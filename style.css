@@ -29,3 +29,55 @@ details.champ summary{cursor:pointer;font-size:1.1rem;color:#c8aa6e}
 details.champ small{color:#8a8f98;margin-left:8px}
 
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+
+/* ---------- Ouverture de booster ---------- */
+#reveal{position:fixed;inset:0;z-index:1000;background:rgba(5,10,20,.94);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box}
+#reveal[hidden]{display:none}
+#revealMsg{color:#c8aa6e;font-size:1.1rem;margin:0 0 20px;min-height:1.4em}
+#revealRow{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+.reveal-actions{margin-top:24px}
+
+.flip{position:relative;width:180px;height:350px;perspective:1000px;cursor:pointer;isolation:isolate}
+.flip-inner{position:absolute;inset:0;transition:transform .7s cubic-bezier(.3,1.2,.5,1);transform-style:preserve-3d}
+.flip.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-back,.flip-front{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flip-front{transform:rotateY(180deg)}
+.flip-front .card{width:100%;height:100%;animation:none;box-sizing:border-box;display:flex;flex-direction:column}
+.flip-front .card img{flex:none}
+.flip-back{border-radius:8px;border:3px solid #c8aa6e;display:flex;align-items:center;justify-content:center;
+  background:repeating-linear-gradient(45deg,#14223f,#14223f 10px,#0e1b33 10px,#0e1b33 20px)}
+.flip-back span{font-size:4rem;color:#c8aa6e;font-weight:bold}
+.flip.next .flip-back{animation:hint 1s ease-in-out infinite}
+.flip:not(.flipped):hover .flip-inner{transform:translateY(-6px)}
+@keyframes hint{0%,100%{box-shadow:0 0 0 rgba(200,170,110,0)}50%{box-shadow:0 0 22px rgba(200,170,110,.9)}}
+
+/* effets selon rareté */
+.flip.fx-rare .flip-front .card{animation:glowBlue 1.4s ease-out}
+.flip.fx-epic .flip-front .card{animation:glowPurple 1.6s ease-out;box-shadow:0 0 18px #a335ee}
+.flip.fx-legendary .flip-front .card{animation:glowOrange 1.8s ease-out;box-shadow:0 0 26px #ff8000}
+.flip.fx-mythic .flip-front .card{animation:glowRed 2s ease-out;box-shadow:0 0 36px #e84057}
+@keyframes glowBlue{0%{box-shadow:0 0 0 #0397ab}40%{box-shadow:0 0 30px 6px #0397ab}100%{box-shadow:0 0 10px #0397ab}}
+@keyframes glowPurple{0%{box-shadow:0 0 0 #a335ee}40%{box-shadow:0 0 45px 10px #a335ee}100%{box-shadow:0 0 18px #a335ee}}
+@keyframes glowOrange{0%{box-shadow:0 0 0 #ff8000}40%{box-shadow:0 0 60px 16px #ff8000}100%{box-shadow:0 0 26px #ff8000}}
+@keyframes glowRed{0%{box-shadow:0 0 0 #e84057}40%{box-shadow:0 0 80px 22px #e84057}100%{box-shadow:0 0 36px #e84057}}
+
+.flip.fx-mythic::before,.flip.fx-legendary::before{content:"";position:absolute;inset:-70px;z-index:-1;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent,var(--ray),transparent 25%,var(--ray),transparent 50%,var(--ray),transparent 75%,var(--ray),transparent);
+  animation:spin 4s linear infinite;opacity:.55;filter:blur(6px)}
+.flip.fx-mythic{--ray:#e84057}
+.flip.fx-legendary{--ray:#ff8000}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle,var(--c,#fff),transparent 70%)}
+#flash.go{animation:flash .9s ease-out}
+@keyframes flash{0%{opacity:var(--o,.5)}100%{opacity:0}}
+
+.shake1{animation:shake1 .45s}
+.shake2{animation:shake2 .7s}
+@keyframes shake1{0%,100%{transform:translate(0)}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
+@keyframes shake2{0%,100%{transform:translate(0)}10%{transform:translate(-10px,6px)}20%{transform:translate(10px,-6px)}30%{transform:translate(-9px,-6px)}40%{transform:translate(9px,6px)}50%{transform:translate(-7px,4px)}60%{transform:translate(7px,-4px)}80%{transform:translate(-3px,2px)}}
+
+.particle{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:5;
+  background:var(--p);box-shadow:0 0 8px var(--p);animation:burst 1.1s ease-out forwards}
+@keyframes burst{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(0);opacity:0}}

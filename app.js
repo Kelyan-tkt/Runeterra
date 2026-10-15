@@ -27,11 +27,11 @@ const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/
 
 // chance qu'un booster contienne au moins 1 carte de cette rareté (le reste = communes)
 const RARITIES = {
-  common:    { label: "Commune",    chance: 1 },
-  rare:      { label: "Rare",       chance: 0.941 },
-  epic:      { label: "Épique",     chance: 0.176 },
-  legendary: { label: "Légendaire", chance: 0.02 },
-  mythic:    { label: "Mythique",   chance: 0.0033 }
+  common:    { label: "Commune",    chance: 1,      color: "#8a8f98" },
+  rare:      { label: "Rare",       chance: 0.941,  color: "#0397ab" },
+  epic:      { label: "Épique",     chance: 0.176,  color: "#a335ee" },
+  legendary: { label: "Légendaire", chance: 0.02,   color: "#ff8000" },
+  mythic:    { label: "Mythique",   chance: 0.0033, color: "#e84057" }
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
 
@@ -150,12 +150,118 @@ async function openBooster() {
       return s;
     });
 
-    $("result").innerHTML = drawn.map((c, i) => cardHTML(c, 0, i * 0.2)).join("");
+    $("result").innerHTML = "";
+    startReveal(drawn);
   } catch (e) {
     alert(e.message);
   }
   render();
 }
+
+// ---------- Révélation carte par carte ----------
+let rv = null;
+
+function startReveal(cards) {
+  cards.forEach(c => { const i = new Image(); i.referrerPolicy = "no-referrer"; i.src = c.img; });
+  rv = { cards, next: 0, busy: false };
+  $("revealRow").innerHTML = cards.map((c, i) => `
+    <div class="flip" data-i="${i}">
+      <div class="flip-inner">
+        <div class="flip-back"><span>R</span></div>
+        <div class="flip-front">${cardHTML(c)}</div>
+      </div>
+    </div>`).join("");
+  $("revealAll").hidden = false;
+  $("revealClose").hidden = true;
+  $("reveal").hidden = false;
+  updateReveal();
+}
+
+function updateReveal() {
+  if (!rv) return;
+  document.querySelectorAll(".flip").forEach((el, i) => el.classList.toggle("next", i === rv.next));
+  $("revealMsg").textContent = rv.next < rv.cards.length
+    ? `Clique pour révéler la carte ${rv.next + 1} / ${rv.cards.length}`
+    : "Booster ouvert !";
+}
+
+function flipNext() {
+  if (!rv || rv.next >= rv.cards.length) return;
+  const i = rv.next++;
+  const el = document.querySelector(`.flip[data-i="${i}"]`);
+  const c = rv.cards[i];
+  el.classList.add("flipped", `fx-${c.rarity}`);
+  setTimeout(() => rarityEffect(el, c.rarity), 350);
+  updateReveal();
+  if (rv.next >= rv.cards.length) finishReveal();
+}
+
+function flipAll() {
+  if (!rv || rv.busy) return;
+  rv.busy = true;
+  $("revealAll").hidden = true;
+  const step = () => {
+    if (!rv || rv.next >= rv.cards.length) return;
+    flipNext();
+    setTimeout(step, 450);
+  };
+  step();
+}
+
+function finishReveal() {
+  $("revealAll").hidden = true;
+  $("revealClose").hidden = false;
+  $("result").innerHTML = rv.cards.map(c => cardHTML(c)).join("");
+}
+
+function closeReveal() {
+  $("reveal").hidden = true;
+  rv = null;
+  render();
+}
+
+function rarityEffect(el, rarity) {
+  const fxMap = {
+    epic:      { flash: .35, shake: "shake1", particles: 14 },
+    legendary: { flash: .55, shake: "shake2", particles: 32 },
+    mythic:    { flash: .85, shake: "shake2", particles: 70 }
+  };
+  const fx = fxMap[rarity];
+  if (!fx) return;
+  const color = RARITIES[rarity].color;
+
+  const f = $("flash");
+  f.classList.remove("go");
+  f.style.setProperty("--c", color);
+  f.style.setProperty("--o", fx.flash);
+  void f.offsetWidth;
+  f.classList.add("go");
+
+  const row = $("revealRow");
+  row.classList.remove("shake1", "shake2");
+  void row.offsetWidth;
+  row.classList.add(fx.shake);
+  setTimeout(() => row.classList.remove(fx.shake), 800);
+
+  for (let i = 0; i < fx.particles; i++) {
+    const p = document.createElement("span");
+    p.className = "particle";
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 90 + Math.random() * (rarity === "mythic" ? 260 : 160);
+    p.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
+    p.style.setProperty("--dy", `${Math.sin(angle) * dist}px`);
+    p.style.setProperty("--p", Math.random() < .3 ? "#fff" : color);
+    el.appendChild(p);
+    setTimeout(() => p.remove(), 1200);
+  }
+}
+
+$("reveal").addEventListener("click", e => {
+  if (e.target.closest("button")) return;
+  if (rv && !rv.busy) flipNext();
+});
+$("revealAll").onclick = flipAll;
+$("revealClose").onclick = closeReveal;
 
 // ---------- Affichage ----------
 const cardHTML = (c, qty = 0, delay = 0, locked = false) => `
@@ -198,7 +304,7 @@ function renderCollection() {
 function render() {
   applyRefill(state);
   $("boosterCount").textContent = state.boosters;
-  $("openBtn").disabled = state.boosters <= 0;
+  $("openBtn").disabled = state.boosters <= 0 || !!rv;
 
   const uniqueOwned = Object.keys(state.cards || {}).length;
   $("cardCount").textContent = `${uniqueOwned} / ${skinList.length} skins`;
@@ -218,7 +324,10 @@ setInterval(() => {
   if (!state) return;
   const before = state.boosters;
   applyRefill(state);
-  if (state.boosters !== before) render();
+  if (state.boosters !== before) {
+    $("boosterCount").textContent = state.boosters;
+    $("openBtn").disabled = state.boosters <= 0 || !!rv;
+  }
   tickTimer();
 }, 1000);
 
@@ -286,7 +395,7 @@ onAuthStateChanged(auth, async u => {
   $("loginView").hidden = !!u;
   $("gameView").hidden = !u;
   $("userBox").hidden = !u;
-  if (!u) { state = null; return; }
+  if (!u) { state = null; $("reveal").hidden = true; rv = null; return; }
   $("userName").textContent = u.displayName || "";
   try {
     if (!champions.length) await loadGameData();
