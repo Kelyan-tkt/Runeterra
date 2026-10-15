@@ -109,7 +109,7 @@ function skinCard(id) {
     rarity: s ? rarityOf(s) : "common",
     img: cdUrl(s?.loadScreenPath || s?.splashPath),
     imgAlt: cdUrl(s?.splashPath || s?.tilePath),
-    splash: cdUrl(s?.splashPath || s?.uncenteredSplashPath || s?.loadScreenPath),
+    splash: cdUrl(s?.uncenteredSplashPath || s?.splashPath || s?.loadScreenPath),
     splashAlt: cdUrl(s?.uncenteredSplashPath || s?.loadScreenPath || s?.tilePath)
   };
 }
