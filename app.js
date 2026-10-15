@@ -25,6 +25,26 @@ const CARDS_PER_BOOSTER = 5;
 const DDRAGON = "https://ddragon.leagueoflegends.com";
 const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
+const RARITIES = {
+  common:    { label: "Commune",    weight: 50, color: "#8a8f98" },
+  rare:      { label: "Rare",       weight: 30, color: "#0397ab" },
+  epic:      { label: "Épique",     weight: 12, color: "#a335ee" },
+  legendary: { label: "Légendaire", weight: 6,  color: "#ff8000" },
+  mythic:    { label: "Mythique",   weight: 2,  color: "#e84057" }
+};
+const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
+let pools = {};
+
+function rarityOf(s) {
+  if (s.isBase) return "common";
+  switch (s.rarity) {
+    case "kEpic": return "epic";
+    case "kLegendary": return "legendary";
+    case "kUltimate": case "kMythic": case "kTranscendent": return "mythic";
+    default: return "rare";
+  }
+}
+
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 const $ = id => document.getElementById(id);
@@ -70,6 +90,8 @@ async function loadGameData() {
   skinsById = data;
   skinList = Object.values(data).filter(s =>
     s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
+      pools = {};
+  skinList.forEach(s => (pools[rarityOf(s)] ||= []).push(s));
 }
 
 function skinCard(id) {
@@ -79,15 +101,25 @@ function skinCard(id) {
     id,
     name: champ?.name || "Inconnu",
     skinName: s?.isBase ? "Classique" : (s?.name || `Skin ${id}`),
+    rarity: s ? rarityOf(s) : "common",
     img: cdUrl(s?.loadScreenPath || s?.splashPath),
     imgAlt: cdUrl(s?.splashPath || s?.tilePath)
   };
 }
 
-function drawCard() {
-  const s = skinList[Math.floor(Math.random() * skinList.length)];
-  return skinCard(s.id);
+function rollRarity() {
+  const available = Object.keys(RARITIES).filter(r => pools[r]?.length);
+  const total = available.reduce((a, r) => a + RARITIES[r].weight, 0);
+  let n = Math.random() * total;
+  for (const r of available) { n -= RARITIES[r].weight; if (n < 0) return r; }
+  return available[0];
 }
+
+function drawCard() {
+  const pool = pools[rollRarity()];
+  return skinCard(pool[Math.floor(Math.random() * pool.length)].id);
+}
+
 
 // ---------- Ouverture ----------
 async function openBooster() {
@@ -116,7 +148,8 @@ async function openBooster() {
 
 // ---------- Affichage ----------
 const cardHTML = (c, qty = 0, delay = 0) => `
-  <div class="card" style="animation-delay:${delay}s">
+  <div class="card ${c.rarity}" style="animation-delay:${delay}s">
+    <span class="badge">${RARITIES[c.rarity].label}</span>
     <img loading="lazy" referrerpolicy="no-referrer" alt="${c.name}" src="${c.img}"
          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
     <div class="info"><b>${c.name}</b><br>${c.skinName}${qty > 1 ? `<br>x${qty}` : ""}</div>
@@ -130,7 +163,9 @@ function render() {
   const entries = Object.entries(state.cards || {});
   $("cardCount").textContent = entries.reduce((a, [, q]) => a + q, 0);
   $("collection").innerHTML = entries
-    .map(([id, qty]) => cardHTML(skinCard(+id), qty)).join("") || "Collection vide.";
+    .map(([id, qty]) => ({ c: skinCard(+id), qty }))
+    .sort((a, b) => RARITY_ORDER.indexOf(a.c.rarity) - RARITY_ORDER.indexOf(b.c.rarity))
+    .map(({ c, qty }) => cardHTML(c, qty)).join("") || "Collection vide.";
 }
 
 function tickTimer() {

@@ -11,3 +11,10 @@ nav button.active{background:#c8aa6e;color:#000}
 .card .info{padding:6px;font-size:.85rem}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
 input{padding:10px;margin:4px;border-radius:6px;border:1px solid #c8aa6e;background:#1e2328;color:#f0e6d2}
+.card{position:relative}
+.badge{position:absolute;top:6px;left:6px;z-index:1;padding:2px 8px;border-radius:4px;font-size:.7rem;background:rgba(0,0,0,.75)}
+.card.common{border-color:#8a8f98}
+.card.rare{border-color:#0397ab}.card.rare .badge{color:#0397ab}
+.card.epic{border-color:#a335ee}.card.epic .badge{color:#a335ee}
+.card.legendary{border-color:#ff8000;box-shadow:0 0 14px #ff8000}.card.legendary .badge{color:#ff8000}
+.card.mythic{border-color:#e84057;box-shadow:0 0 20px #e84057}.card.mythic .badge{color:#e84057}
