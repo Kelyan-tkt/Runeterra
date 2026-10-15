@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Runeterra</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Runeterra</h1>
+    <div id="userBox" hidden>
+      <span id="userName"></span>
+      <button id="logoutBtn">Déconnexion</button>
+    </div>
+  </header>
+
+<section id="loginView">
+  <h2>Connexion</h2>
+  <input id="username" placeholder="Pseudo" maxlength="20" autocomplete="username"><br>
+  <input id="password" type="password" placeholder="Mot de passe (6 caractères min)" autocomplete="current-password"><br>
+  <button id="loginBtn">Se connecter</button>
+  <button id="registerBtn">Créer un compte</button>
+  <p id="authError" style="color:#e84057"></p>
+</section>
+
+  <main id="gameView" hidden>
+    <nav>
+      <button data-tab="boosters" class="active">Boosters</button>
+      <button data-tab="collection">Collection</button>
+    </nav>
+
+    <section id="tab-boosters">
+      <h2>Boosters : <span id="boosterCount">0</span> / 10</h2>
+      <p id="timer"></p>
+      <button id="openBtn">Ouvrir un booster</button>
+      <div id="result" class="grid"></div>
+    </section>
+
+    <section id="tab-collection" hidden>
+      <h2>Ma collection (<span id="cardCount">0</span> cartes)</h2>
+      <div id="collection" class="grid"></div>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
