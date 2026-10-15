@@ -22,9 +22,11 @@ const db = getFirestore(app);
 const MAX_BOOSTERS = 10;
 const REFILL_MS = 10 * 60 * 1000;
 const CARDS_PER_BOOSTER = 5;
-const CDN = "https://ddragon.leagueoflegends.com";
+const DDRAGON = "https://ddragon.leagueoflegends.com";
+const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
-let user = null, state = null, champions = [], version = "", skinCache = {};
+let user = null, state = null;
+let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 const $ = id => document.getElementById(id);
 
 // ---------- Boosters (recharge) ----------
@@ -48,41 +50,50 @@ async function loadState() {
     const snap = await tx.get(userRef());
     let s = snap.exists() ? snap.data()
       : { boosters: MAX_BOOSTERS, lastRefill: Date.now(), cards: {} };
+    s.cards = s.cards || {};
     s = applyRefill(s);
     tx.set(userRef(), s);
     return s;
   });
 }
 
-// ---------- Données Riot ----------
-async function loadChampions() {
-  version = (await (await fetch(`${CDN}/api/versions.json`)).json())[0];
-  const d = await (await fetch(`${CDN}/cdn/${version}/data/fr_FR/champion.json`)).json();
+// ---------- Données du jeu ----------
+const cdUrl = p => p ? `${CD}/${p.replace("/lol-game-data/assets/", "").toLowerCase()}` : "";
+
+async function loadGameData() {
+  const versions = await (await fetch(`${DDRAGON}/api/versions.json`)).json();
+  const d = await (await fetch(`${DDRAGON}/cdn/${versions[0]}/data/fr_FR/champion.json`)).json();
   champions = Object.values(d.data);
+  champions.forEach(c => champByKey[c.key] = c);
+
+  const data = await (await fetch(`${CD}/v1/skins.json`)).json();
+  skinsById = data;
+  skinList = Object.values(data).filter(s =>
+    s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
 }
 
-async function getSkins(id) {
-  if (!skinCache[id]) {
-    const d = await (await fetch(`${CDN}/cdn/${version}/data/fr_FR/champion/${id}.json`)).json();
-    skinCache[id] = d.data[id].skins;
-  }
-  return skinCache[id];
+function skinCard(id) {
+  const s = skinsById[id];
+  const champ = champByKey[Math.floor(id / 1000)];
+  return {
+    id,
+    name: champ?.name || "Inconnu",
+    skinName: s?.isBase ? "Classique" : (s?.name || `Skin ${id}`),
+    img: cdUrl(s?.loadScreenPath || s?.splashPath),
+    imgAlt: cdUrl(s?.splashPath || s?.tilePath)
+  };
 }
 
-async function drawCard() {
-  const champ = champions[Math.floor(Math.random() * champions.length)];
-  const skins = await getSkins(champ.id);
-  const skin = skins[Math.floor(Math.random() * skins.length)];
-  return { champ: champ.id, name: champ.name, num: skin.num,
-           skinName: skin.num === 0 ? "Classique" : skin.name };
+function drawCard() {
+  const s = skinList[Math.floor(Math.random() * skinList.length)];
+  return skinCard(s.id);
 }
 
 // ---------- Ouverture ----------
 async function openBooster() {
   $("openBtn").disabled = true;
   try {
-    const drawn = [];
-    for (let i = 0; i < CARDS_PER_BOOSTER; i++) drawn.push(await drawCard());
+    const drawn = Array.from({ length: CARDS_PER_BOOSTER }, drawCard);
 
     state = await runTransaction(db, async tx => {
       const snap = await tx.get(userRef());
@@ -91,10 +102,7 @@ async function openBooster() {
       if (s.boosters === MAX_BOOSTERS) s.lastRefill = Date.now();
       s.boosters -= 1;
       s.cards = s.cards || {};
-      drawn.forEach(c => {
-        const k = `${c.champ}_${c.num}`;
-        s.cards[k] = (s.cards[k] || 0) + 1;
-      });
+      drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
       tx.set(userRef(), s);
       return s;
     });
@@ -109,7 +117,8 @@ async function openBooster() {
 // ---------- Affichage ----------
 const cardHTML = (c, qty = 0, delay = 0) => `
   <div class="card" style="animation-delay:${delay}s">
-    <img loading="lazy" src="${CDN}/cdn/img/champion/loading/${c.champ}_${c.num}.jpg" alt="${c.name}">
+    <img loading="lazy" referrerpolicy="no-referrer" alt="${c.name}" src="${c.img}"
+         onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
     <div class="info"><b>${c.name}</b><br>${c.skinName}${qty > 1 ? `<br>x${qty}` : ""}</div>
   </div>`;
 
@@ -120,12 +129,8 @@ function render() {
 
   const entries = Object.entries(state.cards || {});
   $("cardCount").textContent = entries.reduce((a, [, q]) => a + q, 0);
-  $("collection").innerHTML = entries.map(([k, qty]) => {
-    const [champ, num] = k.split("_");
-    const ch = champions.find(c => c.id === champ);
-    return cardHTML({ champ, num, name: ch?.name || champ,
-      skinName: num === "0" ? "Classique" : `Skin ${num}` }, qty);
-  }).join("") || "Collection vide.";
+  $("collection").innerHTML = entries
+    .map(([id, qty]) => cardHTML(skinCard(+id), qty)).join("") || "Collection vide.";
 }
 
 function tickTimer() {
@@ -136,15 +141,23 @@ function tickTimer() {
   const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
   $("timer").textContent = `Prochain booster dans ${m}:${String(s).padStart(2, "0")}`;
 }
-setInterval(() => { if (state) { const before = state.boosters; applyRefill(state); if (state.boosters !== before) render(); tickTimer(); } }, 1000);
 
-// ---------- Onglets + Auth ----------
+setInterval(() => {
+  if (!state) return;
+  const before = state.boosters;
+  applyRefill(state);
+  if (state.boosters !== before) render();
+  tickTimer();
+}, 1000);
+
+// ---------- Onglets ----------
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
   $("tab-boosters").hidden = b.dataset.tab !== "boosters";
   $("tab-collection").hidden = b.dataset.tab !== "collection";
 });
 
+// ---------- Auth pseudo + mot de passe ----------
 const toEmail = name => `${name.trim().toLowerCase()}@runeterra.app`;
 
 function readForm() {
@@ -174,6 +187,7 @@ $("registerBtn").onclick = async () => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, toEmail(f.name), f.pass);
     await updateProfile(cred.user, { displayName: f.name });
+    $("userName").textContent = f.name;
   } catch (e) {
     $("authError").textContent = authMessages[e.code] || e.code;
   }
@@ -188,6 +202,7 @@ $("loginBtn").onclick = async () => {
     $("authError").textContent = authMessages[e.code] || e.code;
   }
 };
+
 $("logoutBtn").onclick = () => signOut(auth);
 $("openBtn").onclick = openBooster;
 
@@ -197,8 +212,13 @@ onAuthStateChanged(auth, async u => {
   $("gameView").hidden = !u;
   $("userBox").hidden = !u;
   if (!u) { state = null; return; }
-  $("userName").textContent = u.displayName;
-  if (!champions.length) await loadChampions();
-  await loadState();
-  render(); tickTimer();
+  $("userName").textContent = u.displayName || "";
+  try {
+    if (!champions.length) await loadGameData();
+    await loadState();
+    render(); tickTimer();
+  } catch (e) {
+    console.error(e);
+    alert("Erreur de chargement : " + e.message);
+  }
 });
