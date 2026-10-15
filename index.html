@@ -4,44 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Runeterra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>Runeterra</h1>
+  <header class="topbar">
+    <h1 class="logo">Runeterra</h1>
     <div id="userBox" hidden>
       <span id="userName"></span>
-      <button id="logoutBtn">Déconnexion</button>
+      <button id="logoutBtn" class="btn">Déconnexion</button>
     </div>
   </header>
 
-  <section id="loginView">
+  <section id="loginView" class="panel login">
     <h2>Connexion</h2>
     <input id="username" placeholder="Pseudo" maxlength="20" autocomplete="username"><br>
     <input id="password" type="password" placeholder="Mot de passe (6 caractères min)" autocomplete="current-password"><br>
-    <button id="loginBtn">Se connecter</button>
-    <button id="registerBtn">Créer un compte</button>
-    <p id="authError" style="color:#e84057"></p>
+    <div class="login-actions">
+      <button id="loginBtn" class="btn-play">Se connecter</button>
+      <button id="registerBtn" class="btn">Créer un compte</button>
+    </div>
+    <p id="authError"></p>
   </section>
 
   <main id="gameView" hidden>
-    <nav>
+    <nav class="tabs">
       <button data-tab="boosters" class="active">Boosters</button>
       <button data-tab="collection">Collection</button>
     </nav>
 
     <section id="tab-boosters">
-      <h2>Boosters : <span id="boosterCount">0</span> / 10</h2>
+      <div id="chest" class="chest" role="button" tabindex="0" aria-label="Ouvrir un booster">
+        <div class="chest-glow"></div>
+        <img id="chestImg" alt="Coffre hextech"
+             src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/hextech-images/chest_generic.png">
+        <span id="chestCount" class="chest-count">x0</span>
+      </div>
+      <h2 class="boosters-title">Boosters : <span id="boosterCount">0</span> / 10</h2>
       <p id="timer"></p>
-      <button id="openBtn">Ouvrir un booster</button>
+      <button id="openBtn" class="btn-play">Ouvrir un booster</button>
       <div id="result" class="grid"></div>
     </section>
 
     <section id="tab-collection" hidden>
-      <h2>Ma collection (<span id="cardCount">0</span>)</h2>
-            <div class="craft">
+      <h2>Ma collection <span class="count">(<span id="cardCount">0</span>)</span></h2>
+      <div class="craft panel">
         <span>Doublons : <b id="dupCount">0</b></span>
-        <button id="craftBtn">Échanger 3 doublons → 1 carte</button>
+        <button id="craftBtn" class="btn-play small">Échanger 3 doublons → 1 carte</button>
       </div>
       <div class="toolbar">
         <input id="search" type="search" placeholder="Rechercher un champion ou un skin…">
@@ -56,15 +67,18 @@
     <p id="revealMsg"></p>
     <div id="revealRow"></div>
     <div class="reveal-actions">
-      <button id="revealAll">Tout ouvrir</button>
-      <button id="revealClose" hidden>Fermer</button>
+      <button id="revealAll" class="btn-play">Tout ouvrir</button>
+      <button id="revealClose" class="btn-play" hidden>Fermer</button>
     </div>
   </div>
+
   <div id="lightbox" hidden>
-    <button id="lbClose" aria-label="Fermer">✕</button>
+    <button id="lbClose" class="btn" aria-label="Fermer">✕</button>
     <img id="lbImg" alt="">
     <p id="lbCaption"><b id="lbTitle"></b> <span id="lbRarity"></span></p>
   </div>
+
   <script type="module" src="app.js"></script>
+  <script type="module" src="ui.js"></script>
 </body>
 </html>
