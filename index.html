@@ -15,14 +15,14 @@
     </div>
   </header>
 
-<section id="loginView">
-  <h2>Connexion</h2>
-  <input id="username" placeholder="Pseudo" maxlength="20" autocomplete="username"><br>
-  <input id="password" type="password" placeholder="Mot de passe (6 caractères min)" autocomplete="current-password"><br>
-  <button id="loginBtn">Se connecter</button>
-  <button id="registerBtn">Créer un compte</button>
-  <p id="authError" style="color:#e84057"></p>
-</section>
+  <section id="loginView">
+    <h2>Connexion</h2>
+    <input id="username" placeholder="Pseudo" maxlength="20" autocomplete="username"><br>
+    <input id="password" type="password" placeholder="Mot de passe (6 caractères min)" autocomplete="current-password"><br>
+    <button id="loginBtn">Se connecter</button>
+    <button id="registerBtn">Créer un compte</button>
+    <p id="authError" style="color:#e84057"></p>
+  </section>
 
   <main id="gameView" hidden>
     <nav>
@@ -38,8 +38,12 @@
     </section>
 
     <section id="tab-collection" hidden>
-      <h2>Ma collection (<span id="cardCount">0</span> cartes)</h2>
-      <div id="collection" class="grid"></div>
+      <h2>Ma collection (<span id="cardCount">0</span>)</h2>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Rechercher un champion ou un skin…">
+        <label><input id="onlyOwned" type="checkbox"> Possédées seulement</label>
+      </div>
+      <div id="collection"></div>
     </section>
   </main>
 

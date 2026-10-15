@@ -5,16 +5,27 @@ button{background:#c8aa6e;border:0;padding:10px 20px;border-radius:6px;cursor:po
 button:disabled{opacity:.4;cursor:not-allowed}
 nav button{background:#1e2328;color:#c8aa6e}
 nav button.active{background:#c8aa6e;color:#000}
+input{padding:10px;margin:4px;border-radius:6px;border:1px solid #c8aa6e;background:#1e2328;color:#f0e6d2}
+
 .grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:20px}
-.card{width:180px;border:3px solid #888;border-radius:8px;overflow:hidden;background:#111;animation:pop .4s ease both}
+.card{position:relative;width:180px;border:3px solid #8a8f98;border-radius:8px;overflow:hidden;background:#111;animation:pop .4s ease both}
 .card img{width:100%;height:290px;object-fit:cover;display:block}
 .card .info{padding:6px;font-size:.85rem}
-@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
-input{padding:10px;margin:4px;border-radius:6px;border:1px solid #c8aa6e;background:#1e2328;color:#f0e6d2}
-.card{position:relative}
 .badge{position:absolute;top:6px;left:6px;z-index:1;padding:2px 8px;border-radius:4px;font-size:.7rem;background:rgba(0,0,0,.75)}
+
 .card.common{border-color:#8a8f98}
 .card.rare{border-color:#0397ab}.card.rare .badge{color:#0397ab}
 .card.epic{border-color:#a335ee}.card.epic .badge{color:#a335ee}
 .card.legendary{border-color:#ff8000;box-shadow:0 0 14px #ff8000}.card.legendary .badge{color:#ff8000}
 .card.mythic{border-color:#e84057;box-shadow:0 0 20px #e84057}.card.mythic .badge{color:#e84057}
+
+.card.locked img{filter:grayscale(1) brightness(.45)}
+.card.locked{opacity:.65;box-shadow:none}
+
+.toolbar{display:flex;gap:16px;justify-content:center;align-items:center;margin:12px 0;flex-wrap:wrap}
+.toolbar input[type=search]{width:320px;max-width:90%}
+details.champ{margin:10px auto;max-width:1200px;text-align:left;background:#0e1b33;border-radius:8px;padding:8px 12px}
+details.champ summary{cursor:pointer;font-size:1.1rem;color:#c8aa6e}
+details.champ small{color:#8a8f98;margin-left:8px}
+
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}

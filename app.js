@@ -25,15 +25,20 @@ const CARDS_PER_BOOSTER = 5;
 const DDRAGON = "https://ddragon.leagueoflegends.com";
 const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
+// chance qu'un booster contienne au moins 1 carte de cette rareté (le reste = communes)
 const RARITIES = {
-  common:    { label: "Commune",    weight: 50, color: "#8a8f98" },
-  rare:      { label: "Rare",       weight: 30, color: "#0397ab" },
-  epic:      { label: "Épique",     weight: 12, color: "#a335ee" },
-  legendary: { label: "Légendaire", weight: 6,  color: "#ff8000" },
-  mythic:    { label: "Mythique",   weight: 2,  color: "#e84057" }
+  common:    { label: "Commune",    chance: 1 },
+  rare:      { label: "Rare",       chance: 0.941 },
+  epic:      { label: "Épique",     chance: 0.176 },
+  legendary: { label: "Légendaire", chance: 0.02 },
+  mythic:    { label: "Mythique",   chance: 0.0033 }
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
-let pools = {};
+
+let user = null, state = null;
+let champions = [], champByKey = {}, skinsById = {}, skinList = [];
+let pools = {}, skinsByChamp = {};
+const $ = id => document.getElementById(id);
 
 function rarityOf(s) {
   if (s.isBase) return "common";
@@ -44,10 +49,6 @@ function rarityOf(s) {
     default: return "rare";
   }
 }
-
-let user = null, state = null;
-let champions = [], champByKey = {}, skinsById = {}, skinList = [];
-const $ = id => document.getElementById(id);
 
 // ---------- Boosters (recharge) ----------
 function applyRefill(s, now = Date.now()) {
@@ -90,8 +91,12 @@ async function loadGameData() {
   skinsById = data;
   skinList = Object.values(data).filter(s =>
     s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
-      pools = {};
-  skinList.forEach(s => (pools[rarityOf(s)] ||= []).push(s));
+
+  pools = {}; skinsByChamp = {};
+  skinList.forEach(s => {
+    (pools[rarityOf(s)] ||= []).push(s);
+    (skinsByChamp[Math.floor(s.id / 1000)] ||= []).push(s);
+  });
 }
 
 function skinCard(id) {
@@ -107,25 +112,31 @@ function skinCard(id) {
   };
 }
 
-function rollRarity() {
-  const available = Object.keys(RARITIES).filter(r => pools[r]?.length);
-  const total = available.reduce((a, r) => a + RARITIES[r].weight, 0);
-  let n = Math.random() * total;
-  for (const r of available) { n -= RARITIES[r].weight; if (n < 0) return r; }
-  return available[0];
-}
+function drawBooster(n) {
+  const picks = [];
+  for (const r of ["rare", "epic", "legendary", "mythic"]) {
+    if (pools[r]?.length && Math.random() < RARITIES[r].chance) picks.push(r);
+  }
+  while (picks.length < n) picks.push("common");
+  picks.sort((a, b) => RARITY_ORDER.indexOf(b) - RARITY_ORDER.indexOf(a));
 
-function drawCard() {
-  const pool = pools[rollRarity()];
-  return skinCard(pool[Math.floor(Math.random() * pool.length)].id);
+  const cards = [], seen = new Set();
+  for (const r of picks) {
+    const pool = pools[r]?.length ? pools[r] : skinList;
+    let s, guard = 0;
+    do { s = pool[Math.floor(Math.random() * pool.length)]; }
+    while (seen.has(s.id) && guard++ < 200);
+    seen.add(s.id);
+    cards.push(skinCard(s.id));
+  }
+  return cards;
 }
-
 
 // ---------- Ouverture ----------
 async function openBooster() {
   $("openBtn").disabled = true;
   try {
-    const drawn = Array.from({ length: CARDS_PER_BOOSTER }, drawCard);
+    const drawn = drawBooster(CARDS_PER_BOOSTER);
 
     state = await runTransaction(db, async tx => {
       const snap = await tx.get(userRef());
@@ -147,25 +158,51 @@ async function openBooster() {
 }
 
 // ---------- Affichage ----------
-const cardHTML = (c, qty = 0, delay = 0) => `
-  <div class="card ${c.rarity}" style="animation-delay:${delay}s">
+const cardHTML = (c, qty = 0, delay = 0, locked = false) => `
+  <div class="card ${c.rarity}${locked ? " locked" : ""}" style="animation-delay:${delay}s">
     <span class="badge">${RARITIES[c.rarity].label}</span>
     <img loading="lazy" referrerpolicy="no-referrer" alt="${c.name}" src="${c.img}"
          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
     <div class="info"><b>${c.name}</b><br>${c.skinName}${qty > 1 ? `<br>x${qty}` : ""}</div>
   </div>`;
 
+const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+function renderCollection() {
+  const owned = state.cards || {};
+  const q = norm($("search").value.trim());
+  const only = $("onlyOwned").checked;
+  const champs = Object.keys(skinsByChamp)
+    .map(k => champByKey[k]).filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+
+  let html = "";
+  for (const champ of champs) {
+    const skins = skinsByChamp[champ.key].slice().sort((a, b) => a.id - b.id);
+    const ownedCount = skins.filter(s => owned[s.id]).length;
+    const champMatch = q && norm(champ.name).includes(q);
+    const visible = skins.filter(s => {
+      if (only && !owned[s.id]) return false;
+      if (!q || champMatch) return true;
+      return norm(skinCard(s.id).skinName).includes(q);
+    });
+    if (!visible.length) continue;
+    html += `<details class="champ" ${q || only ? "open" : ""}>
+      <summary>${champ.name}<small>${ownedCount}/${skins.length}</small></summary>
+      <div class="grid">${visible.map(s => cardHTML(skinCard(s.id), owned[s.id] || 0, 0, !owned[s.id])).join("")}</div>
+    </details>`;
+  }
+  $("collection").innerHTML = html || "Aucun résultat.";
+}
+
 function render() {
   applyRefill(state);
   $("boosterCount").textContent = state.boosters;
   $("openBtn").disabled = state.boosters <= 0;
 
-  const entries = Object.entries(state.cards || {});
-  $("cardCount").textContent = entries.reduce((a, [, q]) => a + q, 0);
-  $("collection").innerHTML = entries
-    .map(([id, qty]) => ({ c: skinCard(+id), qty }))
-    .sort((a, b) => RARITY_ORDER.indexOf(a.c.rarity) - RARITY_ORDER.indexOf(b.c.rarity))
-    .map(({ c, qty }) => cardHTML(c, qty)).join("") || "Collection vide.";
+  const uniqueOwned = Object.keys(state.cards || {}).length;
+  $("cardCount").textContent = `${uniqueOwned} / ${skinList.length} skins`;
+  renderCollection();
 }
 
 function tickTimer() {
@@ -184,6 +221,9 @@ setInterval(() => {
   if (state.boosters !== before) render();
   tickTimer();
 }, 1000);
+
+$("search").addEventListener("input", () => state && renderCollection());
+$("onlyOwned").addEventListener("change", () => state && renderCollection());
 
 // ---------- Onglets ----------
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
