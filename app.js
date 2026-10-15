@@ -108,7 +108,9 @@ function skinCard(id) {
     skinName: s?.isBase ? "Classique" : (s?.name || `Skin ${id}`),
     rarity: s ? rarityOf(s) : "common",
     img: cdUrl(s?.loadScreenPath || s?.splashPath),
-    imgAlt: cdUrl(s?.splashPath || s?.tilePath)
+    imgAlt: cdUrl(s?.splashPath || s?.tilePath),
+    splash: cdUrl(s?.splashPath || s?.uncenteredSplashPath || s?.loadScreenPath),
+    splashAlt: cdUrl(s?.uncenteredSplashPath || s?.loadScreenPath || s?.tilePath)
   };
 }
 
@@ -182,7 +184,7 @@ function updateReveal() {
   document.querySelectorAll(".flip").forEach((el, i) => el.classList.toggle("next", i === rv.next));
   $("revealMsg").textContent = rv.next < rv.cards.length
     ? `Clique pour révéler la carte ${rv.next + 1} / ${rv.cards.length}`
-    : "Booster ouvert !";
+    : "Booster ouvert ! Clique sur une carte pour voir son splash art.";
 }
 
 function flipNext() {
@@ -256,16 +258,51 @@ function rarityEffect(el, rarity) {
   }
 }
 
+// clic dans l'écran d'ouverture : carte déjà révélée -> splash, sinon -> carte suivante
 $("reveal").addEventListener("click", e => {
   if (e.target.closest("button")) return;
+  const flipped = e.target.closest(".flip.flipped .card");
+  if (flipped) { openLightbox(flipped.dataset.id); return; }
   if (rv && !rv.busy) flipNext();
 });
 $("revealAll").onclick = flipAll;
 $("revealClose").onclick = closeReveal;
 
+// ---------- Splash art en grand ----------
+function openLightbox(id) {
+  const c = skinCard(+id);
+  const img = $("lbImg");
+  img.dataset.t = "";
+  img.onerror = () => {
+    if (img.dataset.t !== "1") { img.dataset.t = "1"; img.src = c.splashAlt; }
+  };
+  img.src = c.splash;
+  img.alt = `${c.name} - ${c.skinName}`;
+  $("lbTitle").textContent = `${c.name} — ${c.skinName}`;
+  const r = $("lbRarity");
+  r.textContent = RARITIES[c.rarity].label;
+  r.style.color = RARITIES[c.rarity].color;
+  $("lightbox").hidden = false;
+}
+
+function closeLightbox() {
+  $("lightbox").hidden = true;
+  $("lbImg").src = "";
+}
+
+$("lightbox").addEventListener("click", closeLightbox);
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+
+// clic sur une carte hors de l'écran d'ouverture (collection, dernier booster)
+document.addEventListener("click", e => {
+  if (e.target.closest("#reveal") || e.target.closest("#lightbox")) return;
+  const card = e.target.closest(".card");
+  if (card && card.dataset.id) openLightbox(card.dataset.id);
+});
+
 // ---------- Affichage ----------
 const cardHTML = (c, qty = 0, delay = 0, locked = false) => `
-  <div class="card ${c.rarity}${locked ? " locked" : ""}" style="animation-delay:${delay}s">
+  <div class="card ${c.rarity}${locked ? " locked" : ""}" data-id="${c.id}" style="animation-delay:${delay}s">
     <span class="badge">${RARITIES[c.rarity].label}</span>
     <img loading="lazy" referrerpolicy="no-referrer" alt="${c.name}" src="${c.img}"
          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
