@@ -22,6 +22,8 @@ const db = getFirestore(app);
 const MAX_BOOSTERS = 10;
 const REFILL_MS = 10 * 60 * 1000;
 const CARDS_PER_BOOSTER = 5;
+const ALLOW_DUPES_IN_BOOSTER = true;
+const DUPES_PER_CRAFT = 3;
 const DDRAGON = "https://ddragon.leagueoflegends.com";
 const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
@@ -34,6 +36,9 @@ const RARITIES = {
   mythic:    { label: "Mythique",   chance: 0.0033, color: "#e84057" }
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
+
+// poids pour la rareté de la carte obtenue par échange de doublons
+const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
 
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
@@ -109,7 +114,7 @@ function skinCard(id) {
     rarity: s ? rarityOf(s) : "common",
     img: cdUrl(s?.loadScreenPath || s?.splashPath),
     imgAlt: cdUrl(s?.splashPath || s?.tilePath),
-    splash: cdUrl(s?.uncenteredSplashPath || s?.splashPath || s?.loadScreenPath),
+    splash: cdUrl(s?.splashPath || s?.uncenteredSplashPath || s?.loadScreenPath),
     splashAlt: cdUrl(s?.uncenteredSplashPath || s?.loadScreenPath || s?.tilePath)
   };
 }
@@ -127,11 +132,60 @@ function drawBooster(n) {
     const pool = pools[r]?.length ? pools[r] : skinList;
     let s, guard = 0;
     do { s = pool[Math.floor(Math.random() * pool.length)]; }
-    while (seen.has(s.id) && guard++ < 200);
+    while (!ALLOW_DUPES_IN_BOOSTER && seen.has(s.id) && guard++ < 200);
     seen.add(s.id);
     cards.push(skinCard(s.id));
   }
   return cards;
+}
+
+// ---------- Doublons ----------
+const dupCount = cards => Object.values(cards || {}).reduce((a, q) => a + Math.max(0, q - 1), 0);
+
+function pickCraftCard(owned) {
+  const avail = Object.keys(CRAFT_WEIGHTS).filter(r => pools[r]?.some(s => !owned[s.id]));
+  if (!avail.length) return null;
+  const total = avail.reduce((a, r) => a + CRAFT_WEIGHTS[r], 0);
+  let n = Math.random() * total, rarity = avail[0];
+  for (const r of avail) { n -= CRAFT_WEIGHTS[r]; if (n < 0) { rarity = r; break; } }
+  const cand = pools[rarity].filter(s => !owned[s.id]);
+  return skinCard(cand[Math.floor(Math.random() * cand.length)].id);
+}
+
+async function craftCard() {
+  if (rv) return;
+  if (dupCount(state.cards) < DUPES_PER_CRAFT) {
+    alert(`Il faut ${DUPES_PER_CRAFT} doublons pour faire un échange.`);
+    return;
+  }
+  const card = pickCraftCard(state.cards || {});
+  if (!card) { alert("Tu possèdes déjà toutes les cartes !"); return; }
+
+  $("craftBtn").disabled = true;
+  try {
+    state = await runTransaction(db, async tx => {
+      const snap = await tx.get(userRef());
+      const s = snap.data();
+      s.cards = s.cards || {};
+      if (dupCount(s.cards) < DUPES_PER_CRAFT) throw new Error("Pas assez de doublons.");
+
+      let need = DUPES_PER_CRAFT;
+      const ids = Object.keys(s.cards).filter(k => s.cards[k] > 1)
+        .sort((a, b) => s.cards[b] - s.cards[a]);
+      for (const id of ids) {
+        while (need > 0 && s.cards[id] > 1) { s.cards[id]--; need--; }
+        if (need === 0) break;
+      }
+      s.cards[card.id] = (s.cards[card.id] || 0) + 1;
+      tx.set(userRef(), s);
+      return s;
+    });
+    $("result").innerHTML = "";
+    startReveal([card]);
+  } catch (e) {
+    alert(e.message);
+  }
+  render();
 }
 
 // ---------- Ouverture ----------
@@ -173,7 +227,7 @@ function startReveal(cards) {
         <div class="flip-front">${cardHTML(c)}</div>
       </div>
     </div>`).join("");
-  $("revealAll").hidden = false;
+  $("revealAll").hidden = cards.length < 2;
   $("revealClose").hidden = true;
   $("reveal").hidden = false;
   updateReveal();
@@ -184,7 +238,7 @@ function updateReveal() {
   document.querySelectorAll(".flip").forEach((el, i) => el.classList.toggle("next", i === rv.next));
   $("revealMsg").textContent = rv.next < rv.cards.length
     ? `Clique pour révéler la carte ${rv.next + 1} / ${rv.cards.length}`
-    : "Booster ouvert ! Clique sur une carte pour voir son splash art.";
+    : "Terminé ! Clique sur une carte pour voir son splash art.";
 }
 
 function flipNext() {
@@ -258,7 +312,6 @@ function rarityEffect(el, rarity) {
   }
 }
 
-// clic dans l'écran d'ouverture : carte déjà révélée -> splash, sinon -> carte suivante
 $("reveal").addEventListener("click", e => {
   if (e.target.closest("button")) return;
   const flipped = e.target.closest(".flip.flipped .card");
@@ -293,7 +346,6 @@ function closeLightbox() {
 $("lightbox").addEventListener("click", closeLightbox);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
 
-// clic sur une carte hors de l'écran d'ouverture (collection, dernier booster)
 document.addEventListener("click", e => {
   if (e.target.closest("#reveal") || e.target.closest("#lightbox")) return;
   const card = e.target.closest(".card");
@@ -345,6 +397,11 @@ function render() {
 
   const uniqueOwned = Object.keys(state.cards || {}).length;
   $("cardCount").textContent = `${uniqueOwned} / ${skinList.length} skins`;
+
+  const dups = dupCount(state.cards);
+  $("dupCount").textContent = dups;
+  $("craftBtn").disabled = dups < DUPES_PER_CRAFT || !!rv;
+
   renderCollection();
 }
 
@@ -370,6 +427,7 @@ setInterval(() => {
 
 $("search").addEventListener("input", () => state && renderCollection());
 $("onlyOwned").addEventListener("change", () => state && renderCollection());
+$("craftBtn").onclick = craftCard;
 
 // ---------- Onglets ----------
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
