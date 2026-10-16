@@ -257,3 +257,10 @@ ul.list .btn{margin-left:6px}
 .trade-box select{width:100%;padding:10px;background:#010a13;color:var(--gold-light);border:1px solid var(--gold-dim);margin-bottom:12px}
 #tradeMinePrev,#tradeTheirsPrev{display:flex;justify-content:center}
 #tradeMsg{min-height:1.2em;color:#e84057}
+
+/* ---------- Légendaire : reflet holographique ---------- */
+.flip.fx-legendary .flip-front{overflow:hidden;border-radius:3px}
+.flip.fx-legendary .flip-front::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);
+  transform:translateX(-120%);animation:shine 3s ease-in-out infinite}
+@keyframes shine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}

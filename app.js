@@ -287,6 +287,7 @@ function closeReveal() {
   render();
 }
 
+// ---------- Effets de rareté ----------
 function screenFlash(color, opacity) {
   const f = $("flash");
   f.classList.remove("go");
@@ -311,6 +312,18 @@ function spawn(parent, cls, vars = {}, life = 1500) {
   parent.appendChild(n);
   setTimeout(() => n.remove(), life);
   return n;
+}
+
+function mythicEmbers(el) {
+  const id = setInterval(() => {
+    if (!el.isConnected || $("reveal").hidden) { clearInterval(id); return; }
+    spawn(el, "ember", {
+      "--p": "#e84057",
+      "--x": `${5 + Math.random() * 90}%`,
+      "--d": "0s",
+      "--h": `${120 + Math.random() * 120}px`
+    }, 2000);
+  }, 280);
 }
 
 function rarityEffect(el, rarity) {
@@ -346,6 +359,7 @@ function rarityEffect(el, rarity) {
   } else if (rarity === "mythic") {
     screenFlash(color, .85);
     shakeRow("shake2");
+    mythicEmbers(el);
     for (let i = 0; i < 70; i++) {
       const angle = Math.random() * Math.PI * 2;
       const dist = 90 + Math.random() * 260;
@@ -607,7 +621,8 @@ async function acceptTrade(id) {
   }
 }
 
-const setTradeStatus = (id, status) => updateDoc(doc(db, "trades", id), { status }).catch(e => alert(e.message));
+const setTradeStatus = (id, status) =>
+  updateDoc(doc(db, "trades", id), { status }).catch(e => alert(e.message));
 
 // ---------- Affichage social ----------
 const mini = id => {
