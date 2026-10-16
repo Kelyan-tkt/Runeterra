@@ -42,6 +42,20 @@ const RARITIES = {
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
 const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
+const MAX_SPINS = 5;
+const SPIN_REFILL_MS = 10 * 60 * 1000;
+const WHEEL = [
+  { type: "booster", icon: "📦", color: "#0397ab" },
+  { type: "nothing", icon: "💨", color: "#2b303b" },
+  { type: "bonus",   icon: "🌟", color: "#ff8000" },
+  { type: "nothing", icon: "💨", color: "#383e4c" },
+  { type: "respin",  icon: "🔁", color: "#a335ee" },
+  { type: "nothing", icon: "💨", color: "#2b303b" },
+  { type: "booster", icon: "📦", color: "#0397ab" },
+  { type: "nothing", icon: "💨", color: "#383e4c" },
+  { type: "nothing", icon: "💨", color: "#2b303b" },
+  { type: "nothing", icon: "💨", color: "#383e4c" }
+];
 const BONUS_TOP = { epic: 85, legendary: 12.5, mythic: 2.5 };
 
 const QUESTS = {
@@ -90,9 +104,7 @@ function rarityOf(s) {
 
 // ---------- Boosters (recharge) ----------
 function applyRefill(s, now = Date.now()) {
-  if (s.boosters >= MAX_BOOSTERS) {
-    s.boosters = MAX_BOOSTERS; s.lastRefill = now; return s;
-  }
+      if (s.boosters >= MAX_BOOSTERS) { s.lastRefill = now; return s; }
   const gained = Math.floor((now - s.lastRefill) / REFILL_MS);
   if (gained > 0) {
     s.boosters = Math.min(MAX_BOOSTERS, s.boosters + gained);
@@ -198,6 +210,7 @@ async function loadState() {
       : { boosters: MAX_BOOSTERS, lastRefill: Date.now(), cards: {} };
     s.cards = s.cards || {};
     s = applyRefill(s);
+    ensureSpins(s);
     ensureQuests(s);
     ensureObtained(s);
     tx.set(userRef(), s);
@@ -514,7 +527,7 @@ async function openBooster() {
       const snap = await tx.get(userRef());
       let s = applyRefill(snap.data());
       if (s.boosters <= 0) throw new Error("Aucun booster disponible");
-      if (s.boosters === MAX_BOOSTERS) s.lastRefill = Date.now();
+      if (s.boosters >= MAX_BOOSTERS) s.lastRefill = Date.now();
       s.boosters -= 1;
       s.cards = s.cards || {};
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
@@ -937,6 +950,7 @@ function render() {
 
   renderCollection();
   renderQuests();
+  tickSpins();
   if (vw && !$("viewer").hidden) renderViewer();
 }
 
@@ -967,6 +981,7 @@ setInterval(() => {
     }
     tickTimer();
     tickQuestTimers();
+    tickSpins();
   } catch (e) { console.error(e); }
 }, 1000);
 
@@ -979,6 +994,101 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
   if (b.dataset.tab === "friends") refreshSocial();
 });
+
+// ---------- Mini-jeu : roulette ----------
+let spinning = false, wheelRot = 0;
+
+function ensureSpins(s) {
+  if (typeof s.spins !== "number") s.spins = MAX_SPINS;
+  if (typeof s.lastSpin !== "number") s.lastSpin = Date.now();
+  return s;
+}
+
+function applySpinRefill(s, now = Date.now()) {
+  ensureSpins(s);
+  if (s.spins >= MAX_SPINS) { s.lastSpin = now; return s; }
+  const gained = Math.floor((now - s.lastSpin) / SPIN_REFILL_MS);
+  if (gained > 0) {
+    s.spins = Math.min(MAX_SPINS, s.spins + gained);
+    s.lastSpin = s.spins >= MAX_SPINS ? now : s.lastSpin + gained * SPIN_REFILL_MS;
+  }
+  return s;
+}
+
+function buildWheel() {
+  const step = 360 / WHEEL.length;
+  const stops = WHEEL.map((w, i) => `${w.color} ${i * step}deg ${(i + 1) * step}deg`).join(",");
+  const el = $("wheel");
+  el.style.background = `conic-gradient(${stops})`;
+  el.innerHTML = WHEEL.map((w, i) =>
+    `<span class="seg" style="transform:rotate(${(i + .5) * step}deg) translateY(-108px)">${w.icon}</span>`).join("");
+}
+buildWheel();
+
+const SPIN_MSG = {
+  booster: "📦 Tu gagnes 1 booster !",
+  bonus:   "🌟 Tu gagnes 1 booster amélioré !",
+  respin:  "🔁 Relance ! Tu récupères 1 lancer.",
+  nothing: "💨 Perdu, retente ta chance."
+};
+
+async function spinWheel() {
+  if (spinning || rv || !state) return;
+  applySpinRefill(state);
+  if (state.spins <= 0) return;
+
+  spinning = true;
+  $("spinBtn").disabled = true;
+  $("spinResult").textContent = "";
+  const idx = Math.floor(Math.random() * WHEEL.length);
+  const seg = WHEEL[idx];
+
+  try {
+    const next = await runTransaction(db, async tx => {
+      const snap = await tx.get(userRef());
+      const s = snap.data();
+      applySpinRefill(s);
+      if (s.spins <= 0) throw new Error("Aucun lancer disponible.");
+      if (s.spins >= MAX_SPINS) s.lastSpin = Date.now();
+      s.spins -= 1;
+      if (seg.type === "booster") s.boosters = (s.boosters || 0) + 1;
+      else if (seg.type === "bonus") s.bonusBoosters = (s.bonusBoosters || 0) + 1;
+      else if (seg.type === "respin") s.spins += 1;
+      tx.set(userRef(), s);
+      return s;
+    });
+
+    const center = (idx + .5) * (360 / WHEEL.length);
+    const jitter = (Math.random() - .5) * 24;
+    const target = Math.floor(wheelRot / 360) * 360 + 360 * 6 + (360 - center) + jitter;
+    const w = $("wheel");
+    w.style.transition = "transform 4.5s cubic-bezier(.12,.6,.1,1)";
+    w.style.transform = `rotate(${target}deg)`;
+    wheelRot = target;
+    await new Promise(r => setTimeout(r, 4700));
+
+    state = next;
+    $("spinResult").textContent = SPIN_MSG[seg.type];
+  } catch (e) {
+    alert(e.message);
+  }
+  spinning = false;
+  render();
+  tickSpins();
+}
+
+function tickSpins() {
+  if (!state || spinning) return;
+  applySpinRefill(state);
+  $("spinCount").textContent = state.spins;
+  $("spinBtn").disabled = state.spins <= 0 || !!rv;
+  if (state.spins >= MAX_SPINS) { $("spinTimer").textContent = "Stock plein"; return; }
+  const left = Math.max(0, SPIN_REFILL_MS - (Date.now() - state.lastSpin));
+  const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+  $("spinTimer").textContent = `Prochain lancer dans ${m}:${String(s).padStart(2, "0")}`;
+}
+
+$("spinBtn").onclick = spinWheel;
 
 // ---------- Quêtes : affichage et récompenses ----------
 function questRow(period, def, q) {
@@ -1348,7 +1458,7 @@ function startListeners() {
     const s = snap.data();
     s.cards = s.cards || {};
     state = applyRefill(s);
-    try { if (!rv) render(); } catch (e) { console.error("Erreur d'affichage :", e); }
+    try { if (!rv && !spinning) render(); } catch (e) { console.error("Erreur d'affichage :", e); }
     fixObtained();
   }, "compte"));
 

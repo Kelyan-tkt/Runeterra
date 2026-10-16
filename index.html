@@ -40,6 +40,7 @@
       <button data-tab="collection">Galerie des champions</button>
       <button data-tab="friends">Amis <span id="friendsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="quests">Quêtes <span id="questsBadge" class="nbadge" hidden>0</span></button>
+      <button data-tab="games">Jeux</button>
     </nav>
 
     <section id="tab-boosters">
@@ -113,6 +114,29 @@
         <div class="panel social-box"><h3>Échanges envoyés</h3><ul id="tradesOut" class="list"></ul></div>
       </div>
     </section>
+
+    <section id="tab-games" hidden>
+  <h2>🎡 Roue de la chance</h2>
+  <p class="hint">Tu as 5 lancers maximum, et tu en récupères 1 toutes les 10 minutes.</p>
+
+  <div class="wheel-wrap">
+    <div class="wheel-pointer">▼</div>
+    <div id="wheel"></div>
+  </div>
+
+  <p class="spin-info">Lancers : <b id="spinCount">5</b> / 5 · <span id="spinTimer"></span></p>
+  <div style="text-align:center">
+    <button id="spinBtn" class="btn-play">Lancer la roue</button>
+    <p id="spinResult" class="spin-result"></p>
+  </div>
+
+  <ul class="wheel-legend">
+    <li>📦 Booster (2/10)</li>
+    <li>🌟 Booster amélioré (1/10)</li>
+    <li>🔁 Relance (1/10)</li>
+    <li>💨 Perdu (6/10)</li>
+  </ul>
+</section>
 
     <section id="tab-quests" hidden>
       <h2>Quêtes</h2>
