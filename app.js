@@ -2,8 +2,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          updateProfile, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-import { getFirestore, doc, runTransaction, collection, query, where, onSnapshot,
-         getDoc, setDoc, addDoc, updateDoc, deleteDoc }
+import { getFirestore, initializeFirestore, doc, runTransaction, collection, query, where,
+         onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -18,7 +18,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Mets true UNIQUEMENT si des joueurs ont leurs requêtes Firestore bloquées (ERR_BLOCKED_BY_CLIENT)
+const USE_LONG_POLLING = false;
+const db = USE_LONG_POLLING
+  ? initializeFirestore(app, { experimentalForceLongPolling: true })
+  : getFirestore(app);
 
 const MAX_BOOSTERS = 10;
 const REFILL_MS = 10 * 60 * 1000;
@@ -62,6 +67,16 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const myName = () => auth.currentUser?.displayName || "";
 const rIdx = r => RARITY_ORDER.indexOf(r);
+
+const BLOCK_MSG = "Ton navigateur bloque la connexion à la base de données (ERR_BLOCKED_BY_CLIENT). "
+  + "Désactive ton bloqueur de pubs ou le bouclier de ton navigateur pour ce site, ou essaie un autre navigateur, puis recharge la page.";
+function showNetWarn(msg = BLOCK_MSG) {
+  const b = $("netWarn");
+  if (!b) { console.warn(msg); return; }
+  b.textContent = msg;
+  b.hidden = false;
+}
+const looksBlocked = e => e?.code === "unavailable" || /offline|blocked|unavailable|network/i.test(e?.message || "");
 
 function rarityOf(s) {
   if (s.isBase) return "common";
@@ -144,7 +159,6 @@ function addProgress(s, key, n = 1) {
 }
 
 // ---------- Dates d'obtention des cartes ----------
-// cartes déjà possédées au premier passage : date 0 (inconnue) ; nouvelles cartes : date du jour
 function ensureObtained(s) {
   s.obtained ||= {};
   const legacy = !s.obtainedInit;
@@ -356,7 +370,7 @@ $("recFilter").addEventListener("click", e => {
 $("recycleAuto").onclick = () => {
   const rows = recycleRows()
     .filter(r => !recFilter || r.c.rarity === recFilter)
-    .sort((a, b) => rIdx(b.c.rarity) - rIdx(a.c.rarity));   // les plus communes d'abord
+    .sort((a, b) => rIdx(b.c.rarity) - rIdx(a.c.rarity));
   const sel = {};
   let need = DUPES_PER_CRAFT;
   for (const r of rows) {
@@ -700,15 +714,13 @@ function renderCollection() {
 
     const ownedSkins = skins.filter(s => owned[s.id]);
     const ownedTimes = ownedSkins.map(s => obt[s.id] ?? 0);
-    const bestPool = (matches.filter(s => owned[s.id]).length ? matches.filter(s => owned[s.id]) : ownedSkins);
+    const ownedMatches = matches.filter(s => owned[s.id]);
+    const bestPool = ownedMatches.length ? ownedMatches : ownedSkins;
     const best = bestPool.length ? Math.min(...bestPool.map(s => rIdx(rarityOf(s)))) : 99;
 
-    let rep;
-    if (filtersActive) {
-      rep = matches.slice().sort((a, b) => rIdx(rarityOf(a)) - rIdx(rarityOf(b)) || a.id - b.id)[0];
-    } else {
-      rep = skins.find(s => s.isBase) || skins[0];
-    }
+    const rep = filtersActive
+      ? matches.slice().sort((a, b) => rIdx(rarityOf(a)) - rIdx(rarityOf(b)) || a.id - b.id)[0]
+      : (skins.find(s => s.isBase) || skins[0]);
 
     rows.push({
       key, champ, skins, rep,
@@ -874,14 +886,16 @@ function tickQuestTimers() {
 
 setInterval(() => {
   if (!state) return;
-  const before = state.boosters;
-  applyRefill(state);
-  if (state.boosters !== before) {
-    $("boosterCount").textContent = state.boosters;
-    $("openBtn").disabled = state.boosters <= 0 || !!rv;
-  }
-  tickTimer();
-  tickQuestTimers();
+  try {
+    const before = state.boosters;
+    applyRefill(state);
+    if (state.boosters !== before) {
+      $("boosterCount").textContent = state.boosters;
+      $("openBtn").disabled = state.boosters <= 0 || !!rv;
+    }
+    tickTimer();
+    tickQuestTimers();
+  } catch (e) { console.error(e); }
 }, 1000);
 
 $("craftBtn").onclick = openRecycle;
@@ -891,6 +905,7 @@ $("bonusBtn").onclick = openBonusBooster;
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
+  if (b.dataset.tab === "friends") refreshSocial();
 });
 
 // ---------- Quêtes : affichage et récompenses ----------
@@ -1006,6 +1021,7 @@ async function sendFriendRequest() {
       msg.textContent = f.status === "accepted" ? "Vous êtes déjà amis."
         : f.requester === user.uid ? "Demande déjà envoyée."
         : "Cette personne t'a déjà envoyé une demande : accepte-la ci-dessous.";
+      refreshSocial();
       return;
     }
     await setDoc(ref, {
@@ -1016,6 +1032,7 @@ async function sendFriendRequest() {
     });
     msg.textContent = "Demande envoyée !";
     $("friendInput").value = "";
+    refreshSocial();
   } catch (e) {
     msg.textContent = "Erreur : " + e.message;
   }
@@ -1091,6 +1108,7 @@ $("tradeSend").onclick = async () => {
     $("tradeModal").hidden = true;
     tradeFriend = null;
     alert("Proposition envoyée !");
+    refreshSocial();
   } catch (e) {
     $("tradeMsg").textContent = "Erreur : " + e.message;
   }
@@ -1120,13 +1138,14 @@ async function acceptTrade(id) {
       tx.update(tradeRef, { status: "accepted" });
     });
     alert("Échange réussi !");
+    refreshSocial();
   } catch (e) {
     alert(e.message);
   }
 }
 
 const setTradeStatus = (id, status) =>
-  updateDoc(doc(db, "trades", id), { status }).catch(e => alert(e.message));
+  updateDoc(doc(db, "trades", id), { status }).then(refreshSocial).catch(e => alert(e.message));
 
 // ---------- Affichage social ----------
 function mini(id) {
@@ -1139,7 +1158,7 @@ const STATUS = { pending: "En attente", accepted: "Accepté ✔", declined: "Ref
 const emptyLi = txt => `<li class="empty">${txt}</li>`;
 
 function renderSocial() {
-  if (!user || !skinList.length) return;
+  if (!user) return;
   const me = user.uid;
   const accepted = friendships.filter(f => f.status === "accepted");
   const reqIn = friendships.filter(f => f.status === "pending" && f.requester !== me);
@@ -1151,6 +1170,7 @@ function renderSocial() {
   $("friendsBadge").textContent = n;
   $("friendsBadge").hidden = n === 0;
 
+  // amis et demandes : ne dépendent pas des données de skins
   $("reqIn").innerHTML = reqIn.map(f => `<li><span>${esc(otherName(f))}</span><span>
     <button class="btn" data-act="acceptFriend" data-id="${f.id}">Accepter</button>
     <button class="btn" data-act="removeFriend" data-id="${f.id}">Refuser</button></span></li>`).join("")
@@ -1165,34 +1185,82 @@ function renderSocial() {
     <button class="btn" data-act="removeFriend" data-id="${f.id}">Retirer</button></span></li>`).join("")
     || emptyLi("Aucun ami pour l'instant.");
 
-  $("tradesIn").innerHTML = inPending.map(t => `<li>
-    <div><div style="margin-bottom:6px"><b>${esc(t.fromName)}</b> te propose :</div>
-    <div class="trade-line">${mini(t.offerId)}<span class="arrow">⇄</span>${mini(t.wantId)}</div>
-    <small class="tstatus">Il donne la 1re carte, tu donnes la 2e.</small></div>
-    <span><button class="btn" data-act="acceptTrade" data-id="${t.id}">Accepter</button>
-    <button class="btn" data-act="declineTrade" data-id="${t.id}">Refuser</button></span></li>`).join("")
-    || emptyLi("Aucun échange reçu.");
+  // échanges : nécessitent les données de skins
+  if (!skinList.length) return;
+  try {
+    $("tradesIn").innerHTML = inPending.map(t => `<li>
+      <div><div style="margin-bottom:6px"><b>${esc(t.fromName)}</b> te propose :</div>
+      <div class="trade-line">${mini(t.offerId)}<span class="arrow">⇄</span>${mini(t.wantId)}</div>
+      <small class="tstatus">Il donne la 1re carte, tu donnes la 2e.</small></div>
+      <span><button class="btn" data-act="acceptTrade" data-id="${t.id}">Accepter</button>
+      <button class="btn" data-act="declineTrade" data-id="${t.id}">Refuser</button></span></li>`).join("")
+      || emptyLi("Aucun échange reçu.");
 
-  $("tradesOut").innerHTML = outList.map(t => `<li>
-    <div><div style="margin-bottom:6px">À <b>${esc(t.toName)}</b> · <span class="tstatus">${STATUS[t.status] || t.status}</span></div>
-    <div class="trade-line">${mini(t.offerId)}<span class="arrow">⇄</span>${mini(t.wantId)}</div></div>
-    ${t.status === "pending" ? `<button class="btn" data-act="cancelTrade" data-id="${t.id}">Annuler</button>` : ""}</li>`).join("")
-    || emptyLi("Aucun échange envoyé.");
+    $("tradesOut").innerHTML = outList.map(t => `<li>
+      <div><div style="margin-bottom:6px">À <b>${esc(t.toName)}</b> · <span class="tstatus">${STATUS[t.status] || t.status}</span></div>
+      <div class="trade-line">${mini(t.offerId)}<span class="arrow">⇄</span>${mini(t.wantId)}</div></div>
+      ${t.status === "pending" ? `<button class="btn" data-act="cancelTrade" data-id="${t.id}">Annuler</button>` : ""}</li>`).join("")
+      || emptyLi("Aucun échange envoyé.");
+  } catch (e) {
+    console.error("affichage des échanges :", e);
+  }
 }
 
 $("tab-friends").addEventListener("click", e => {
   const b = e.target.closest("[data-act]");
   if (!b) return;
   const { act, id, uid, name } = b.dataset;
-  if (act === "acceptFriend") updateDoc(doc(db, "friendships", id), { status: "accepted" }).catch(err => alert(err.message));
-  else if (act === "removeFriend") deleteDoc(doc(db, "friendships", id)).catch(err => alert(err.message));
+  if (act === "acceptFriend") updateDoc(doc(db, "friendships", id), { status: "accepted" }).then(refreshSocial).catch(err => alert(err.message));
+  else if (act === "removeFriend") deleteDoc(doc(db, "friendships", id)).then(refreshSocial).catch(err => alert(err.message));
   else if (act === "trade") openTrade(uid, name);
   else if (act === "acceptTrade") acceptTrade(id);
   else if (act === "declineTrade") setTradeStatus(id, "declined");
   else if (act === "cancelTrade") setTradeStatus(id, "cancelled");
 });
 
-// ---------- Écoute en temps réel ----------
+// ---------- Synchronisation des amis et échanges ----------
+const docsOf = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+// lecture ponctuelle (secours si l'écoute en temps réel est bloquée)
+async function refreshSocial() {
+  if (!user) return;
+  try {
+    const [f, ti, to] = await Promise.all([
+      getDocs(query(collection(db, "friendships"), where("users", "array-contains", user.uid))),
+      getDocs(query(collection(db, "trades"), where("to", "==", user.uid))),
+      getDocs(query(collection(db, "trades"), where("from", "==", user.uid)))
+    ]);
+    friendships = docsOf(f);
+    tradesIn = docsOf(ti);
+    tradesOut = docsOf(to);
+    renderSocial();
+  } catch (e) {
+    console.warn("refreshSocial :", e.message);
+    if (looksBlocked(e)) showNetWarn();
+  }
+}
+
+// écoute avec nouvelle tentative automatique en cas d'erreur
+function listen(makeQuery, onData, label) {
+  let stopped = false, unsub = null, timer = null;
+  const start = () => {
+    if (stopped) return;
+    try {
+      unsub = onSnapshot(makeQuery(), onData, e => {
+        console.error(label, e);
+        if (looksBlocked(e)) showNetWarn();
+        $("friendMsg").textContent = `Synchronisation interrompue (${e.code || "erreur"}), nouvelle tentative…`;
+        timer = setTimeout(start, 8000);
+      });
+    } catch (e) {
+      console.error(label, e);
+      timer = setTimeout(start, 8000);
+    }
+  };
+  start();
+  return () => { stopped = true; if (unsub) unsub(); clearTimeout(timer); };
+}
+
 function stopListeners() {
   unsubs.forEach(u => u());
   unsubs = [];
@@ -1202,25 +1270,32 @@ function stopListeners() {
 
 function startListeners() {
   stopListeners();
-  const onErr = e => {
-    console.error(e);
-    $("friendMsg").textContent = "Erreur de synchronisation : " + e.message;
-  };
-  const docs = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  unsubs.push(onSnapshot(userRef(), snap => {
+  unsubs.push(listen(() => userRef(), snap => {
     if (!snap.exists()) return;
     const s = snap.data();
     s.cards = s.cards || {};
     state = applyRefill(s);
-    if (!rv) render();
+    try { if (!rv) render(); } catch (e) { console.error("Erreur d'affichage :", e); }
     fixObtained();
-  }, onErr));
+  }, "compte"));
 
-  unsubs.push(onSnapshot(query(collection(db, "trades"), where("to", "==", user.uid)),
-    snap => { tradesIn = docs(snap); tradesLoaded.in = true; renderSocial(); syncTradeQuests(); }, onErr));
-  unsubs.push(onSnapshot(query(collection(db, "trades"), where("from", "==", user.uid)),
-    snap => { tradesOut = docs(snap); tradesLoaded.out = true; renderSocial(); syncTradeQuests(); }, onErr));
+  unsubs.push(listen(
+    () => query(collection(db, "friendships"), where("users", "array-contains", user.uid)),
+    snap => { friendships = docsOf(snap); $("friendMsg").textContent = ""; renderSocial(); },
+    "amis"));
+
+  unsubs.push(listen(
+    () => query(collection(db, "trades"), where("to", "==", user.uid)),
+    snap => { tradesIn = docsOf(snap); tradesLoaded.in = true; renderSocial(); syncTradeQuests(); },
+    "échanges reçus"));
+
+  unsubs.push(listen(
+    () => query(collection(db, "trades"), where("from", "==", user.uid)),
+    snap => { tradesOut = docsOf(snap); tradesLoaded.out = true; renderSocial(); syncTradeQuests(); },
+    "échanges envoyés"));
+
+  refreshSocial();
 }
 
 // ---------- Auth pseudo + mot de passe ----------
@@ -1294,10 +1369,12 @@ onAuthStateChanged(auth, async u => {
     if (!champions.length) await loadGameData();
     await loadState();
     await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
-    render(); tickTimer();
-    startListeners();
+    startListeners();                       // les amis démarrent avant l'affichage
+    try { render(); tickTimer(); }
+    catch (e) { console.error("Erreur d'affichage :", e); }
   } catch (e) {
     console.error(e);
-    alert("Erreur de chargement : " + e.message);
+    if (looksBlocked(e)) showNetWarn();
+    else alert("Erreur de chargement : " + e.message);
   }
 });
