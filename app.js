@@ -278,7 +278,39 @@ function pickCraftCard(owned) {
   return skinCard(cand[Math.floor(Math.random() * cand.length)].id);
 }
 
-let recSel = {};
+let recSel = {}, recFilter = "";
+
+function recycleRows() {
+  return Object.entries(state.cards || {}).filter(([, q]) => q >= 2)
+    .map(([id, q]) => ({ c: skinCard(+id), avail: q - 1 }))
+    .sort((a, b) => rIdx(a.c.rarity) - rIdx(b.c.rarity) || a.c.name.localeCompare(b.c.name, "fr"));
+}
+
+function renderRecycleList() {
+  const all = recycleRows();
+  const counts = {};
+  all.forEach(r => { counts[r.c.rarity] = (counts[r.c.rarity] || 0) + r.avail; });
+
+  document.querySelectorAll("#recFilter button").forEach(b => {
+    const r = b.dataset.r;
+    const label = r ? RARITIES[r].label : "Toutes";
+    const n = r ? (counts[r] || 0) : Object.values(counts).reduce((a, x) => a + x, 0);
+    b.textContent = `${label} (${n})`;
+    b.disabled = !!r && n === 0;
+    b.classList.toggle("active", r === recFilter);
+  });
+
+  const rows = all.filter(r => !recFilter || r.c.rarity === recFilter);
+  $("recycleList").innerHTML = rows.map(({ c, avail }) => `
+    <li data-id="${c.id}" data-avail="${avail}">
+      ${mini(c.id)}
+      <span class="stepper">
+        <button class="btn" data-d="-1">−</button><b data-n>0</b><button class="btn" data-d="1">+</button>
+        <small>/ ${avail}</small>
+      </span>
+    </li>`).join("") || `<li class="empty">Aucun doublon de cette rareté.</li>`;
+  updateRecycleUI();
+}
 
 function openRecycle() {
   if (rv) return;
@@ -287,25 +319,15 @@ function openRecycle() {
     return;
   }
   recSel = {};
+  recFilter = "";
   $("recNeed").textContent = DUPES_PER_CRAFT;
-  const rows = Object.entries(state.cards || {}).filter(([, q]) => q >= 2)
-    .map(([id, q]) => ({ c: skinCard(+id), avail: q - 1 }))
-    .sort((a, b) => rIdx(a.c.rarity) - rIdx(b.c.rarity) || a.c.name.localeCompare(b.c.name, "fr"));
-  $("recycleList").innerHTML = rows.map(({ c, avail }) => `
-    <li data-id="${c.id}" data-avail="${avail}">
-      ${mini(c.id)}
-      <span class="stepper">
-        <button class="btn" data-d="-1">−</button><b data-n>0</b><button class="btn" data-d="1">+</button>
-        <small>/ ${avail}</small>
-      </span>
-    </li>`).join("");
-  updateRecycleUI();
+  renderRecycleList();
   $("recycleModal").hidden = false;
 }
 
 function updateRecycleUI() {
   const total = Object.values(recSel).reduce((a, b) => a + b, 0);
-  $("recycleList").querySelectorAll("li").forEach(li => {
+  $("recycleList").querySelectorAll("li[data-id]").forEach(li => {
     const id = li.dataset.id, avail = +li.dataset.avail, n = recSel[id] || 0;
     li.querySelector("[data-n]").textContent = n;
     li.querySelector('[data-d="-1"]').disabled = n <= 0;
@@ -318,13 +340,48 @@ function updateRecycleUI() {
 $("recycleList").addEventListener("click", e => {
   const b = e.target.closest("button[data-d]");
   if (!b || b.disabled) return;
-  const li = b.closest("li");
-  const id = li.dataset.id;
+  const id = b.closest("li").dataset.id;
   recSel[id] = Math.max(0, (recSel[id] || 0) + +b.dataset.d);
   updateRecycleUI();
 });
+
+$("recFilter").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b || b.disabled) return;
+  recFilter = b.dataset.r;
+  recSel = {};
+  renderRecycleList();
+});
+
+$("recycleAuto").onclick = () => {
+  const rows = recycleRows()
+    .filter(r => !recFilter || r.c.rarity === recFilter)
+    .sort((a, b) => rIdx(b.c.rarity) - rIdx(a.c.rarity));   // les plus communes d'abord
+  const sel = {};
+  let need = DUPES_PER_CRAFT;
+  for (const r of rows) {
+    if (need <= 0) break;
+    const take = Math.min(r.avail, need);
+    sel[r.c.id] = take;
+    need -= take;
+  }
+  if (need > 0) {
+    const label = recFilter ? RARITIES[recFilter].label.toLowerCase() : "";
+    alert(`Pas assez de doublons${label ? " de rareté « " + label + " »" : ""} (il en faut ${DUPES_PER_CRAFT}).`);
+    return;
+  }
+  recSel = sel;
+  updateRecycleUI();
+};
+
 $("recycleCancel").onclick = () => { $("recycleModal").hidden = true; };
-$("recycleGo").onclick = recycleCards;
+
+$("recycleGo").onclick = () => {
+  const risky = Object.entries(recSel).some(([id, n]) =>
+    n > 0 && ["legendary", "mythic"].includes(skinCard(+id).rarity));
+  if (risky && !confirm("Tu vas recycler une carte légendaire ou mythique. Continuer ?")) return;
+  recycleCards();
+};
 
 async function recycleCards() {
   const sel = { ...recSel };

@@ -352,3 +352,18 @@ button.thumb.active{opacity:1;transform:translateY(-6px);box-shadow:0 0 14px var
 .stepper .btn{padding:4px 12px;margin:0}
 .stepper .btn:disabled{opacity:.35;cursor:not-allowed}
 #recycleCount{color:var(--gold);font-family:'Cinzel',serif;letter-spacing:.08em}
+
+/* ---------- Supprime la rotation des rayons (légendaire et mythique) ---------- */
+.flip.fx-legendary::before,.flip.fx-mythic::before{content:none!important;animation:none!important;background:none!important}
+
+/* ---------- Légendaire : reflet holographique (au cas où il manquerait) ---------- */
+.flip.fx-legendary .flip-front{overflow:hidden;border-radius:3px}
+.flip.fx-legendary .flip-front::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);
+  transform:translateX(-120%);animation:shine 3s ease-in-out infinite}
+@keyframes shine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.chips .btn{padding:6px 12px;margin:0}
+.chips .btn.active{color:var(--gold-light);border-color:var(--gold);box-shadow:0 0 10px rgba(200,170,110,.5)}
+.chips .btn:disabled{opacity:.35;cursor:not-allowed}

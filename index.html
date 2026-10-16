@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
   <header class="topbar">
@@ -166,12 +166,21 @@
     </div>
   </div>
 
-  <div id="recycleModal" hidden>
+    <div id="recycleModal" hidden>
     <div class="panel trade-box">
       <h2>Recycler des doublons</h2>
       <p class="hint">Choisis exactement <b id="recNeed">3</b> doublons. Tu gardes toujours un exemplaire de chaque carte.</p>
+      <div id="recFilter" class="chips">
+        <button class="btn" data-r="">Toutes</button>
+        <button class="btn" data-r="common">Commune</button>
+        <button class="btn" data-r="rare">Rare</button>
+        <button class="btn" data-r="epic">Épique</button>
+        <button class="btn" data-r="legendary">Légendaire</button>
+        <button class="btn" data-r="mythic">Mythique</button>
+      </div>
       <ul id="recycleList" class="list"></ul>
       <p id="recycleCount"></p>
+      <button id="recycleAuto" class="btn">Sélection auto</button>
       <button id="recycleGo" class="btn-play small">Recycler</button>
       <button id="recycleCancel" class="btn">Annuler</button>
     </div>
@@ -183,7 +192,7 @@
     <p id="lbCaption"><b id="lbTitle"></b> <span id="lbRarity"></span></p>
   </div>
 
-  <script type="module" src="app.js?v=10"></script>
-  <script type="module" src="ui.js?v=10"></script>
+  <script type="module" src="app.js?v=11"></script>
+  <script type="module" src="ui.js?v=11"></script>
 </body>
 </html>
