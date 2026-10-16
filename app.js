@@ -43,7 +43,7 @@ const RARITIES = {
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
 const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
 const MAX_SPINS = 5;
-const SPIN_REFILL_MS = 10 * 60 * 1000;
+const SPIN_REFILL_MS = 20 * 60 * 1000;
 const WHEEL = [
   { type: "booster", icon: "📦", color: "#0397ab" },
   { type: "nothing", icon: "💨", color: "#2b303b" },
