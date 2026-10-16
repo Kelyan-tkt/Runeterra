@@ -345,8 +345,10 @@ function openRecycle() {
     alert(`Il faut ${DUPES_PER_CRAFT} doublons pour recycler.`);
     return;
   }
-  recSel = {};
-  recFilter = "";
+    recSel = {};
+  const rows = recycleRows();
+  recFilter = ["common", "rare", "epic", "legendary", "mythic"]
+    .find(r => rows.some(x => x.c.rarity === r)) || "";
   $("recNeed").textContent = DUPES_PER_CRAFT;
   renderRecycleList();
   $("recycleModal").hidden = false;
