@@ -276,39 +276,77 @@ function closeReveal() {
   render();
 }
 
-function rarityEffect(el, rarity) {
-  const fxMap = {
-    epic:      { flash: .35, shake: "shake1", particles: 14 },
-    legendary: { flash: .55, shake: "shake2", particles: 32 },
-    mythic:    { flash: .85, shake: "shake2", particles: 70 }
-  };
-  const fx = fxMap[rarity];
-  if (!fx) return;
-  const color = RARITIES[rarity].color;
-
+function screenFlash(color, opacity) {
   const f = $("flash");
   f.classList.remove("go");
   f.style.setProperty("--c", color);
-  f.style.setProperty("--o", fx.flash);
+  f.style.setProperty("--o", opacity);
   void f.offsetWidth;
   f.classList.add("go");
+}
 
+function shakeRow(cls) {
   const row = $("revealRow");
   row.classList.remove("shake1", "shake2");
   void row.offsetWidth;
-  row.classList.add(fx.shake);
-  setTimeout(() => row.classList.remove(fx.shake), 800);
+  row.classList.add(cls);
+  setTimeout(() => row.classList.remove(cls), 800);
+}
 
-  for (let i = 0; i < fx.particles; i++) {
-    const p = document.createElement("span");
-    p.className = "particle";
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 90 + Math.random() * (rarity === "mythic" ? 260 : 160);
-    p.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
-    p.style.setProperty("--dy", `${Math.sin(angle) * dist}px`);
-    p.style.setProperty("--p", Math.random() < .3 ? "#fff" : color);
-    el.appendChild(p);
-    setTimeout(() => p.remove(), 1200);
+function spawn(parent, cls, vars = {}, life = 1500) {
+  const n = document.createElement("span");
+  n.className = cls;
+  Object.entries(vars).forEach(([k, v]) => n.style.setProperty(k, v));
+  parent.appendChild(n);
+  setTimeout(() => n.remove(), life);
+  return n;
+}
+
+function rarityEffect(el, rarity) {
+  const color = RARITIES[rarity].color;
+
+  if (rarity === "epic") {
+    // onde de choc + braises qui montent
+    screenFlash(color, .3);
+    shakeRow("shake1");
+    spawn(el, "ring", { "--p": color }, 1200);
+    setTimeout(() => spawn(el, "ring", { "--p": color }, 1200), 220);
+    for (let i = 0; i < 22; i++) {
+      spawn(el, "ember", {
+        "--p": color,
+        "--x": `${5 + Math.random() * 90}%`,
+        "--d": `${Math.random() * 0.5}s`,
+        "--h": `${160 + Math.random() * 140}px`
+      }, 2400);
+    }
+  } else if (rarity === "legendary") {
+    // pilier de lumière + pluie de confettis dorés
+    screenFlash(color, .6);
+    shakeRow("shake2");
+    spawn(el, "beam", {}, 1900);
+    const gold = ["#ffd35a", "#ff8000", "#fff3b0"];
+    for (let i = 0; i < 46; i++) {
+      spawn($("reveal"), "confetti", {
+        "--x": `${Math.random() * 100}vw`,
+        "--d": `${Math.random() * 0.8}s`,
+        "--t": `${1.8 + Math.random() * 1.2}s`,
+        "--c": gold[i % 3],
+        "--r": `${360 + Math.random() * 720}deg`
+      }, 3600);
+    }
+  } else if (rarity === "mythic") {
+    // inchangé : flash rouge, forte secousse, rayons (CSS) + particules
+    screenFlash(color, .85);
+    shakeRow("shake2");
+    for (let i = 0; i < 70; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 90 + Math.random() * 260;
+      spawn(el, "particle", {
+        "--dx": `${Math.cos(angle) * dist}px`,
+        "--dy": `${Math.sin(angle) * dist}px`,
+        "--p": Math.random() < .3 ? "#fff" : color
+      }, 1200);
+    }
   }
 }
 

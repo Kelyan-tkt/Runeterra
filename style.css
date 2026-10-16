@@ -185,3 +185,34 @@ details.champ small{color:var(--text);margin-left:10px;font-family:'Lato',sans-s
   .chest{width:220px;height:220px}
   .btn-play{padding:14px 30px}
 }
+
+/* ---------- Survol : surbrillance de la couleur de rareté ---------- */
+.card.common{--rc:#8a8f98}
+.card.rare{--rc:#0397ab}
+.card.epic{--rc:#a335ee}
+.card.legendary{--rc:#ff8000}
+.card.mythic{--rc:#e84057}
+
+.card{transition:transform .2s,box-shadow .25s}
+.card::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;
+  background:radial-gradient(circle at 50% 100%,var(--rc),transparent 75%);mix-blend-mode:screen}
+.card:hover::after{opacity:.6}
+.card:hover{border-color:var(--rc);box-shadow:0 0 0 1px var(--rc),0 0 26px 4px var(--rc)!important}
+
+/* ---------- Effet épique : onde de choc + braises ---------- */
+.ring{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border:3px solid var(--p);
+  border-radius:50%;pointer-events:none;z-index:4;box-shadow:0 0 16px var(--p);animation:ringOut 1.1s ease-out forwards}
+@keyframes ringOut{from{transform:scale(.3);opacity:1}to{transform:scale(11);opacity:0}}
+.ember{position:absolute;left:var(--x);bottom:10%;width:7px;height:7px;border-radius:50%;background:var(--p);
+  box-shadow:0 0 10px var(--p);pointer-events:none;z-index:4;opacity:0;animation:emberUp 1.8s ease-out var(--d) forwards}
+@keyframes emberUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(calc(var(--h) * -1)) scale(.2);opacity:0}}
+
+/* ---------- Effet légendaire : pilier de lumière + confettis ---------- */
+.beam{position:absolute;left:50%;bottom:40%;width:150px;height:700px;margin-left:-75px;z-index:-1;pointer-events:none;
+  transform-origin:50% 100%;background:linear-gradient(to top,rgba(255,200,80,.95),rgba(255,128,0,.5) 40%,transparent);
+  -webkit-mask-image:linear-gradient(to right,transparent,#000 30%,#000 70%,transparent);
+  mask-image:linear-gradient(to right,transparent,#000 30%,#000 70%,transparent);animation:beamUp 1.7s ease-out forwards}
+@keyframes beamUp{0%{transform:scaleY(0);opacity:1}35%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}
+.confetti{position:fixed;top:-20px;left:var(--x);width:9px;height:16px;background:var(--c);pointer-events:none;z-index:1500;
+  animation:fall var(--t) ease-in var(--d) forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(var(--r))}}
