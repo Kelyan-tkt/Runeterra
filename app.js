@@ -304,6 +304,11 @@ function pickCraftCard(owned) {
   const cand = pools[rarity].filter(s => !owned[s.id]);
   return skinCard(cand[Math.floor(Math.random() * cand.length)].id);
 }
+// une carte de recyclage = une carte tirée au hasard dans un booster normal
+function drawRecycleCard() {
+  const b = drawBooster(CARDS_PER_BOOSTER);
+  return b[Math.floor(Math.random() * b.length)];
+}
 
 let recSel = {}, recFilter = "";
 
@@ -436,8 +441,7 @@ async function recycleCards() {
   const sel = { ...recSel };
   const total = Object.values(sel).reduce((a, b) => a + b, 0);
   if (total !== DUPES_PER_CRAFT) { alert(`Choisis exactement ${DUPES_PER_CRAFT} doublons.`); return; }
-  const card = pickCraftCard(state.cards || {});
-  if (!card) { alert("Tu possèdes déjà toutes les cartes !"); return; }
+  const card = drawRecycleCard();
 
   $("recycleGo").disabled = true;
   try {
@@ -458,8 +462,7 @@ function bulkPlan() {
     .filter(r => !recFilter || r.c.rarity === recFilter)
     .sort((a, b) => rIdx(b.c.rarity) - rIdx(a.c.rarity));      // les plus communes d'abord
   const dupes = rows.reduce((a, r) => a + r.avail, 0);
-  const unowned = skinList.length - Object.keys(state.cards || {}).length;
-  const k = Math.max(0, Math.min(Math.floor(dupes / DUPES_PER_CRAFT), unowned));
+  const k = Math.floor(dupes / DUPES_PER_CRAFT);
   return { rows, dupes, k };
 }
 
@@ -475,15 +478,7 @@ async function recycleAll() {
   if (!k) return;
 
   // tirage des nouvelles cartes (sans doublon entre elles, jamais déjà possédées)
-  const ownedTmp = { ...(state.cards || {}) };
-  const newCards = [];
-  for (let i = 0; i < k; i++) {
-    const c = pickCraftCard(ownedTmp);
-    if (!c) break;
-    ownedTmp[c.id] = 1;
-    newCards.push(c);
-  }
-  if (!newCards.length) { alert("Tu possèdes déjà toutes les cartes !"); return; }
+    const newCards = Array.from({ length: k }, drawRecycleCard);
 
   // doublons à consommer : exactement 3 par carte obtenue
   const need = newCards.length * DUPES_PER_CRAFT;
