@@ -216,3 +216,18 @@ details.champ small{color:var(--text);margin-left:10px;font-family:'Lato',sans-s
 .confetti{position:fixed;top:-20px;left:var(--x);width:9px;height:16px;background:var(--c);pointer-events:none;z-index:1500;
   animation:fall var(--t) ease-in var(--d) forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(var(--r))}}
+
+/* ---------- Dos des cartes : surbrillance de la rareté au survol ---------- */
+.flip.r-common{--rc:#8a8f98}
+.flip.r-rare{--rc:#0397ab}
+.flip.r-epic{--rc:#a335ee}
+.flip.r-legendary{--rc:#ff8000}
+.flip.r-mythic{--rc:#e84057}
+
+.flip-back{transition:border-color .25s,box-shadow .25s}
+.flip-back span{transition:color .25s}
+.flip:not(.flipped):hover .flip-back{
+  animation:none;
+  border-color:var(--rc);
+  box-shadow:0 0 0 1px var(--rc),0 0 30px 6px var(--rc),inset 0 0 40px var(--rc)}
+.flip:not(.flipped):hover .flip-back span{color:var(--rc);text-shadow:0 0 18px var(--rc)}

@@ -221,7 +221,7 @@ function startReveal(cards) {
   cards.forEach(c => { const i = new Image(); i.referrerPolicy = "no-referrer"; i.src = c.img; });
   rv = { cards, next: 0, busy: false };
   $("revealRow").innerHTML = cards.map((c, i) => `
-    <div class="flip" data-i="${i}">
+        <div class="flip r-${c.rarity}" data-i="${i}">
       <div class="flip-inner">
         <div class="flip-back"><span>R</span></div>
         <div class="flip-front">${cardHTML(c)}</div>
