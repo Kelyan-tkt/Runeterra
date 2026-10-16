@@ -349,6 +349,7 @@ function updateRecycleUI() {
   });
   $("recycleCount").textContent = `${total} / ${DUPES_PER_CRAFT} sélectionnés`;
   $("recycleGo").disabled = total !== DUPES_PER_CRAFT;
+  updateBulkBtn();
 }
 
 $("recycleList").addEventListener("click", e => {
@@ -397,31 +398,35 @@ $("recycleGo").onclick = () => {
   recycleCards();
 };
 
+// applique un recyclage : retire les doublons choisis, ajoute les nouvelles cartes
+async function applyRecycle(sel, newCards) {
+  const need = Object.values(sel).reduce((a, b) => a + b, 0);
+  state = await runTransaction(db, async tx => {
+    const snap = await tx.get(userRef());
+    const s = snap.data();
+    s.cards = s.cards || {};
+    for (const [id, n] of Object.entries(sel)) {
+      if (n > 0 && (s.cards[id] || 0) - 1 < n) throw new Error("Doublons insuffisants.");
+    }
+    for (const [id, n] of Object.entries(sel)) if (n > 0) s.cards[id] -= n;
+    newCards.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
+    ensureObtained(s);
+    addProgress(s, "recycle", need);
+    tx.set(userRef(), s);
+    return s;
+  });
+}
+
 async function recycleCards() {
   const sel = { ...recSel };
+  const total = Object.values(sel).reduce((a, b) => a + b, 0);
+  if (total !== DUPES_PER_CRAFT) { alert(`Choisis exactement ${DUPES_PER_CRAFT} doublons.`); return; }
   const card = pickCraftCard(state.cards || {});
   if (!card) { alert("Tu possèdes déjà toutes les cartes !"); return; }
 
   $("recycleGo").disabled = true;
   try {
-    state = await runTransaction(db, async tx => {
-      const snap = await tx.get(userRef());
-      const s = snap.data();
-      s.cards = s.cards || {};
-      let total = 0;
-      for (const [id, n] of Object.entries(sel)) {
-        if (n <= 0) continue;
-        if ((s.cards[id] || 0) - 1 < n) throw new Error("Doublons insuffisants.");
-        total += n;
-      }
-      if (total !== DUPES_PER_CRAFT) throw new Error(`Choisis exactement ${DUPES_PER_CRAFT} doublons.`);
-      for (const [id, n] of Object.entries(sel)) if (n > 0) s.cards[id] -= n;
-      s.cards[card.id] = (s.cards[card.id] || 0) + 1;
-      ensureObtained(s);
-      addProgress(s, "recycle", DUPES_PER_CRAFT);
-      tx.set(userRef(), s);
-      return s;
-    });
+    await applyRecycle(sel, [card]);
     $("recycleModal").hidden = true;
     $("result").innerHTML = "";
     startReveal([card]);
@@ -431,6 +436,73 @@ async function recycleCards() {
   }
   render();
 }
+
+// ----- Tout recycler -----
+function bulkPlan() {
+  const rows = recycleRows()
+    .filter(r => !recFilter || r.c.rarity === recFilter)
+    .sort((a, b) => rIdx(b.c.rarity) - rIdx(a.c.rarity));      // les plus communes d'abord
+  const dupes = rows.reduce((a, r) => a + r.avail, 0);
+  const unowned = skinList.length - Object.keys(state.cards || {}).length;
+  const k = Math.max(0, Math.min(Math.floor(dupes / DUPES_PER_CRAFT), unowned));
+  return { rows, dupes, k };
+}
+
+function updateBulkBtn() {
+  const { k } = bulkPlan();
+  const b = $("recycleAll");
+  b.textContent = k ? `Tout recycler (${k} carte${k > 1 ? "s" : ""})` : "Tout recycler";
+  b.disabled = k === 0;
+}
+
+async function recycleAll() {
+  const { rows, k } = bulkPlan();
+  if (!k) return;
+
+  // tirage des nouvelles cartes (sans doublon entre elles, jamais déjà possédées)
+  const ownedTmp = { ...(state.cards || {}) };
+  const newCards = [];
+  for (let i = 0; i < k; i++) {
+    const c = pickCraftCard(ownedTmp);
+    if (!c) break;
+    ownedTmp[c.id] = 1;
+    newCards.push(c);
+  }
+  if (!newCards.length) { alert("Tu possèdes déjà toutes les cartes !"); return; }
+
+  // doublons à consommer : exactement 3 par carte obtenue
+  const need = newCards.length * DUPES_PER_CRAFT;
+  const sel = {};
+  let left = need;
+  for (const r of rows) {
+    if (left <= 0) break;
+    const take = Math.min(r.avail, left);
+    sel[r.c.id] = take;
+    left -= take;
+  }
+
+  const risky = Object.keys(sel).some(id => ["legendary", "mythic"].includes(skinCard(+id).rarity));
+  const scope = recFilter ? `de rareté « ${RARITIES[recFilter].label} »` : "(toutes raretés)";
+  const n = newCards.length;
+  const ok = confirm(`Recycler ${need} doublons ${scope} pour obtenir ${n} nouvelle${n > 1 ? "s" : ""} carte${n > 1 ? "s" : ""} ?`
+    + (risky ? "\nAttention : cela inclut des cartes légendaires ou mythiques." : ""));
+  if (!ok) return;
+
+  $("recycleAll").disabled = true;
+  $("recycleGo").disabled = true;
+  try {
+    await applyRecycle(sel, newCards);
+    $("recycleModal").hidden = true;
+    $("result").innerHTML = "";
+    startReveal(newCards);
+  } catch (e) {
+    alert(e.message);
+    renderRecycleList();
+  }
+  render();
+}
+
+$("recycleAll").onclick = recycleAll;
 
 // ---------- Ouverture ----------
 async function openBooster() {
