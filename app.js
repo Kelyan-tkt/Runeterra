@@ -37,8 +37,6 @@ const RARITIES = {
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
 const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
-
-// carte "de tête" d'un booster bonus (épique minimum garanti)
 const BONUS_TOP = { epic: 85, legendary: 12.5, mythic: 2.5 };
 
 const QUESTS = {
@@ -58,11 +56,12 @@ let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
 let friendships = [], tradesIn = [], tradesOut = [], unsubs = [];
-let tradesLoaded = { in: false, out: false }, syncingTrades = false;
+let tradesLoaded = { in: false, out: false }, syncingTrades = false, fixingObt = false;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const myName = () => auth.currentUser?.displayName || "";
+const rIdx = r => RARITY_ORDER.indexOf(r);
 
 function rarityOf(s) {
   if (s.isBase) return "common";
@@ -144,6 +143,37 @@ function addProgress(s, key, n = 1) {
   s.quests.weekly[key] = (s.quests.weekly[key] || 0) + n;
 }
 
+// ---------- Dates d'obtention des cartes ----------
+// cartes déjà possédées au premier passage : date 0 (inconnue) ; nouvelles cartes : date du jour
+function ensureObtained(s) {
+  s.obtained ||= {};
+  const legacy = !s.obtainedInit;
+  for (const id of Object.keys(s.cards || {})) {
+    if (s.obtained[id] === undefined) s.obtained[id] = legacy ? 0 : Date.now();
+  }
+  s.obtainedInit = true;
+}
+
+async function fixObtained() {
+  if (!user || !state || fixingObt) return;
+  const missing = Object.keys(state.cards || {}).some(id => state.obtained?.[id] === undefined);
+  if (!missing && state.obtainedInit) return;
+  fixingObt = true;
+  try {
+    await runTransaction(db, async tx => {
+      const snap = await tx.get(userRef());
+      const s = snap.data();
+      s.cards ||= {};
+      ensureObtained(s);
+      tx.set(userRef(), s);
+    });
+  } catch (e) {
+    console.warn("dates d'obtention :", e.message);
+  } finally {
+    fixingObt = false;
+  }
+}
+
 // ---------- Firestore ----------
 const userRef = () => doc(db, "users", user.uid);
 
@@ -155,6 +185,7 @@ async function loadState() {
     s.cards = s.cards || {};
     s = applyRefill(s);
     ensureQuests(s);
+    ensureObtained(s);
     tx.set(userRef(), s);
     return s;
   });
@@ -211,7 +242,7 @@ function drawBooster(n) {
     if (pools[r]?.length && Math.random() < RARITIES[r].chance) picks.push(r);
   }
   while (picks.length < n) picks.push("common");
-  picks.sort((a, b) => RARITY_ORDER.indexOf(b) - RARITY_ORDER.indexOf(a));
+  picks.sort((a, b) => rIdx(b) - rIdx(a));
 
   const cards = [], seen = new Set();
   for (const r of picks) {
@@ -231,11 +262,10 @@ function drawBonusBooster(n) {
   for (const [r, w] of Object.entries(BONUS_TOP)) { x -= w; if (x < 0) { top = r; break; } }
   const pool = pools[top]?.length ? pools[top] : (pools.epic?.length ? pools.epic : skinList);
   const topCard = skinCard(pool[Math.floor(Math.random() * pool.length)].id);
-  return [...drawBooster(n - 1), topCard]
-    .sort((a, b) => RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity));
+  return [...drawBooster(n - 1), topCard].sort((a, b) => rIdx(b.rarity) - rIdx(a.rarity));
 }
 
-// ---------- Doublons ----------
+// ---------- Doublons / recyclage ----------
 const dupCount = cards => Object.values(cards || {}).reduce((a, q) => a + Math.max(0, q - 1), 0);
 
 function pickCraftCard(owned) {
@@ -248,39 +278,85 @@ function pickCraftCard(owned) {
   return skinCard(cand[Math.floor(Math.random() * cand.length)].id);
 }
 
-async function craftCard() {
+let recSel = {};
+
+function openRecycle() {
   if (rv) return;
   if (dupCount(state.cards) < DUPES_PER_CRAFT) {
-    alert(`Il faut ${DUPES_PER_CRAFT} doublons pour faire un échange.`);
+    alert(`Il faut ${DUPES_PER_CRAFT} doublons pour recycler.`);
     return;
   }
+  recSel = {};
+  $("recNeed").textContent = DUPES_PER_CRAFT;
+  const rows = Object.entries(state.cards || {}).filter(([, q]) => q >= 2)
+    .map(([id, q]) => ({ c: skinCard(+id), avail: q - 1 }))
+    .sort((a, b) => rIdx(a.c.rarity) - rIdx(b.c.rarity) || a.c.name.localeCompare(b.c.name, "fr"));
+  $("recycleList").innerHTML = rows.map(({ c, avail }) => `
+    <li data-id="${c.id}" data-avail="${avail}">
+      ${mini(c.id)}
+      <span class="stepper">
+        <button class="btn" data-d="-1">−</button><b data-n>0</b><button class="btn" data-d="1">+</button>
+        <small>/ ${avail}</small>
+      </span>
+    </li>`).join("");
+  updateRecycleUI();
+  $("recycleModal").hidden = false;
+}
+
+function updateRecycleUI() {
+  const total = Object.values(recSel).reduce((a, b) => a + b, 0);
+  $("recycleList").querySelectorAll("li").forEach(li => {
+    const id = li.dataset.id, avail = +li.dataset.avail, n = recSel[id] || 0;
+    li.querySelector("[data-n]").textContent = n;
+    li.querySelector('[data-d="-1"]').disabled = n <= 0;
+    li.querySelector('[data-d="1"]').disabled = n >= avail || total >= DUPES_PER_CRAFT;
+  });
+  $("recycleCount").textContent = `${total} / ${DUPES_PER_CRAFT} sélectionnés`;
+  $("recycleGo").disabled = total !== DUPES_PER_CRAFT;
+}
+
+$("recycleList").addEventListener("click", e => {
+  const b = e.target.closest("button[data-d]");
+  if (!b || b.disabled) return;
+  const li = b.closest("li");
+  const id = li.dataset.id;
+  recSel[id] = Math.max(0, (recSel[id] || 0) + +b.dataset.d);
+  updateRecycleUI();
+});
+$("recycleCancel").onclick = () => { $("recycleModal").hidden = true; };
+$("recycleGo").onclick = recycleCards;
+
+async function recycleCards() {
+  const sel = { ...recSel };
   const card = pickCraftCard(state.cards || {});
   if (!card) { alert("Tu possèdes déjà toutes les cartes !"); return; }
 
-  $("craftBtn").disabled = true;
+  $("recycleGo").disabled = true;
   try {
     state = await runTransaction(db, async tx => {
       const snap = await tx.get(userRef());
       const s = snap.data();
       s.cards = s.cards || {};
-      if (dupCount(s.cards) < DUPES_PER_CRAFT) throw new Error("Pas assez de doublons.");
-
-      let need = DUPES_PER_CRAFT;
-      const ids = Object.keys(s.cards).filter(k => s.cards[k] > 1)
-        .sort((a, b) => s.cards[b] - s.cards[a]);
-      for (const id of ids) {
-        while (need > 0 && s.cards[id] > 1) { s.cards[id]--; need--; }
-        if (need === 0) break;
+      let total = 0;
+      for (const [id, n] of Object.entries(sel)) {
+        if (n <= 0) continue;
+        if ((s.cards[id] || 0) - 1 < n) throw new Error("Doublons insuffisants.");
+        total += n;
       }
+      if (total !== DUPES_PER_CRAFT) throw new Error(`Choisis exactement ${DUPES_PER_CRAFT} doublons.`);
+      for (const [id, n] of Object.entries(sel)) if (n > 0) s.cards[id] -= n;
       s.cards[card.id] = (s.cards[card.id] || 0) + 1;
+      ensureObtained(s);
       addProgress(s, "recycle", DUPES_PER_CRAFT);
       tx.set(userRef(), s);
       return s;
     });
+    $("recycleModal").hidden = true;
     $("result").innerHTML = "";
     startReveal([card]);
   } catch (e) {
     alert(e.message);
+    updateRecycleUI();
   }
   render();
 }
@@ -299,6 +375,7 @@ async function openBooster() {
       s.boosters -= 1;
       s.cards = s.cards || {};
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
+      ensureObtained(s);
       addProgress(s, "open");
       tx.set(userRef(), s);
       return s;
@@ -325,6 +402,7 @@ async function openBonusBooster() {
       s.bonusBoosters -= 1;
       s.cards = s.cards || {};
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
+      ensureObtained(s);
       tx.set(userRef(), s);
       return s;
     });
@@ -516,7 +594,6 @@ function closeLightbox() {
 }
 
 $("lightbox").addEventListener("click", closeLightbox);
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
 
 document.addEventListener("click", e => {
   if (e.target.closest("#reveal") || e.target.closest("#lightbox")) return;
@@ -524,44 +601,182 @@ document.addEventListener("click", e => {
   if (card && card.dataset.id) openLightbox(card.dataset.id);
 });
 
-// ---------- Affichage ----------
+// ---------- Affichage des cartes ----------
 const cardHTML = (c, qty = 0, delay = 0, locked = false) => `
   <div class="card ${c.rarity}${locked ? " locked" : ""}" data-id="${c.id}" style="animation-delay:${delay}s">
     <span class="badge">${RARITIES[c.rarity].label}</span>
+    ${qty > 1 ? `<span class="qty">×${qty}</span>` : ""}
     <img loading="lazy" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
-    <div class="info"><b>${esc(c.name)}</b><br>${esc(c.skinName)}${qty > 1 ? `<br>x${qty}` : ""}</div>
+    <div class="info"><b>${esc(c.name)}</b><br>${esc(c.skinName)}</div>
   </div>`;
 
 const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+// ---------- Galerie des champions ----------
 function renderCollection() {
   const owned = state.cards || {};
+  const obt = state.obtained || {};
   const q = norm($("search").value.trim());
-  const only = $("onlyOwned").checked;
-  const champs = Object.keys(skinsByChamp)
-    .map(k => champByKey[k]).filter(Boolean)
-    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  const rf = $("filterRarity").value;
+  const onlyOwned = $("onlyOwned").checked;
+  const onlyDupes = $("onlyDupes").checked;
+  const filtersActive = !!rf || onlyDupes;
+  const BIG = 9e15;
+  const rows = [];
 
-  let html = "";
-  for (const champ of champs) {
-    const skins = skinsByChamp[champ.key].slice().sort((a, b) => a.id - b.id);
-    const ownedCount = skins.filter(s => owned[s.id]).length;
+  for (const key of Object.keys(skinsByChamp)) {
+    const champ = champByKey[key];
+    if (!champ) continue;
+    const skins = skinsByChamp[key].slice().sort((a, b) => a.id - b.id);
     const champMatch = q && norm(champ.name).includes(q);
-    const visible = skins.filter(s => {
-      if (only && !owned[s.id]) return false;
-      if (!q || champMatch) return true;
-      return norm(skinCard(s.id).skinName).includes(q);
+
+    const matches = skins.filter(s => {
+      const c = owned[s.id] || 0;
+      if (onlyOwned && !c) return false;
+      if (onlyDupes && c < 2) return false;
+      if (rf && rarityOf(s) !== rf) return false;
+      if (q && !champMatch && !norm(s.isBase ? "classique" : (s.name || "")).includes(q)) return false;
+      return true;
     });
-    if (!visible.length) continue;
-    html += `<details class="champ" ${q || only ? "open" : ""}>
-      <summary>${esc(champ.name)}<small>${ownedCount}/${skins.length}</small></summary>
-      <div class="grid">${visible.map(s => cardHTML(skinCard(s.id), owned[s.id] || 0, 0, !owned[s.id])).join("")}</div>
-    </details>`;
+    if (!matches.length) continue;
+
+    const ownedSkins = skins.filter(s => owned[s.id]);
+    const ownedTimes = ownedSkins.map(s => obt[s.id] ?? 0);
+    const bestPool = (matches.filter(s => owned[s.id]).length ? matches.filter(s => owned[s.id]) : ownedSkins);
+    const best = bestPool.length ? Math.min(...bestPool.map(s => rIdx(rarityOf(s)))) : 99;
+
+    let rep;
+    if (filtersActive) {
+      rep = matches.slice().sort((a, b) => rIdx(rarityOf(a)) - rIdx(rarityOf(b)) || a.id - b.id)[0];
+    } else {
+      rep = skins.find(s => s.isBase) || skins[0];
+    }
+
+    rows.push({
+      key, champ, skins, rep,
+      ownedCount: ownedSkins.length,
+      dupes: skins.reduce((a, s) => a + Math.max(0, (owned[s.id] || 0) - 1), 0),
+      last: ownedTimes.length ? Math.max(...ownedTimes) : -1,
+      first: ownedTimes.length ? Math.min(...ownedTimes) : BIG,
+      best
+    });
   }
-  $("collection").innerHTML = html || "Aucun résultat.";
+
+  const byName = (a, b) => a.champ.name.localeCompare(b.champ.name, "fr");
+  const sorters = {
+    name: byName,
+    recent: (a, b) => b.last - a.last || byName(a, b),
+    oldest: (a, b) => a.first - b.first || byName(a, b),
+    rarity: (a, b) => a.best - b.best || byName(a, b),
+    dupes: (a, b) => b.dupes - a.dupes || byName(a, b)
+  };
+  rows.sort(sorters[$("sortBy").value] || byName);
+
+  $("collection").innerHTML = rows.map(r => {
+    const c = skinCard(r.rep.id);
+    const qty = owned[r.rep.id] || 0;
+    const pct = Math.round((r.ownedCount / r.skins.length) * 100);
+    return `<button class="tile ${c.rarity}${qty ? "" : " locked"}" data-champ="${r.key}" data-skin="${r.rep.id}">
+      <span class="badge">${RARITIES[c.rarity].label}</span>
+      ${qty > 1 ? `<span class="qty">×${qty}</span>` : ""}
+      <img loading="lazy" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
+           onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
+      <div class="tinfo">
+        <b>${esc(r.champ.name)}</b>
+        <small>${r.ownedCount} / ${r.skins.length} skins${r.dupes ? ` · ${r.dupes} doublon${r.dupes > 1 ? "s" : ""}` : ""}</small>
+        <div class="bar"><span style="width:${pct}%"></span></div>
+      </div>
+    </button>`;
+  }).join("") || `<p class="hint">Aucun champion ne correspond.</p>`;
 }
 
+["search", "sortBy", "filterRarity", "onlyDupes", "onlyOwned"].forEach(id =>
+  $(id).addEventListener(id === "search" ? "input" : "change", () => state && renderCollection()));
+
+$("collection").addEventListener("click", e => {
+  const t = e.target.closest(".tile");
+  if (t) openViewer(t.dataset.champ, t.dataset.skin);
+});
+
+// ---------- Visionneuse de skins ----------
+let vw = null;
+
+function openViewer(champKey, startId) {
+  const ids = skinsByChamp[champKey].slice().sort((a, b) => a.id - b.id).map(s => s.id);
+  vw = { champKey, ids, i: Math.max(0, ids.indexOf(+startId)) };
+  $("vChamp").textContent = champByKey[champKey].name;
+  $("viewer").hidden = false;
+  renderViewer();
+}
+
+function closeViewer() {
+  $("viewer").hidden = true;
+  vw = null;
+}
+
+function renderViewer() {
+  if (!vw) return;
+  const id = vw.ids[vw.i];
+  const c = skinCard(id);
+  const qty = state.cards?.[id] || 0;
+  const ts = state.obtained?.[id];
+
+  const img = $("vImg");
+  img.dataset.t = "";
+  img.onerror = () => { if (img.dataset.t !== "1") { img.dataset.t = "1"; img.src = c.splashAlt; } };
+  img.style.animation = "none"; void img.offsetWidth; img.style.animation = "";
+  img.src = c.splash;
+  img.alt = `${c.name} - ${c.skinName}`;
+
+  $("vFrame").className = `rar-${c.rarity}${qty ? "" : " locked"}`;
+  $("vQty").hidden = qty < 2;
+  $("vQty").textContent = `×${qty}`;
+  $("vLock").hidden = !!qty;
+  $("vCount").textContent = `Skin ${vw.i + 1} / ${vw.ids.length}`;
+
+  const when = !qty ? "Non obtenue"
+    : (ts ? `Obtenue le ${new Date(ts).toLocaleDateString("fr-FR")}` : "Obtenue (date inconnue)")
+      + (qty > 1 ? ` · ${qty} exemplaires` : "");
+  $("vTitle").innerHTML = `<b>${esc(c.skinName)}</b>
+    <span style="color:${RARITIES[c.rarity].color}">· ${RARITIES[c.rarity].label}</span><br><small>${when}</small>`;
+
+  $("vStrip").innerHTML = vw.ids.map((sid, k) => {
+    const sc = skinCard(sid), q2 = state.cards?.[sid] || 0;
+    return `<button class="thumb ${sc.rarity}${k === vw.i ? " active" : ""}${q2 ? "" : " locked"}" data-k="${k}" title="${esc(sc.skinName)}">
+      <img loading="lazy" referrerpolicy="no-referrer" src="${sc.img}" alt="">
+      ${q2 > 1 ? `<span class="qty">×${q2}</span>` : ""}</button>`;
+  }).join("");
+  $("vStrip").querySelector(".active")?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+
+function viewerStep(d) {
+  if (!vw) return;
+  vw.i = (vw.i + d + vw.ids.length) % vw.ids.length;
+  renderViewer();
+}
+
+$("vPrev").onclick = () => viewerStep(-1);
+$("vNext").onclick = () => viewerStep(1);
+$("vClose").onclick = closeViewer;
+$("vStrip").addEventListener("click", e => {
+  const b = e.target.closest("[data-k]");
+  if (b && vw) { vw.i = +b.dataset.k; renderViewer(); }
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    if (!$("lightbox").hidden) closeLightbox();
+    else if (!$("viewer").hidden) closeViewer();
+    else if (!$("recycleModal").hidden) $("recycleModal").hidden = true;
+    else if (!$("tradeModal").hidden) { $("tradeModal").hidden = true; tradeFriend = null; }
+  } else if (!$("viewer").hidden && $("lightbox").hidden) {
+    if (e.key === "ArrowLeft") viewerStep(-1);
+    if (e.key === "ArrowRight") viewerStep(1);
+  }
+});
+
+// ---------- Rendu général ----------
 function render() {
   applyRefill(state);
   $("boosterCount").textContent = state.boosters;
@@ -581,6 +796,7 @@ function render() {
 
   renderCollection();
   renderQuests();
+  if (vw && !$("viewer").hidden) renderViewer();
 }
 
 function tickTimer() {
@@ -611,9 +827,7 @@ setInterval(() => {
   tickQuestTimers();
 }, 1000);
 
-$("search").addEventListener("input", () => state && renderCollection());
-$("onlyOwned").addEventListener("change", () => state && renderCollection());
-$("craftBtn").onclick = craftCard;
+$("craftBtn").onclick = openRecycle;
 $("bonusBtn").onclick = openBonusBooster;
 
 // ---------- Onglets ----------
@@ -681,10 +895,8 @@ $("tab-quests").addEventListener("click", e => {
   claimQuest(period, id);
 });
 
-// compte les échanges acceptés (une seule fois chacun), pour les deux joueurs
 async function syncTradeQuests() {
-  if (!user || !state || syncingTrades || !tradesLoaded.in || !tradesOut) return;
-  if (!tradesLoaded.out) return;
+  if (!user || !state || syncingTrades || !tradesLoaded.in || !tradesLoaded.out) return;
   const accepted = [...tradesIn, ...tradesOut].filter(t => t.status === "accepted").map(t => t.id);
   const seen = state.quests?.seenTrades;
   if (seen && accepted.every(id => seen.includes(id))) return;
@@ -753,14 +965,13 @@ async function sendFriendRequest() {
 }
 $("friendAdd").onclick = sendFriendRequest;
 
-// ---------- Échanges ----------
-let tradeFriend = null;
+// ---------- Échanges (même rareté uniquement) ----------
+let tradeFriend = null, tradeData = null;
 
 function optionList(entries) {
   return entries
     .map(([id, q]) => ({ c: skinCard(+id), q }))
-    .sort((a, b) => RARITY_ORDER.indexOf(a.c.rarity) - RARITY_ORDER.indexOf(b.c.rarity)
-      || a.c.name.localeCompare(b.c.name, "fr"))
+    .sort((a, b) => rIdx(a.c.rarity) - rIdx(b.c.rarity) || a.c.name.localeCompare(b.c.name, "fr"))
     .map(({ c, q }) => `<option value="${c.id}">${esc(c.name)} — ${esc(c.skinName)} (${RARITIES[c.rarity].label}) · ${q - 1} doublon(s)</option>`)
     .join("");
 }
@@ -771,6 +982,17 @@ function tradePreview() {
   $("tradeTheirsPrev").innerHTML = t ? cardHTML(skinCard(+t)) : "";
 }
 
+function updateTheirsOptions() {
+  const m = $("tradeMine").value;
+  if (!m || !tradeData) { $("tradeTheirs").innerHTML = ""; tradePreview(); return; }
+  const r = skinCard(+m).rarity;
+  const filtered = tradeData.theirs.filter(([id]) => skinCard(+id).rarity === r);
+  $("tradeTheirs").innerHTML = optionList(filtered);
+  $("tradeMsg").textContent = filtered.length ? ""
+    : `${tradeFriend.name} n'a aucun doublon de rareté « ${RARITIES[r].label} ».`;
+  tradePreview();
+}
+
 async function openTrade(friendUid, friendName) {
   try {
     const snap = await getDoc(doc(db, "users", friendUid));
@@ -779,26 +1001,30 @@ async function openTrade(friendUid, friendName) {
     if (!mine.length) { alert("Tu n'as aucun doublon à proposer."); return; }
     if (!theirs.length) { alert(`${friendName} n'a aucun doublon à échanger pour l'instant.`); return; }
     tradeFriend = { uid: friendUid, name: friendName };
+    tradeData = { mine, theirs };
     $("tradeWith").textContent = friendName;
     $("tradeMine").innerHTML = optionList(mine);
-    $("tradeTheirs").innerHTML = optionList(theirs);
     $("tradeMsg").textContent = "";
-    tradePreview();
+    updateTheirsOptions();
     $("tradeModal").hidden = false;
   } catch (e) {
     alert("Impossible de charger la collection de ton ami : " + e.message);
   }
 }
 
-$("tradeMine").addEventListener("change", tradePreview);
+$("tradeMine").addEventListener("change", updateTheirsOptions);
 $("tradeTheirs").addEventListener("change", tradePreview);
 $("tradeCancel").onclick = () => { $("tradeModal").hidden = true; tradeFriend = null; };
 
 $("tradeSend").onclick = async () => {
   if (!tradeFriend) return;
   const offerId = +$("tradeMine").value, wantId = +$("tradeTheirs").value;
-  if (!offerId || !wantId) return;
+  if (!offerId || !wantId) { $("tradeMsg").textContent = "Choisis une carte à donner et une carte à recevoir."; return; }
   if (offerId === wantId) { $("tradeMsg").textContent = "Choisis deux cartes différentes."; return; }
+  if (skinCard(offerId).rarity !== skinCard(wantId).rarity) {
+    $("tradeMsg").textContent = "Les deux cartes doivent avoir la même rareté.";
+    return;
+  }
   try {
     await addDoc(collection(db, "trades"), {
       from: user.uid, fromName: myName(),
@@ -816,6 +1042,10 @@ $("tradeSend").onclick = async () => {
 async function acceptTrade(id) {
   const t = tradesIn.find(x => x.id === id);
   if (!t) return;
+  if (skinCard(t.offerId).rarity !== skinCard(t.wantId).rarity) {
+    alert("Cet échange est refusé : les deux cartes n'ont pas la même rareté.");
+    return;
+  }
   const tradeRef = doc(db, "trades", id);
   const myRef = doc(db, "users", user.uid);
   const theirRef = doc(db, "users", t.from);
@@ -842,12 +1072,12 @@ const setTradeStatus = (id, status) =>
   updateDoc(doc(db, "trades", id), { status }).catch(e => alert(e.message));
 
 // ---------- Affichage social ----------
-const mini = id => {
+function mini(id) {
   const c = skinCard(id);
   return `<span class="mini"><img src="${c.img}" referrerpolicy="no-referrer" alt="">
     <span><b>${esc(c.name)}</b><br>${esc(c.skinName)}<br>
     <small style="color:${RARITIES[c.rarity].color}">${RARITIES[c.rarity].label}</small></span></span>`;
-};
+}
 const STATUS = { pending: "En attente", accepted: "Accepté ✔", declined: "Refusé ✖" };
 const emptyLi = txt => `<li class="empty">${txt}</li>`;
 
@@ -927,10 +1157,9 @@ function startListeners() {
     s.cards = s.cards || {};
     state = applyRefill(s);
     if (!rv) render();
+    fixObtained();
   }, onErr));
 
-  unsubs.push(onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", user.uid)),
-    snap => { friendships = docs(snap); renderSocial(); }, onErr));
   unsubs.push(onSnapshot(query(collection(db, "trades"), where("to", "==", user.uid)),
     snap => { tradesIn = docs(snap); tradesLoaded.in = true; renderSocial(); syncTradeQuests(); }, onErr));
   unsubs.push(onSnapshot(query(collection(db, "trades"), where("from", "==", user.uid)),
@@ -997,6 +1226,9 @@ onAuthStateChanged(auth, async u => {
     state = null;
     $("reveal").hidden = true;
     $("tradeModal").hidden = true;
+    $("recycleModal").hidden = true;
+    $("viewer").hidden = true;
+    vw = null;
     rv = null;
     return;
   }

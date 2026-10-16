@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
   <header class="topbar">
@@ -32,7 +32,7 @@
   <main id="gameView" hidden>
     <nav class="tabs">
       <button data-tab="boosters" class="active">Boosters</button>
-      <button data-tab="collection">Collection</button>
+      <button data-tab="collection">Galerie des champions</button>
       <button data-tab="friends">Amis <span id="friendsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="quests">Quêtes <span id="questsBadge" class="nbadge" hidden>0</span></button>
     </nav>
@@ -47,26 +47,46 @@
       <h2 class="boosters-title">Boosters : <span id="boosterCount">0</span> / 10</h2>
       <p id="timer"></p>
       <button id="openBtn" class="btn-play">Ouvrir un booster</button>
-            <div id="bonusBox" hidden>
-      <button id="bonusBtn" class="btn-play small">Booster bonus : <span id="bonusCount">0</span></button>
+      <div id="bonusBox" hidden>
+        <button id="bonusBtn" class="btn-play small">Booster bonus : <span id="bonusCount">0</span></button>
         <p class="hint">Épique minimum garanti</p>
       </div>
       <div id="result" class="grid"></div>
     </section>
 
     <section id="tab-collection" hidden>
-      <h2>Ma collection <span class="count">(<span id="cardCount">0</span>)</span></h2>
+      <h2>Galerie des champions <span class="count">(<span id="cardCount">0</span>)</span></h2>
+
       <div class="craft panel">
         <span>Doublons : <b id="dupCount">0</b></span>
-        <button id="craftBtn" class="btn-play small">Échanger 3 doublons → 1 carte</button>
+        <button id="craftBtn" class="btn-play small">Recycler 3 doublons → 1 carte</button>
       </div>
-      <div class="toolbar">
+
+      <div class="gallery-bar panel">
         <input id="search" type="search" placeholder="Rechercher un champion ou un skin…">
+        <select id="sortBy">
+          <option value="name">Tri : Nom (A → Z)</option>
+          <option value="recent">Tri : Plus récents</option>
+          <option value="oldest">Tri : Plus anciens</option>
+          <option value="rarity">Tri : Rareté</option>
+          <option value="dupes">Tri : Doublons</option>
+        </select>
+        <select id="filterRarity">
+          <option value="">Toutes les raretés</option>
+          <option value="common">Commune</option>
+          <option value="rare">Rare</option>
+          <option value="epic">Épique</option>
+          <option value="legendary">Légendaire</option>
+          <option value="mythic">Mythique</option>
+        </select>
+        <label><input id="onlyDupes" type="checkbox"> Doublons seulement</label>
         <label><input id="onlyOwned" type="checkbox"> Possédées seulement</label>
       </div>
-      <div id="collection"></div>
+
+      <div id="collection" class="champ-grid"></div>
     </section>
-        <section id="tab-friends" hidden>
+
+    <section id="tab-friends" hidden>
       <h2>Amis</h2>
       <div class="panel social-box">
         <h3>Ajouter un ami</h3>
@@ -88,7 +108,8 @@
         <div class="panel social-box"><h3>Échanges envoyés</h3><ul id="tradesOut" class="list"></ul></div>
       </div>
     </section>
-        <section id="tab-quests" hidden>
+
+    <section id="tab-quests" hidden>
       <h2>Quêtes</h2>
       <p class="hint">Chaque quête terminée donne 1 booster bonus avec une carte épique minimum garantie.</p>
       <div class="social-grid">
@@ -114,9 +135,26 @@
     </div>
   </div>
 
-    <div id="tradeModal" hidden>
+  <div id="viewer" hidden>
+    <button id="vClose" class="btn" aria-label="Fermer">✕</button>
+    <div class="v-head"><h2 id="vChamp"></h2><small id="vCount"></small></div>
+    <div class="v-stage">
+      <button id="vPrev" class="v-arrow" aria-label="Skin précédent">‹</button>
+      <div id="vFrame">
+        <img id="vImg" alt="">
+        <span id="vQty" class="qty" hidden></span>
+        <div id="vLock" hidden>Non obtenue</div>
+      </div>
+      <button id="vNext" class="v-arrow" aria-label="Skin suivant">›</button>
+    </div>
+    <p id="vTitle"></p>
+    <div id="vStrip"></div>
+  </div>
+
+  <div id="tradeModal" hidden>
     <div class="panel trade-box">
       <h2>Échange avec <span id="tradeWith"></span></h2>
+      <p class="hint">Seules des cartes de même rareté peuvent être échangées.</p>
       <div class="trade-cols">
         <div><h3>Tu donnes</h3><select id="tradeMine"></select><div id="tradeMinePrev"></div></div>
         <div class="trade-arrow">⇄</div>
@@ -127,13 +165,25 @@
       <button id="tradeCancel" class="btn">Annuler</button>
     </div>
   </div>
+
+  <div id="recycleModal" hidden>
+    <div class="panel trade-box">
+      <h2>Recycler des doublons</h2>
+      <p class="hint">Choisis exactement <b id="recNeed">3</b> doublons. Tu gardes toujours un exemplaire de chaque carte.</p>
+      <ul id="recycleList" class="list"></ul>
+      <p id="recycleCount"></p>
+      <button id="recycleGo" class="btn-play small">Recycler</button>
+      <button id="recycleCancel" class="btn">Annuler</button>
+    </div>
+  </div>
+
   <div id="lightbox" hidden>
     <button id="lbClose" class="btn" aria-label="Fermer">✕</button>
     <img id="lbImg" alt="">
     <p id="lbCaption"><b id="lbTitle"></b> <span id="lbRarity"></span></p>
   </div>
 
-  <script type="module" src="app.js"></script>
-  <script type="module" src="ui.js"></script>
+  <script type="module" src="app.js?v=10"></script>
+  <script type="module" src="ui.js?v=10"></script>
 </body>
 </html>
