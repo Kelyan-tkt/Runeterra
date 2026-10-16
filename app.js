@@ -38,10 +38,27 @@ const RARITIES = {
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
 const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
 
+// carte "de tête" d'un booster bonus (épique minimum garanti)
+const BONUS_TOP = { epic: 85, legendary: 12.5, mythic: 2.5 };
+
+const QUESTS = {
+  daily: [
+    { id: "open",    label: "Ouvrir 30 boosters",   target: 30 },
+    { id: "trade",   label: "Faire 1 échange",       target: 1 },
+    { id: "recycle", label: "Recycler 3 doublons",   target: 3 }
+  ],
+  weekly: [
+    { id: "open",    label: "Ouvrir 100 boosters",   target: 100 },
+    { id: "trade",   label: "Faire 10 échanges",     target: 10 },
+    { id: "recycle", label: "Recycler 30 doublons",  target: 30 }
+  ]
+};
+
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
 let friendships = [], tradesIn = [], tradesOut = [], unsubs = [];
+let tradesLoaded = { in: false, out: false }, syncingTrades = false;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -70,6 +87,63 @@ function applyRefill(s, now = Date.now()) {
   return s;
 }
 
+// ---------- Dates (heure de Paris) ----------
+const dayKey = () => new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit"
+}).format(new Date());
+
+function weekdayParis() {
+  const [y, m, d] = dayKey().split("-").map(Number);
+  return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+}
+
+function weekKey() {
+  const [y, m, d] = dayKey().split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() - weekdayParis());
+  return dt.toISOString().slice(0, 10);
+}
+
+function parisSecondsToday() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
+  }).formatToParts(new Date());
+  const g = t => +parts.find(p => p.type === t).value;
+  return g("hour") * 3600 + g("minute") * 60 + g("second");
+}
+
+const untilDaily = () => 86400 - parisSecondsToday();
+const untilWeekly = () => (6 - weekdayParis()) * 86400 + untilDaily();
+
+function fmtDuration(sec) {
+  const p = n => String(n).padStart(2, "0");
+  const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600);
+  const m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return `${d > 0 ? d + " j " : ""}${p(h)}:${p(m)}:${p(s)}`;
+}
+
+// ---------- Quêtes : données ----------
+const freshQuest = () => ({ open: 0, trade: 0, recycle: 0, claimed: {} });
+
+function ensureQuests(s) {
+  s.quests ||= {};
+  const q = s.quests;
+  const dk = dayKey(), wk = weekKey();
+  if (q.dayKey !== dk) { q.dayKey = dk; q.daily = freshQuest(); }
+  if (q.weekKey !== wk) { q.weekKey = wk; q.weekly = freshQuest(); }
+  q.daily ||= freshQuest();
+  q.weekly ||= freshQuest();
+  q.daily.claimed ||= {};
+  q.weekly.claimed ||= {};
+  return s;
+}
+
+function addProgress(s, key, n = 1) {
+  ensureQuests(s);
+  s.quests.daily[key] = (s.quests.daily[key] || 0) + n;
+  s.quests.weekly[key] = (s.quests.weekly[key] || 0) + n;
+}
+
 // ---------- Firestore ----------
 const userRef = () => doc(db, "users", user.uid);
 
@@ -80,6 +154,7 @@ async function loadState() {
       : { boosters: MAX_BOOSTERS, lastRefill: Date.now(), cards: {} };
     s.cards = s.cards || {};
     s = applyRefill(s);
+    ensureQuests(s);
     tx.set(userRef(), s);
     return s;
   });
@@ -150,6 +225,16 @@ function drawBooster(n) {
   return cards;
 }
 
+function drawBonusBooster(n) {
+  const total = Object.values(BONUS_TOP).reduce((a, b) => a + b, 0);
+  let x = Math.random() * total, top = "epic";
+  for (const [r, w] of Object.entries(BONUS_TOP)) { x -= w; if (x < 0) { top = r; break; } }
+  const pool = pools[top]?.length ? pools[top] : (pools.epic?.length ? pools.epic : skinList);
+  const topCard = skinCard(pool[Math.floor(Math.random() * pool.length)].id);
+  return [...drawBooster(n - 1), topCard]
+    .sort((a, b) => RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity));
+}
+
 // ---------- Doublons ----------
 const dupCount = cards => Object.values(cards || {}).reduce((a, q) => a + Math.max(0, q - 1), 0);
 
@@ -188,6 +273,7 @@ async function craftCard() {
         if (need === 0) break;
       }
       s.cards[card.id] = (s.cards[card.id] || 0) + 1;
+      addProgress(s, "recycle", DUPES_PER_CRAFT);
       tx.set(userRef(), s);
       return s;
     });
@@ -211,6 +297,32 @@ async function openBooster() {
       if (s.boosters <= 0) throw new Error("Aucun booster disponible");
       if (s.boosters === MAX_BOOSTERS) s.lastRefill = Date.now();
       s.boosters -= 1;
+      s.cards = s.cards || {};
+      drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
+      addProgress(s, "open");
+      tx.set(userRef(), s);
+      return s;
+    });
+
+    $("result").innerHTML = "";
+    startReveal(drawn);
+  } catch (e) {
+    alert(e.message);
+  }
+  render();
+}
+
+async function openBonusBooster() {
+  if (rv) return;
+  $("bonusBtn").disabled = true;
+  try {
+    const drawn = drawBonusBooster(CARDS_PER_BOOSTER);
+
+    state = await runTransaction(db, async tx => {
+      const snap = await tx.get(userRef());
+      const s = snap.data();
+      if ((s.bonusBoosters || 0) <= 0) throw new Error("Aucun booster bonus disponible.");
+      s.bonusBoosters -= 1;
       s.cards = s.cards || {};
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
       tx.set(userRef(), s);
@@ -455,6 +567,11 @@ function render() {
   $("boosterCount").textContent = state.boosters;
   $("openBtn").disabled = state.boosters <= 0 || !!rv;
 
+  const bonus = state.bonusBoosters || 0;
+  $("bonusBox").hidden = bonus <= 0;
+  $("bonusCount").textContent = bonus;
+  $("bonusBtn").disabled = bonus <= 0 || !!rv;
+
   const uniqueOwned = Object.keys(state.cards || {}).length;
   $("cardCount").textContent = `${uniqueOwned} / ${skinList.length} skins`;
 
@@ -463,6 +580,7 @@ function render() {
   $("craftBtn").disabled = dups < DUPES_PER_CRAFT || !!rv;
 
   renderCollection();
+  renderQuests();
 }
 
 function tickTimer() {
@@ -474,6 +592,13 @@ function tickTimer() {
   $("timer").textContent = `Prochain booster dans ${m}:${String(s).padStart(2, "0")}`;
 }
 
+function tickQuestTimers() {
+  if (!state) return;
+  if (state.quests?.dayKey !== dayKey() || state.quests?.weekKey !== weekKey()) { render(); return; }
+  $("dailyTimer").textContent = "Reset dans " + fmtDuration(untilDaily());
+  $("weeklyTimer").textContent = "Reset dans " + fmtDuration(untilWeekly());
+}
+
 setInterval(() => {
   if (!state) return;
   const before = state.boosters;
@@ -483,17 +608,109 @@ setInterval(() => {
     $("openBtn").disabled = state.boosters <= 0 || !!rv;
   }
   tickTimer();
+  tickQuestTimers();
 }, 1000);
 
 $("search").addEventListener("input", () => state && renderCollection());
 $("onlyOwned").addEventListener("change", () => state && renderCollection());
 $("craftBtn").onclick = craftCard;
+$("bonusBtn").onclick = openBonusBooster;
 
 // ---------- Onglets ----------
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
 });
+
+// ---------- Quêtes : affichage et récompenses ----------
+function questRow(period, def, q) {
+  const val = Math.min(q[def.id] || 0, def.target);
+  const done = val >= def.target;
+  const claimed = !!q.claimed?.[def.id];
+  return `<li class="quest ${done ? "done" : ""}">
+    <div class="q-main">
+      <div class="q-label">${esc(def.label)}</div>
+      <div class="bar"><span style="width:${(val / def.target) * 100}%"></span></div>
+      <small>${val} / ${def.target}</small>
+    </div>
+    ${claimed
+      ? `<span class="tstatus">Récupérée ✔</span>`
+      : `<button class="btn-play small" data-q="${period}:${def.id}" ${done ? "" : "disabled"}>Récupérer</button>`}
+  </li>`;
+}
+
+function renderQuests() {
+  if (!state) return;
+  ensureQuests(state);
+  const q = state.quests;
+  $("dailyQuests").innerHTML = QUESTS.daily.map(d => questRow("daily", d, q.daily)).join("");
+  $("weeklyQuests").innerHTML = QUESTS.weekly.map(d => questRow("weekly", d, q.weekly)).join("");
+
+  const claimable = ["daily", "weekly"].reduce((a, p) =>
+    a + QUESTS[p].filter(d => (q[p][d.id] || 0) >= d.target && !q[p].claimed?.[d.id]).length, 0);
+  $("questsBadge").textContent = claimable;
+  $("questsBadge").hidden = claimable === 0;
+  tickQuestTimers();
+}
+
+async function claimQuest(period, id) {
+  try {
+    state = await runTransaction(db, async tx => {
+      const snap = await tx.get(userRef());
+      const s = snap.data();
+      ensureQuests(s);
+      const q = s.quests[period];
+      const def = QUESTS[period].find(x => x.id === id);
+      if (q.claimed[id]) throw new Error("Récompense déjà récupérée.");
+      if ((q[id] || 0) < def.target) throw new Error("Quête non terminée.");
+      q.claimed[id] = true;
+      s.bonusBoosters = (s.bonusBoosters || 0) + 1;
+      tx.set(userRef(), s);
+      return s;
+    });
+    render();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+$("tab-quests").addEventListener("click", e => {
+  const b = e.target.closest("[data-q]");
+  if (!b || b.disabled) return;
+  const [period, id] = b.dataset.q.split(":");
+  claimQuest(period, id);
+});
+
+// compte les échanges acceptés (une seule fois chacun), pour les deux joueurs
+async function syncTradeQuests() {
+  if (!user || !state || syncingTrades || !tradesLoaded.in || !tradesOut) return;
+  if (!tradesLoaded.out) return;
+  const accepted = [...tradesIn, ...tradesOut].filter(t => t.status === "accepted").map(t => t.id);
+  const seen = state.quests?.seenTrades;
+  if (seen && accepted.every(id => seen.includes(id))) return;
+
+  syncingTrades = true;
+  try {
+    await runTransaction(db, async tx => {
+      const snap = await tx.get(userRef());
+      const s = snap.data();
+      ensureQuests(s);
+      const q = s.quests;
+      if (!q.seenTrades) {
+        q.seenTrades = accepted.slice();
+      } else {
+        for (const id of accepted) {
+          if (!q.seenTrades.includes(id)) { q.seenTrades.push(id); addProgress(s, "trade"); }
+        }
+      }
+      tx.set(userRef(), s);
+    });
+  } catch (e) {
+    console.warn("quêtes (échanges) :", e.message);
+  } finally {
+    syncingTrades = false;
+  }
+}
 
 // ---------- Amis ----------
 const pairId = (a, b) => [a, b].sort().join("_");
@@ -693,6 +910,7 @@ function stopListeners() {
   unsubs.forEach(u => u());
   unsubs = [];
   friendships = []; tradesIn = []; tradesOut = [];
+  tradesLoaded = { in: false, out: false };
 }
 
 function startListeners() {
@@ -714,9 +932,9 @@ function startListeners() {
   unsubs.push(onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", user.uid)),
     snap => { friendships = docs(snap); renderSocial(); }, onErr));
   unsubs.push(onSnapshot(query(collection(db, "trades"), where("to", "==", user.uid)),
-    snap => { tradesIn = docs(snap); renderSocial(); }, onErr));
+    snap => { tradesIn = docs(snap); tradesLoaded.in = true; renderSocial(); syncTradeQuests(); }, onErr));
   unsubs.push(onSnapshot(query(collection(db, "trades"), where("from", "==", user.uid)),
-    snap => { tradesOut = docs(snap); renderSocial(); }, onErr));
+    snap => { tradesOut = docs(snap); tradesLoaded.out = true; renderSocial(); syncTradeQuests(); }, onErr));
 }
 
 // ---------- Auth pseudo + mot de passe ----------

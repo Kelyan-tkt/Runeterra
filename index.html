@@ -34,6 +34,7 @@
       <button data-tab="boosters" class="active">Boosters</button>
       <button data-tab="collection">Collection</button>
       <button data-tab="friends">Amis <span id="friendsBadge" class="nbadge" hidden>0</span></button>
+      <button data-tab="quests">Quêtes <span id="questsBadge" class="nbadge" hidden>0</span></button>
     </nav>
 
     <section id="tab-boosters">
@@ -46,6 +47,10 @@
       <h2 class="boosters-title">Boosters : <span id="boosterCount">0</span> / 10</h2>
       <p id="timer"></p>
       <button id="openBtn" class="btn-play">Ouvrir un booster</button>
+            <div id="bonusBox" hidden>
+      <button id="bonusBtn" class="btn-play small">Booster bonus : <span id="bonusCount">0</span></button>
+        <p class="hint">Épique minimum garanti</p>
+      </div>
       <div id="result" class="grid"></div>
     </section>
 
@@ -81,6 +86,20 @@
       <div class="social-grid">
         <div class="panel social-box"><h3>Échanges reçus</h3><ul id="tradesIn" class="list"></ul></div>
         <div class="panel social-box"><h3>Échanges envoyés</h3><ul id="tradesOut" class="list"></ul></div>
+      </div>
+    </section>
+        <section id="tab-quests" hidden>
+      <h2>Quêtes</h2>
+      <p class="hint">Chaque quête terminée donne 1 booster bonus avec une carte épique minimum garantie.</p>
+      <div class="social-grid">
+        <div class="panel social-box">
+          <h3>Quotidiennes <small id="dailyTimer"></small></h3>
+          <ul id="dailyQuests" class="list"></ul>
+        </div>
+        <div class="panel social-box">
+          <h3>Hebdomadaires <small id="weeklyTimer"></small></h3>
+          <ul id="weeklyQuests" class="list"></ul>
+        </div>
       </div>
     </section>
   </main>

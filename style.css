@@ -264,3 +264,15 @@ ul.list .btn{margin-left:6px}
   background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);
   transform:translateX(-120%);animation:shine 3s ease-in-out infinite}
 @keyframes shine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+
+/* ---------- Quêtes ---------- */
+.hint{color:var(--text);opacity:.8;font-size:.85rem;margin:6px 0}
+#bonusBox{margin-top:8px}
+.social-box h3 small{margin-left:10px;color:var(--text);font-family:'Lato',sans-serif;font-weight:400;text-transform:none;letter-spacing:0}
+li.quest{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0}
+.q-main{flex:1 1 220px;min-width:180px}
+.q-label{margin-bottom:6px;color:var(--gold-light)}
+.bar{height:10px;background:#010a13;border:1px solid var(--gold-dim);border-radius:2px;overflow:hidden}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));transition:width .4s}
+li.quest.done .bar span{background:linear-gradient(90deg,#0397ab,var(--hex))}
+li.quest small{color:var(--text)}
