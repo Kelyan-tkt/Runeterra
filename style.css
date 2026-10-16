@@ -401,3 +401,12 @@ button.thumb.active{opacity:1;transform:translateY(-6px);box-shadow:0 0 14px var
 .spin-info { text-align: center; margin: 10px 0; }
 .spin-result { min-height: 1.5em; margin-top: 12px; font-weight: 700; font-size: 1.1rem; }
 .wheel-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; padding: 0; margin-top: 20px; opacity: .8; }
+.rank-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+.rank { list-style: none; padding: 0; margin: 0; }
+.rank li {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; margin-bottom: 6px; border-radius: 8px;
+  background: rgba(255,255,255,.05);
+}
+.rank li.me { background: rgba(201,162,75,.2); outline: 1px solid #c9a24b; }
+.rank li.empty { opacity: .6; justify-content: center; }

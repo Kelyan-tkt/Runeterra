@@ -951,6 +951,7 @@ function render() {
   renderCollection();
   renderQuests();
   tickSpins();
+  syncLeaderboard();
   if (vw && !$("viewer").hidden) renderViewer();
 }
 
@@ -993,6 +994,7 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
   if (b.dataset.tab === "friends") refreshSocial();
+  if (b.dataset.tab === "ranking") loadRanking();
 });
 
 // ---------- Mini-jeu : roulette ----------
@@ -1089,6 +1091,57 @@ function tickSpins() {
 }
 
 $("spinBtn").onclick = spinWheel;
+
+// ---------- Classement ----------
+let lbSig = "";
+
+async function syncLeaderboard() {
+  if (!user || !state || !skinList.length) return;
+  const cards = state.cards || {};
+  const ids = Object.keys(cards).filter(id => cards[id] > 0);
+  const unique = ids.length;
+  const total = ids.reduce((a, id) => a + cards[id], 0);
+  const mythic = ids.filter(id => skinsById[id] && rarityOf(skinsById[id]) === "mythic").length;
+  const name = myName();
+  const sig = `${user.uid}|${unique}|${total}|${mythic}|${name}`;
+  if (sig === lbSig) return;
+  lbSig = sig;
+  try {
+    await setDoc(doc(db, "leaderboard", user.uid), { name, unique, total, mythic, updatedAt: Date.now() });
+  } catch (e) {
+    lbSig = "";
+    console.warn("classement :", e.message);
+  }
+}
+
+async function loadRanking() {
+  $("rankCards").innerHTML = `<li class="empty">Chargement…</li>`;
+  $("rankMythic").innerHTML = `<li class="empty">Chargement…</li>`;
+  try {
+    await syncLeaderboard();
+    const snap = await getDocs(collection(db, "leaderboard"));
+    const players = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    const medals = ["🥇", "🥈", "🥉"];
+    const fill = (el, key) => {
+      const list = players
+        .filter(p => (p[key] || 0) > 0)
+        .sort((a, b) => (b[key] - a[key]) || ((b.total || 0) - (a.total || 0))
+          || String(a.name).localeCompare(String(b.name), "fr"))
+        .slice(0, 50);
+      el.innerHTML = list.map((p, i) => `<li class="${p.uid === user.uid ? "me" : ""}">
+        <span>${i < 3 ? medals[i] : (i + 1) + "."} ${esc(p.name)}</span><b>${p[key]}</b></li>`).join("")
+        || `<li class="empty">Personne pour l'instant.</li>`;
+    };
+    fill($("rankCards"), "unique");
+    fill($("rankMythic"), "mythic");
+  } catch (e) {
+    console.error(e);
+    $("rankCards").innerHTML = `<li class="empty">Erreur : ${esc(e.message)}</li>`;
+    $("rankMythic").innerHTML = "";
+  }
+}
+
+$("rankRefresh").onclick = loadRanking;
 
 // ---------- Quêtes : affichage et récompenses ----------
 function questRow(period, def, q) {
@@ -1544,6 +1597,7 @@ onAuthStateChanged(auth, async u => {
     $("viewer").hidden = true;
     vw = null;
     rv = null;
+    lbSig = "";
     return;
   }
   $("userName").textContent = u.displayName || "";

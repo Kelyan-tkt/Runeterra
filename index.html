@@ -41,6 +41,7 @@
       <button data-tab="friends">Amis <span id="friendsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="quests">Quêtes <span id="questsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="games">Jeux</button>
+      <button data-tab="ranking">Classement</button>
     </nav>
 
     <section id="tab-boosters">
@@ -152,6 +153,22 @@
         </div>
       </div>
     </section>
+    <section id="tab-ranking" hidden>
+  <h2>🏆 Classement</h2>
+  <div style="text-align:center;margin-bottom:14px">
+    <button id="rankRefresh" class="btn">Actualiser</button>
+  </div>
+  <div class="rank-cols">
+    <div>
+      <h3>Cartes possédées</h3>
+      <ul id="rankCards" class="rank"></ul>
+    </div>
+    <div>
+      <h3>Cartes mythiques</h3>
+      <ul id="rankMythic" class="rank"></ul>
+    </div>
+  </div>
+</section>
   </main>
 
   <div id="reveal" hidden>
