@@ -231,3 +231,29 @@ details.champ small{color:var(--text);margin-left:10px;font-family:'Lato',sans-s
   border-color:var(--rc);
   box-shadow:0 0 0 1px var(--rc),0 0 30px 6px var(--rc),inset 0 0 40px var(--rc)}
 .flip:not(.flipped):hover .flip-back span{color:var(--rc);text-shadow:0 0 18px var(--rc)}
+/* ---------- Amis et échanges ---------- */
+.nbadge{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:10px;background:#e84057;color:#fff;font-size:.75rem;font-family:'Lato',sans-serif}
+.social-box{max-width:520px;margin:14px auto;padding:16px 18px;text-align:left}
+.social-box h3{margin:6px 0 10px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;font-size:.95rem}
+#friendMsg{min-height:1.2em;color:var(--text);margin:8px 0 0}
+.social-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:1100px;margin:0 auto}
+.social-grid .social-box{flex:1 1 440px;margin:10px 0}
+ul.list{list-style:none;margin:0 0 12px;padding:0}
+ul.list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gold-dark);flex-wrap:wrap}
+ul.list li.empty{color:var(--text);opacity:.7;border:0}
+ul.list .btn{margin-left:6px}
+.trade-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mini{display:flex;align-items:center;gap:8px;font-size:.8rem;line-height:1.3}
+.mini img{width:38px;height:62px;object-fit:cover;border:1px solid var(--gold-dim)}
+.arrow{color:var(--gold);font-size:1.3rem}
+.tstatus{font-size:.8rem;color:var(--text)}
+
+#tradeModal{position:fixed;inset:0;z-index:1800;background:rgba(1,10,19,.9);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+#tradeModal[hidden]{display:none}
+.trade-box{width:min(760px,100%);padding:22px;text-align:center}
+.trade-cols{display:flex;gap:16px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.trade-cols>div{flex:1 1 260px}
+.trade-arrow{flex:0 0 auto!important;align-self:center;font-size:2rem;color:var(--gold)}
+.trade-box select{width:100%;padding:10px;background:#010a13;color:var(--gold-light);border:1px solid var(--gold-dim);margin-bottom:12px}
+#tradeMinePrev,#tradeTheirsPrev{display:flex;justify-content:center}
+#tradeMsg{min-height:1.2em;color:#e84057}

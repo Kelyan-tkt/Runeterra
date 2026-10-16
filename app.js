@@ -2,7 +2,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          updateProfile, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-import { getFirestore, doc, runTransaction }
+import { getFirestore, doc, runTransaction, collection, query, where, onSnapshot,
+         getDoc, setDoc, addDoc, updateDoc, deleteDoc }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -27,7 +28,6 @@ const DUPES_PER_CRAFT = 3;
 const DDRAGON = "https://ddragon.leagueoflegends.com";
 const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
-// chance qu'un booster contienne au moins 1 carte de cette rareté (le reste = communes)
 const RARITIES = {
   common:    { label: "Commune",    chance: 1,      color: "#8a8f98" },
   rare:      { label: "Rare",       chance: 0.941,  color: "#0397ab" },
@@ -36,14 +36,16 @@ const RARITIES = {
   mythic:    { label: "Mythique",   chance: 0.0033, color: "#e84057" }
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
-
-// poids pour la rareté de la carte obtenue par échange de doublons
 const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
 
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
+let friendships = [], tradesIn = [], tradesOut = [], unsubs = [];
 const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const myName = () => auth.currentUser?.displayName || "";
 
 function rarityOf(s) {
   if (s.isBase) return "common";
@@ -81,6 +83,15 @@ async function loadState() {
     tx.set(userRef(), s);
     return s;
   });
+}
+
+async function ensureUsernameDoc() {
+  const u = auth.currentUser;
+  const name = (u?.displayName || "").toLowerCase();
+  if (!name) return;
+  const ref = doc(db, "usernames", name);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) await setDoc(ref, { uid: u.uid, name: u.displayName });
 }
 
 // ---------- Données du jeu ----------
@@ -221,7 +232,7 @@ function startReveal(cards) {
   cards.forEach(c => { const i = new Image(); i.referrerPolicy = "no-referrer"; i.src = c.img; });
   rv = { cards, next: 0, busy: false };
   $("revealRow").innerHTML = cards.map((c, i) => `
-        <div class="flip r-${c.rarity}" data-i="${i}">
+    <div class="flip r-${c.rarity}" data-i="${i}">
       <div class="flip-inner">
         <div class="flip-back"><span>R</span></div>
         <div class="flip-front">${cardHTML(c)}</div>
@@ -306,7 +317,6 @@ function rarityEffect(el, rarity) {
   const color = RARITIES[rarity].color;
 
   if (rarity === "epic") {
-    // onde de choc + braises qui montent
     screenFlash(color, .3);
     shakeRow("shake1");
     spawn(el, "ring", { "--p": color }, 1200);
@@ -320,7 +330,6 @@ function rarityEffect(el, rarity) {
       }, 2400);
     }
   } else if (rarity === "legendary") {
-    // pilier de lumière + pluie de confettis dorés
     screenFlash(color, .6);
     shakeRow("shake2");
     spawn(el, "beam", {}, 1900);
@@ -335,7 +344,6 @@ function rarityEffect(el, rarity) {
       }, 3600);
     }
   } else if (rarity === "mythic") {
-    // inchangé : flash rouge, forte secousse, rayons (CSS) + particules
     screenFlash(color, .85);
     shakeRow("shake2");
     for (let i = 0; i < 70; i++) {
@@ -394,9 +402,9 @@ document.addEventListener("click", e => {
 const cardHTML = (c, qty = 0, delay = 0, locked = false) => `
   <div class="card ${c.rarity}${locked ? " locked" : ""}" data-id="${c.id}" style="animation-delay:${delay}s">
     <span class="badge">${RARITIES[c.rarity].label}</span>
-    <img loading="lazy" referrerpolicy="no-referrer" alt="${c.name}" src="${c.img}"
+    <img loading="lazy" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
-    <div class="info"><b>${c.name}</b><br>${c.skinName}${qty > 1 ? `<br>x${qty}` : ""}</div>
+    <div class="info"><b>${esc(c.name)}</b><br>${esc(c.skinName)}${qty > 1 ? `<br>x${qty}` : ""}</div>
   </div>`;
 
 const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -421,7 +429,7 @@ function renderCollection() {
     });
     if (!visible.length) continue;
     html += `<details class="champ" ${q || only ? "open" : ""}>
-      <summary>${champ.name}<small>${ownedCount}/${skins.length}</small></summary>
+      <summary>${esc(champ.name)}<small>${ownedCount}/${skins.length}</small></summary>
       <div class="grid">${visible.map(s => cardHTML(skinCard(s.id), owned[s.id] || 0, 0, !owned[s.id])).join("")}</div>
     </details>`;
   }
@@ -470,9 +478,231 @@ $("craftBtn").onclick = craftCard;
 // ---------- Onglets ----------
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
-  $("tab-boosters").hidden = b.dataset.tab !== "boosters";
-  $("tab-collection").hidden = b.dataset.tab !== "collection";
+  document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
 });
+
+// ---------- Amis ----------
+const pairId = (a, b) => [a, b].sort().join("_");
+const otherOf = f => f.users.find(u => u !== user.uid);
+const otherName = f => f.names?.[otherOf(f)] || "?";
+
+async function sendFriendRequest() {
+  const msg = $("friendMsg");
+  msg.textContent = "";
+  const pseudo = $("friendInput").value.trim().toLowerCase();
+  if (!pseudo) return;
+  if (pseudo === myName().toLowerCase()) { msg.textContent = "C'est ton propre pseudo !"; return; }
+  try {
+    const u = await getDoc(doc(db, "usernames", pseudo));
+    if (!u.exists()) {
+      msg.textContent = "Joueur introuvable. Il doit se connecter une fois avec la dernière version du site.";
+      return;
+    }
+    const other = u.data();
+    const ref = doc(db, "friendships", pairId(user.uid, other.uid));
+    const ex = await getDoc(ref);
+    if (ex.exists()) {
+      const f = ex.data();
+      msg.textContent = f.status === "accepted" ? "Vous êtes déjà amis."
+        : f.requester === user.uid ? "Demande déjà envoyée."
+        : "Cette personne t'a déjà envoyé une demande : accepte-la ci-dessous.";
+      return;
+    }
+    await setDoc(ref, {
+      users: [user.uid, other.uid].sort(),
+      names: { [user.uid]: myName(), [other.uid]: other.name },
+      status: "pending",
+      requester: user.uid
+    });
+    msg.textContent = "Demande envoyée !";
+    $("friendInput").value = "";
+  } catch (e) {
+    msg.textContent = "Erreur : " + e.message;
+  }
+}
+$("friendAdd").onclick = sendFriendRequest;
+
+// ---------- Échanges ----------
+let tradeFriend = null;
+
+function optionList(entries) {
+  return entries
+    .map(([id, q]) => ({ c: skinCard(+id), q }))
+    .sort((a, b) => RARITY_ORDER.indexOf(a.c.rarity) - RARITY_ORDER.indexOf(b.c.rarity)
+      || a.c.name.localeCompare(b.c.name, "fr"))
+    .map(({ c, q }) => `<option value="${c.id}">${esc(c.name)} — ${esc(c.skinName)} (${RARITIES[c.rarity].label}) · ${q - 1} doublon(s)</option>`)
+    .join("");
+}
+
+function tradePreview() {
+  const m = $("tradeMine").value, t = $("tradeTheirs").value;
+  $("tradeMinePrev").innerHTML = m ? cardHTML(skinCard(+m)) : "";
+  $("tradeTheirsPrev").innerHTML = t ? cardHTML(skinCard(+t)) : "";
+}
+
+async function openTrade(friendUid, friendName) {
+  try {
+    const snap = await getDoc(doc(db, "users", friendUid));
+    const theirs = Object.entries(snap.data()?.cards || {}).filter(([, q]) => q >= 2);
+    const mine = Object.entries(state.cards || {}).filter(([, q]) => q >= 2);
+    if (!mine.length) { alert("Tu n'as aucun doublon à proposer."); return; }
+    if (!theirs.length) { alert(`${friendName} n'a aucun doublon à échanger pour l'instant.`); return; }
+    tradeFriend = { uid: friendUid, name: friendName };
+    $("tradeWith").textContent = friendName;
+    $("tradeMine").innerHTML = optionList(mine);
+    $("tradeTheirs").innerHTML = optionList(theirs);
+    $("tradeMsg").textContent = "";
+    tradePreview();
+    $("tradeModal").hidden = false;
+  } catch (e) {
+    alert("Impossible de charger la collection de ton ami : " + e.message);
+  }
+}
+
+$("tradeMine").addEventListener("change", tradePreview);
+$("tradeTheirs").addEventListener("change", tradePreview);
+$("tradeCancel").onclick = () => { $("tradeModal").hidden = true; tradeFriend = null; };
+
+$("tradeSend").onclick = async () => {
+  if (!tradeFriend) return;
+  const offerId = +$("tradeMine").value, wantId = +$("tradeTheirs").value;
+  if (!offerId || !wantId) return;
+  if (offerId === wantId) { $("tradeMsg").textContent = "Choisis deux cartes différentes."; return; }
+  try {
+    await addDoc(collection(db, "trades"), {
+      from: user.uid, fromName: myName(),
+      to: tradeFriend.uid, toName: tradeFriend.name,
+      offerId, wantId, status: "pending", createdAt: Date.now()
+    });
+    $("tradeModal").hidden = true;
+    tradeFriend = null;
+    alert("Proposition envoyée !");
+  } catch (e) {
+    $("tradeMsg").textContent = "Erreur : " + e.message;
+  }
+};
+
+async function acceptTrade(id) {
+  const t = tradesIn.find(x => x.id === id);
+  if (!t) return;
+  const tradeRef = doc(db, "trades", id);
+  const myRef = doc(db, "users", user.uid);
+  const theirRef = doc(db, "users", t.from);
+  try {
+    await runTransaction(db, async tx => {
+      const [tSnap, mine, theirs] = await Promise.all([tx.get(tradeRef), tx.get(myRef), tx.get(theirRef)]);
+      const tr = tSnap.data();
+      if (!tr || tr.status !== "pending") throw new Error("Cet échange n'est plus disponible.");
+      const o = String(tr.offerId), w = String(tr.wantId);
+      const mc = mine.data().cards || {}, tc = theirs.data().cards || {};
+      if ((tc[o] || 0) < 2) throw new Error("Ton ami n'a plus ce doublon.");
+      if ((mc[w] || 0) < 2) throw new Error("Tu n'as plus ce doublon.");
+      tx.update(theirRef, { [`cards.${o}`]: tc[o] - 1, [`cards.${w}`]: (tc[w] || 0) + 1, lastTradeId: id });
+      tx.update(myRef, { [`cards.${w}`]: mc[w] - 1, [`cards.${o}`]: (mc[o] || 0) + 1, lastTradeId: id });
+      tx.update(tradeRef, { status: "accepted" });
+    });
+    alert("Échange réussi !");
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+const setTradeStatus = (id, status) => updateDoc(doc(db, "trades", id), { status }).catch(e => alert(e.message));
+
+// ---------- Affichage social ----------
+const mini = id => {
+  const c = skinCard(id);
+  return `<span class="mini"><img src="${c.img}" referrerpolicy="no-referrer" alt="">
+    <span><b>${esc(c.name)}</b><br>${esc(c.skinName)}<br>
+    <small style="color:${RARITIES[c.rarity].color}">${RARITIES[c.rarity].label}</small></span></span>`;
+};
+const STATUS = { pending: "En attente", accepted: "Accepté ✔", declined: "Refusé ✖" };
+const emptyLi = txt => `<li class="empty">${txt}</li>`;
+
+function renderSocial() {
+  if (!user || !skinList.length) return;
+  const me = user.uid;
+  const accepted = friendships.filter(f => f.status === "accepted");
+  const reqIn = friendships.filter(f => f.status === "pending" && f.requester !== me);
+  const reqOut = friendships.filter(f => f.status === "pending" && f.requester === me);
+  const inPending = tradesIn.filter(t => t.status === "pending").sort((a, b) => b.createdAt - a.createdAt);
+  const outList = tradesOut.filter(t => t.status !== "cancelled").sort((a, b) => b.createdAt - a.createdAt).slice(0, 10);
+
+  const n = reqIn.length + inPending.length;
+  $("friendsBadge").textContent = n;
+  $("friendsBadge").hidden = n === 0;
+
+  $("reqIn").innerHTML = reqIn.map(f => `<li><span>${esc(otherName(f))}</span><span>
+    <button class="btn" data-act="acceptFriend" data-id="${f.id}">Accepter</button>
+    <button class="btn" data-act="removeFriend" data-id="${f.id}">Refuser</button></span></li>`).join("")
+    || emptyLi("Aucune demande reçue.");
+
+  $("reqOut").innerHTML = reqOut.map(f => `<li><span>${esc(otherName(f))}</span>
+    <button class="btn" data-act="removeFriend" data-id="${f.id}">Annuler</button></li>`).join("")
+    || emptyLi("Aucune demande envoyée.");
+
+  $("friendList").innerHTML = accepted.map(f => `<li><span>${esc(otherName(f))}</span><span>
+    <button class="btn" data-act="trade" data-uid="${otherOf(f)}" data-name="${esc(otherName(f))}">Échanger</button>
+    <button class="btn" data-act="removeFriend" data-id="${f.id}">Retirer</button></span></li>`).join("")
+    || emptyLi("Aucun ami pour l'instant.");
+
+  $("tradesIn").innerHTML = inPending.map(t => `<li>
+    <div><div style="margin-bottom:6px"><b>${esc(t.fromName)}</b> te propose :</div>
+    <div class="trade-line">${mini(t.offerId)}<span class="arrow">⇄</span>${mini(t.wantId)}</div>
+    <small class="tstatus">Il donne la 1re carte, tu donnes la 2e.</small></div>
+    <span><button class="btn" data-act="acceptTrade" data-id="${t.id}">Accepter</button>
+    <button class="btn" data-act="declineTrade" data-id="${t.id}">Refuser</button></span></li>`).join("")
+    || emptyLi("Aucun échange reçu.");
+
+  $("tradesOut").innerHTML = outList.map(t => `<li>
+    <div><div style="margin-bottom:6px">À <b>${esc(t.toName)}</b> · <span class="tstatus">${STATUS[t.status] || t.status}</span></div>
+    <div class="trade-line">${mini(t.offerId)}<span class="arrow">⇄</span>${mini(t.wantId)}</div></div>
+    ${t.status === "pending" ? `<button class="btn" data-act="cancelTrade" data-id="${t.id}">Annuler</button>` : ""}</li>`).join("")
+    || emptyLi("Aucun échange envoyé.");
+}
+
+$("tab-friends").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const { act, id, uid, name } = b.dataset;
+  if (act === "acceptFriend") updateDoc(doc(db, "friendships", id), { status: "accepted" }).catch(err => alert(err.message));
+  else if (act === "removeFriend") deleteDoc(doc(db, "friendships", id)).catch(err => alert(err.message));
+  else if (act === "trade") openTrade(uid, name);
+  else if (act === "acceptTrade") acceptTrade(id);
+  else if (act === "declineTrade") setTradeStatus(id, "declined");
+  else if (act === "cancelTrade") setTradeStatus(id, "cancelled");
+});
+
+// ---------- Écoute en temps réel ----------
+function stopListeners() {
+  unsubs.forEach(u => u());
+  unsubs = [];
+  friendships = []; tradesIn = []; tradesOut = [];
+}
+
+function startListeners() {
+  stopListeners();
+  const onErr = e => {
+    console.error(e);
+    $("friendMsg").textContent = "Erreur de synchronisation : " + e.message;
+  };
+  const docs = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  unsubs.push(onSnapshot(userRef(), snap => {
+    if (!snap.exists()) return;
+    const s = snap.data();
+    s.cards = s.cards || {};
+    state = applyRefill(s);
+    if (!rv) render();
+  }, onErr));
+
+  unsubs.push(onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", user.uid)),
+    snap => { friendships = docs(snap); renderSocial(); }, onErr));
+  unsubs.push(onSnapshot(query(collection(db, "trades"), where("to", "==", user.uid)),
+    snap => { tradesIn = docs(snap); renderSocial(); }, onErr));
+  unsubs.push(onSnapshot(query(collection(db, "trades"), where("from", "==", user.uid)),
+    snap => { tradesOut = docs(snap); renderSocial(); }, onErr));
+}
 
 // ---------- Auth pseudo + mot de passe ----------
 const toEmail = name => `${name.trim().toLowerCase()}@runeterra.app`;
@@ -505,6 +735,7 @@ $("registerBtn").onclick = async () => {
     const cred = await createUserWithEmailAndPassword(auth, toEmail(f.name), f.pass);
     await updateProfile(cred.user, { displayName: f.name });
     $("userName").textContent = f.name;
+    await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
   } catch (e) {
     $("authError").textContent = authMessages[e.code] || e.code;
   }
@@ -528,12 +759,21 @@ onAuthStateChanged(auth, async u => {
   $("loginView").hidden = !!u;
   $("gameView").hidden = !u;
   $("userBox").hidden = !u;
-  if (!u) { state = null; $("reveal").hidden = true; rv = null; return; }
+  if (!u) {
+    stopListeners();
+    state = null;
+    $("reveal").hidden = true;
+    $("tradeModal").hidden = true;
+    rv = null;
+    return;
+  }
   $("userName").textContent = u.displayName || "";
   try {
     if (!champions.length) await loadGameData();
     await loadState();
+    await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
     render(); tickTimer();
+    startListeners();
   } catch (e) {
     console.error(e);
     alert("Erreur de chargement : " + e.message);

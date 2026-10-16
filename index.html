@@ -33,6 +33,7 @@
     <nav class="tabs">
       <button data-tab="boosters" class="active">Boosters</button>
       <button data-tab="collection">Collection</button>
+      <button data-tab="friends">Amis <span id="friendsBadge" class="nbadge" hidden>0</span></button>
     </nav>
 
     <section id="tab-boosters">
@@ -60,6 +61,28 @@
       </div>
       <div id="collection"></div>
     </section>
+        <section id="tab-friends" hidden>
+      <h2>Amis</h2>
+      <div class="panel social-box">
+        <h3>Ajouter un ami</h3>
+        <input id="friendInput" placeholder="Pseudo de ton ami" maxlength="20">
+        <button id="friendAdd" class="btn-play small">Envoyer la demande</button>
+        <p id="friendMsg"></p>
+      </div>
+      <div class="social-grid">
+        <div class="panel social-box">
+          <h3>Demandes reçues</h3><ul id="reqIn" class="list"></ul>
+          <h3>Demandes envoyées</h3><ul id="reqOut" class="list"></ul>
+        </div>
+        <div class="panel social-box">
+          <h3>Mes amis</h3><ul id="friendList" class="list"></ul>
+        </div>
+      </div>
+      <div class="social-grid">
+        <div class="panel social-box"><h3>Échanges reçus</h3><ul id="tradesIn" class="list"></ul></div>
+        <div class="panel social-box"><h3>Échanges envoyés</h3><ul id="tradesOut" class="list"></ul></div>
+      </div>
+    </section>
   </main>
 
   <div id="reveal" hidden>
@@ -72,6 +95,19 @@
     </div>
   </div>
 
+    <div id="tradeModal" hidden>
+    <div class="panel trade-box">
+      <h2>Échange avec <span id="tradeWith"></span></h2>
+      <div class="trade-cols">
+        <div><h3>Tu donnes</h3><select id="tradeMine"></select><div id="tradeMinePrev"></div></div>
+        <div class="trade-arrow">⇄</div>
+        <div><h3>Tu reçois</h3><select id="tradeTheirs"></select><div id="tradeTheirsPrev"></div></div>
+      </div>
+      <p id="tradeMsg"></p>
+      <button id="tradeSend" class="btn-play small">Proposer l'échange</button>
+      <button id="tradeCancel" class="btn">Annuler</button>
+    </div>
+  </div>
   <div id="lightbox" hidden>
     <button id="lbClose" class="btn" aria-label="Fermer">✕</button>
     <img id="lbImg" alt="">
