@@ -3,7 +3,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          updateProfile, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import { getFirestore, initializeFirestore, doc, runTransaction, collection, query, where,
-         onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc }
+         onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -952,6 +952,7 @@ function render() {
   renderQuests();
   tickSpins();
   syncLeaderboard();
+  if (!$("tab-profile").hidden && $("pBack").hidden) renderProfile(myStats(), true);
   if (vw && !$("viewer").hidden) renderViewer();
 }
 
@@ -995,8 +996,8 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
   if (b.dataset.tab === "friends") refreshSocial();
   if (b.dataset.tab === "ranking") loadRanking();
+  if (b.dataset.tab === "profile") showProfile();
 });
-
 // ---------- Mini-jeu : roulette ----------
 let spinning = false, wheelRot = 0;
 
@@ -1095,24 +1096,137 @@ $("spinBtn").onclick = spinWheel;
 // ---------- Classement ----------
 let lbSig = "";
 
-async function syncLeaderboard() {
-  if (!user || !state || !skinList.length) return;
+const SHOWCASE_MAX = 6;
+
+function myStats() {
   const cards = state.cards || {};
   const ids = Object.keys(cards).filter(id => cards[id] > 0);
-  const unique = ids.length;
-  const total = ids.reduce((a, id) => a + cards[id], 0);
-  const mythic = ids.filter(id => skinsById[id] && rarityOf(skinsById[id]) === "mythic").length;
-  const name = myName();
-  const sig = `${user.uid}|${unique}|${total}|${mythic}|${name}`;
+  return {
+    name: myName(),
+    unique: ids.length,
+    total: ids.reduce((a, id) => a + cards[id], 0),
+    mythic: ids.filter(id => skinsById[id] && rarityOf(skinsById[id]) === "mythic").length,
+    showcase: (state.showcase || []).filter(id => cards[id] > 0).slice(0, SHOWCASE_MAX)
+  };
+}
+
+async function syncLeaderboard() {
+  if (!user || !state || !skinList.length) return;
+  const st = myStats();
+  const sig = `${user.uid}|${JSON.stringify(st)}`;
   if (sig === lbSig) return;
   lbSig = sig;
   try {
-    await setDoc(doc(db, "leaderboard", user.uid), { name, unique, total, mythic, updatedAt: Date.now() });
+    await setDoc(doc(db, "leaderboard", user.uid), { ...st, updatedAt: Date.now() });
   } catch (e) {
     lbSig = "";
     console.warn("classement :", e.message);
   }
+  
 }
+$("tab-ranking").addEventListener("click", e => {
+  const li = e.target.closest("li[data-uid]");
+  if (li) showProfile(li.dataset.uid);
+});
+
+// ---------- Profil et vitrine ----------
+let scSel = [];
+
+function goTab(tab) {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === tab));
+  document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${tab}`);
+}
+
+function renderProfile(p, mine) {
+  const total = skinList.length;
+  const pct = total ? Math.round((p.unique / total) * 100) : 0;
+  $("pName").textContent = `Profil de ${p.name}`;
+  $("pStats").innerHTML = `
+    <div class="stat"><b>${p.unique}</b><small>/ ${total} skins (${pct}%)</small></div>
+    <div class="stat"><b>${p.total}</b><small>cartes au total</small></div>
+    <div class="stat"><b>${p.mythic}</b><small>mythiques</small></div>`;
+  const ids = (p.showcase || []).filter(id => skinsById[id]);
+  let html = ids.map(id => cardHTML(skinCard(+id))).join("");
+  if (mine) for (let i = ids.length; i < SHOWCASE_MAX; i++) html += `<div class="slot">＋</div>`;
+  $("pShowcase").innerHTML = html || `<p class="hint">Aucune carte en vitrine.</p>`;
+  $("pEdit").hidden = !mine;
+  $("pBack").hidden = mine;
+}
+
+async function showProfile(uid) {
+  if (!user || !state) return;
+  const target = uid || user.uid;
+  const mine = target === user.uid;
+  let p;
+  if (mine) {
+    p = myStats();
+  } else {
+    try {
+      const snap = await getDoc(doc(db, "leaderboard", target));
+      if (!snap.exists()) { alert("Ce joueur n'a pas encore de profil."); return; }
+      p = snap.data();
+    } catch (e) { alert(e.message); return; }
+  }
+  renderProfile(p, mine);
+  goTab("profile");
+}
+
+function renderShowcasePicker() {
+  const q = norm($("scSearch").value.trim());
+  const owned = Object.keys(state.cards || {}).filter(id => state.cards[id] > 0).map(id => skinCard(+id));
+  const list = owned
+    .filter(c => !q || norm(c.name).includes(q) || norm(c.skinName).includes(q))
+    .sort((a, b) => rIdx(a.rarity) - rIdx(b.rarity) || a.name.localeCompare(b.name, "fr"));
+  $("scList").innerHTML = list.slice(0, 150).map(c => `
+    <button class="pick ${c.rarity}${scSel.includes(c.id) ? " sel" : ""}" data-id="${c.id}">
+      <img loading="lazy" referrerpolicy="no-referrer" alt="" src="${c.img}"
+           onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
+      <span><b>${esc(c.name)}</b><br>${esc(c.skinName)}<br>
+      <small style="color:${RARITIES[c.rarity].color}">${RARITIES[c.rarity].label}</small></span>
+    </button>`).join("")
+    + (list.length > 150 ? `<p class="hint">Affine ta recherche pour voir les ${list.length - 150} autres.</p>` : "")
+    || `<p class="hint">Aucun résultat.</p>`;
+  $("scCount").textContent = `${scSel.length} / ${SHOWCASE_MAX}`;
+}
+
+function openShowcaseEdit() {
+  if (!state) return;
+  scSel = (state.showcase || []).filter(id => state.cards?.[id] > 0).slice(0, SHOWCASE_MAX);
+  $("scSearch").value = "";
+  renderShowcasePicker();
+  $("showcaseModal").hidden = false;
+}
+
+$("pEdit").onclick = openShowcaseEdit;
+$("pBack").onclick = () => showProfile();
+$("pShowcase").addEventListener("click", e => { if (e.target.closest(".slot")) openShowcaseEdit(); });
+$("scSearch").addEventListener("input", renderShowcasePicker);
+$("scCancel").onclick = () => { $("showcaseModal").hidden = true; };
+$("scClear").onclick = () => { scSel = []; renderShowcasePicker(); };
+
+$("scList").addEventListener("click", e => {
+  const b = e.target.closest(".pick");
+  if (!b) return;
+  const id = +b.dataset.id;
+  const i = scSel.indexOf(id);
+  if (i >= 0) scSel.splice(i, 1);
+  else if (scSel.length < SHOWCASE_MAX) scSel.push(id);
+  else { alert(`Maximum ${SHOWCASE_MAX} cartes en vitrine.`); return; }
+  b.classList.toggle("sel", i < 0);
+  $("scCount").textContent = `${scSel.length} / ${SHOWCASE_MAX}`;
+});
+
+$("scSave").onclick = async () => {
+  try {
+    await updateDoc(userRef(), { showcase: scSel });
+    state.showcase = scSel.slice();
+    $("showcaseModal").hidden = true;
+    showProfile();
+    syncLeaderboard();
+  } catch (e) {
+    alert(e.message);
+  }
+};
 
 async function loadRanking() {
   $("rankCards").innerHTML = `<li class="empty">Chargement…</li>`;
@@ -1123,12 +1237,12 @@ async function loadRanking() {
     const players = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
     const medals = ["🥇", "🥈", "🥉"];
     const fill = (el, key) => {
-      const list = players
+    const list = players
         .filter(p => (p[key] || 0) > 0)
         .sort((a, b) => (b[key] - a[key]) || ((b.total || 0) - (a.total || 0))
           || String(a.name).localeCompare(String(b.name), "fr"))
         .slice(0, 50);
-      el.innerHTML = list.map((p, i) => `<li class="${p.uid === user.uid ? "me" : ""}">
+      el.innerHTML = list.map((p, i) => `<li data-uid="${p.uid}" class="${p.uid === user.uid ? "me" : ""}">
         <span>${i < 3 ? medals[i] : (i + 1) + "."} ${esc(p.name)}</span><b>${p[key]}</b></li>`).join("")
         || `<li class="empty">Personne pour l'instant.</li>`;
     };
@@ -1281,7 +1395,7 @@ function optionList(entries) {
   return entries
     .map(([id, q]) => ({ c: skinCard(+id), q }))
     .sort((a, b) => rIdx(a.c.rarity) - rIdx(b.c.rarity) || a.c.name.localeCompare(b.c.name, "fr"))
-    .map(({ c, q }) => `<option value="${c.id}">${esc(c.name)} — ${esc(c.skinName)} (${RARITIES[c.rarity].label}) · ${q - 1} doublon(s)</option>`)
+    .map(({ c, q }) => `<option value="${c.id}">${esc(c.name)} — ${esc(c.skinName)} (${RARITIES[c.rarity].label}) · ${q > 1 ? "×" + q : "exemplaire unique"}</option>`)
     .join("");
 }
 
@@ -1298,17 +1412,17 @@ function updateTheirsOptions() {
   const filtered = tradeData.theirs.filter(([id]) => skinCard(+id).rarity === r);
   $("tradeTheirs").innerHTML = optionList(filtered);
   $("tradeMsg").textContent = filtered.length ? ""
-    : `${tradeFriend.name} n'a aucun doublon de rareté « ${RARITIES[r].label} ».`;
+      : `${tradeFriend.name} n'a aucune carte de rareté « ${RARITIES[r].label} ».`;
   tradePreview();
 }
 
 async function openTrade(friendUid, friendName) {
   try {
     const snap = await getDoc(doc(db, "users", friendUid));
-    const theirs = Object.entries(snap.data()?.cards || {}).filter(([, q]) => q >= 2);
-    const mine = Object.entries(state.cards || {}).filter(([, q]) => q >= 2);
-    if (!mine.length) { alert("Tu n'as aucun doublon à proposer."); return; }
-    if (!theirs.length) { alert(`${friendName} n'a aucun doublon à échanger pour l'instant.`); return; }
+    const theirs = Object.entries(snap.data()?.cards || {}).filter(([, q]) => q >= 1);
+    const mine = Object.entries(state.cards || {}).filter(([, q]) => q >= 1);
+    if (!mine.length) { alert("Tu n'as aucune carte à proposer."); return; }
+    if (!theirs.length) { alert(`${friendName} n'a aucune carte à échanger.`); return; }
     tradeFriend = { uid: friendUid, name: friendName };
     tradeData = { mine, theirs };
     $("tradeWith").textContent = friendName;
@@ -1364,12 +1478,15 @@ async function acceptTrade(id) {
       const [tSnap, mine, theirs] = await Promise.all([tx.get(tradeRef), tx.get(myRef), tx.get(theirRef)]);
       const tr = tSnap.data();
       if (!tr || tr.status !== "pending") throw new Error("Cet échange n'est plus disponible.");
-      const o = String(tr.offerId), w = String(tr.wantId);
+            const o = String(tr.offerId), w = String(tr.wantId);
       const mc = mine.data().cards || {}, tc = theirs.data().cards || {};
-      if ((tc[o] || 0) < 2) throw new Error("Ton ami n'a plus ce doublon.");
-      if ((mc[w] || 0) < 2) throw new Error("Tu n'as plus ce doublon.");
-      tx.update(theirRef, { [`cards.${o}`]: tc[o] - 1, [`cards.${w}`]: (tc[w] || 0) + 1, lastTradeId: id });
-      tx.update(myRef, { [`cards.${w}`]: mc[w] - 1, [`cards.${o}`]: (mc[o] || 0) + 1, lastTradeId: id });
+      if ((tc[o] || 0) < 1) throw new Error("Ton ami n'a plus cette carte.");
+      if ((mc[w] || 0) < 1) throw new Error("Tu n'as plus cette carte.");
+      const dec = n => (n - 1 <= 0 ? deleteField() : n - 1);
+      tx.update(theirRef, { [`cards.${o}`]: dec(tc[o]), [`cards.${w}`]: (tc[w] || 0) + 1, lastTradeId: id });
+      const myUp = { [`cards.${w}`]: dec(mc[w]), [`cards.${o}`]: (mc[o] || 0) + 1, lastTradeId: id };
+      if (!(mc[o] > 0)) myUp[`obtained.${o}`] = Date.now();
+      tx.update(myRef, myUp);
       tx.update(tradeRef, { status: "accepted" });
     });
     alert("Échange réussi !");
@@ -1416,6 +1533,7 @@ function renderSocial() {
     || emptyLi("Aucune demande envoyée.");
 
   $("friendList").innerHTML = accepted.map(f => `<li><span>${esc(otherName(f))}</span><span>
+    <button class="btn" data-act="profile" data-uid="${otherOf(f)}">Profil</button>
     <button class="btn" data-act="trade" data-uid="${otherOf(f)}" data-name="${esc(otherName(f))}">Échanger</button>
     <button class="btn" data-act="removeFriend" data-id="${f.id}">Retirer</button></span></li>`).join("")
     || emptyLi("Aucun ami pour l'instant.");
@@ -1451,6 +1569,7 @@ $("tab-friends").addEventListener("click", e => {
   else if (act === "acceptTrade") acceptTrade(id);
   else if (act === "declineTrade") setTradeStatus(id, "declined");
   else if (act === "cancelTrade") setTradeStatus(id, "cancelled");
+  else if (act === "profile") showProfile(uid);
 });
 
 // ---------- Synchronisation des amis et échanges ----------

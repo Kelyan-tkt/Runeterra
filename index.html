@@ -42,6 +42,7 @@
       <button data-tab="quests">Quêtes <span id="questsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="games">Jeux</button>
       <button data-tab="ranking">Classement</button>
+      <button data-tab="profile">Profil</button>
     </nav>
 
     <section id="tab-boosters">
@@ -169,6 +170,16 @@
     </div>
   </div>
 </section>
+<section id="tab-profile" hidden>
+  <div class="profile-head">
+    <h2 id="pName">Profil</h2>
+    <button id="pEdit" class="btn">Modifier la vitrine</button>
+    <button id="pBack" class="btn" hidden>← Mon profil</button>
+  </div>
+  <div id="pStats" class="p-stats"></div>
+  <h3>Vitrine</h3>
+  <div id="pShowcase" class="showcase"></div>
+</section>
   </main>
 
   <div id="reveal" hidden>
@@ -239,6 +250,18 @@
     <p id="lbCaption"><b id="lbTitle"></b> <span id="lbRarity"></span></p>
   </div>
 
+  <div id="showcaseModal" class="sc-modal" hidden>
+  <div class="sc-box">
+    <h3>Ta vitrine <small id="scCount"></small></h3>
+    <input id="scSearch" type="search" placeholder="Rechercher un champion ou un skin…">
+    <div id="scList" class="sc-list"></div>
+    <div class="sc-actions">
+      <button id="scClear" class="btn">Vider</button>
+      <button id="scCancel" class="btn">Annuler</button>
+      <button id="scSave" class="btn-play small">Enregistrer</button>
+    </div>
+  </div>
+</div>
   <script type="module" src="app.js?v=11"></script>
   <script type="module" src="ui.js?v=11"></script>
 </body>
