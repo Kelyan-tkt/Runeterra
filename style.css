@@ -367,3 +367,19 @@ button.thumb.active{opacity:1;transform:translateY(-6px);box-shadow:0 0 14px var
 .chips .btn{padding:6px 12px;margin:0}
 .chips .btn.active{color:var(--gold-light);border-color:var(--gold);box-shadow:0 0 10px rgba(200,170,110,.5)}
 .chips .btn:disabled{opacity:.35;cursor:not-allowed}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+}
