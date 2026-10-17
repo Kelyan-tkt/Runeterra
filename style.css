@@ -451,3 +451,56 @@ button.thumb.active{opacity:1;transform:translateY(-6px);box-shadow:0 0 14px var
 .pf-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sc-box label { display: flex; flex-direction: column; gap: 4px; }
 .sc-box select { padding: 10px; border-radius: 8px; border: 1px solid #333; background: #0f1218; color: inherit; }
+.r-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.r-pos { min-width: 2em; text-align: center; }
+.r-av {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  object-fit: cover; object-position: top; border: 2px solid rgba(255,255,255,.25);
+}
+.r-ph { display: grid; place-items: center; background: rgba(255,255,255,.1); font-weight: 700; }
+.r-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Responsive ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+img { max-width: 100%; }
+body { overflow-x: hidden; }
+input, select, textarea { font-size: 16px; }              /* évite le zoom auto sur iPhone */
+.btn, .btn-play { min-height: 40px; }
+[id$="Modal"] > * { max-width: calc(100vw - 24px); max-height: 92vh; overflow-y: auto; }
+
+@media (max-width: 900px) {
+  main { padding-left: 12px; padding-right: 12px; }
+}
+
+@media (max-width: 720px) {
+  header { flex-wrap: wrap; gap: 8px; }
+
+  nav { display: flex; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  nav::-webkit-scrollbar { display: none; }
+  nav button { flex: 0 0 auto; white-space: nowrap; }
+
+  #collection { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  #vImg { max-width: 100%; max-height: 60vh; object-fit: contain; }
+  #vStrip { overflow-x: auto; }
+  #revealRow { flex-wrap: wrap; justify-content: center; gap: 10px; }
+
+  .profile-head { flex-direction: column; text-align: center; }
+  .p-id { margin-right: 0; }
+  .p-avatar { width: 72px; height: 72px; font-size: 1.8rem; }
+  .p-actions { justify-content: center; width: 100%; }
+  .p-stats .stat { flex: 1 1 100px; min-width: 0; }
+  .showcase { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+
+  .sc-box { padding: 12px; }
+  .sc-list { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
+  .rank-cols { gap: 16px; }
+  #tab-friends li { flex-wrap: wrap; gap: 8px; }
+  .trade-line { flex-wrap: wrap; justify-content: center; }
+  .mini img { width: 44px; }
+}
+
+@media (max-width: 400px) {
+  .wheel-wrap { transform: scale(.8); transform-origin: top center; margin-bottom: -55px; }
+  .p-actions .btn { flex: 1 1 100%; }
+}

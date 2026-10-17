@@ -1270,14 +1270,24 @@ async function loadRanking() {
     const snap = await getDocs(collection(db, "leaderboard"));
     const players = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
     const medals = ["🥇", "🥈", "🥉"];
+        const avatarHTML = p => {
+      const id = p.profile?.avatar;
+      if (id && skinsById[id]) {
+        const c = skinCard(+id);
+        return `<img class="r-av" loading="lazy" referrerpolicy="no-referrer" alt="" src="${c.img}"
+          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">`;
+      }
+      return `<span class="r-av r-ph">${esc((p.name || "?")[0].toUpperCase())}</span>`;
+    };
     const fill = (el, key) => {
-    const list = players
+      const list = players
         .filter(p => (p[key] || 0) > 0)
         .sort((a, b) => (b[key] - a[key]) || ((b.total || 0) - (a.total || 0))
           || String(a.name).localeCompare(String(b.name), "fr"))
         .slice(0, 50);
       el.innerHTML = list.map((p, i) => `<li data-uid="${p.uid}" class="${p.uid === user.uid ? "me" : ""}">
-        <span>${i < 3 ? medals[i] : (i + 1) + "."} ${esc(p.name)}</span><b>${p[key]}</b></li>`).join("")
+        <span class="r-left"><span class="r-pos">${i < 3 ? medals[i] : (i + 1) + "."}</span>${avatarHTML(p)}<span class="r-name">${esc(p.name)}</span></span>
+        <b>${p[key]}</b></li>`).join("")
         || `<li class="empty">Personne pour l'instant.</li>`;
     };
     fill($("rankCards"), "unique");
