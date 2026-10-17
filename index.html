@@ -172,9 +172,17 @@
 </section>
 <section id="tab-profile" hidden>
   <div class="profile-head">
-    <h2 id="pName">Profil</h2>
-    <button id="pEdit" class="btn">Modifier la vitrine</button>
-    <button id="pBack" class="btn" hidden>← Mon profil</button>
+    <div id="pAvatar" class="p-avatar"></div>
+    <div class="p-id">
+      <h2 id="pName">Profil</h2>
+      <div id="pTitle" class="p-title"></div>
+      <p id="pBio" class="p-bio"></p>
+    </div>
+    <div class="p-actions">
+      <button id="pCustom" class="btn">Personnaliser</button>
+      <button id="pEdit" class="btn">Modifier la vitrine</button>
+      <button id="pBack" class="btn" hidden>← Mon profil</button>
+    </div>
   </div>
   <div id="pStats" class="p-stats"></div>
   <h3>Vitrine</h3>
@@ -260,6 +268,43 @@
       <button id="scCancel" class="btn">Annuler</button>
       <button id="scSave" class="btn-play small">Enregistrer</button>
     </div>
+  </div>
+</div>
+<div id="pfModal" class="sc-modal" hidden>
+  <div class="sc-box">
+    <h3>Personnaliser le profil</h3>
+    <label>Description (100 caractères max)
+      <input id="pfBio" maxlength="100" placeholder="Ex : chasseur de skins mythiques">
+    </label>
+    <label>Titre
+      <select id="pfTitle"></select>
+    </label>
+    <div>Couleur
+      <div id="pfColors" class="pf-colors"></div>
+    </div>
+    <div class="pf-row">
+      <span>Fond : <b id="pfBgName">aucun</b></span>
+      <button id="pfBgBtn" class="btn">Choisir</button>
+      <button id="pfBgClear" class="btn">Retirer</button>
+    </div>
+    <div class="pf-row">
+      <span>Avatar : <b id="pfAvName">aucun</b></span>
+      <button id="pfAvBtn" class="btn">Choisir</button>
+      <button id="pfAvClear" class="btn">Retirer</button>
+    </div>
+    <div class="sc-actions">
+      <button id="pfCancel" class="btn">Annuler</button>
+      <button id="pfSave" class="btn-play small">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="pickModal" class="sc-modal" hidden style="z-index:70">
+  <div class="sc-box">
+    <h3 id="pickTitle">Choisis une carte</h3>
+    <input id="pickSearch" type="search" placeholder="Rechercher un champion ou un skin…">
+    <div id="pickList" class="sc-list"></div>
+    <div class="sc-actions"><button id="pickCancel" class="btn">Annuler</button></div>
   </div>
 </div>
   <script type="module" src="app.js?v=11"></script>

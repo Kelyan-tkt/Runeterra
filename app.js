@@ -1095,16 +1095,33 @@ let lbSig = "";
 
 const SHOWCASE_MAX = 6;
 
+function cleanProfile(p, cards) {
+  p = p || {};
+  const own = id => (id && cards[id] > 0 && skinsById[id] ? +id : 0);
+  return {
+    bg: own(p.bg),
+    avatar: own(p.avatar),
+    color: /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : "",
+    bio: String(p.bio || "").slice(0, 100),
+    title: String(p.title || "")
+  };
+}
+
 function myStats() {
   const cards = state.cards || {};
   const ids = Object.keys(cards).filter(id => cards[id] > 0);
-  return {
+  const st = {
     name: myName(),
     unique: ids.length,
     total: ids.reduce((a, id) => a + cards[id], 0),
     mythic: ids.filter(id => skinsById[id] && rarityOf(skinsById[id]) === "mythic").length,
     showcase: (state.showcase || []).filter(id => cards[id] > 0).slice(0, SHOWCASE_MAX)
   };
+  const pf = cleanProfile(state.profile, cards);
+  const t = TITLES.find(x => x.id === pf.title);
+  if (!t || !t.ok(st)) pf.title = "";
+  st.profile = pf;
+  return st;
 }
 
 async function syncLeaderboard() {
@@ -1135,18 +1152,38 @@ function goTab(tab) {
 }
 
 function renderProfile(p, mine) {
+  const pr = p.profile || {};
   const total = skinList.length;
   const pct = total ? Math.round((p.unique / total) * 100) : 0;
-  $("pName").textContent = `Profil de ${p.name}`;
+  const sec = $("tab-profile");
+
+  sec.style.setProperty("--accent", /^#[0-9a-f]{6}$/i.test(pr.color || "") ? pr.color : "#ffd35a");
+  sec.style.backgroundImage = pr.bg && skinsById[pr.bg]
+    ? `linear-gradient(rgba(10,12,18,.72), rgba(10,12,18,.94)), url("${skinCard(+pr.bg).splash}")`
+    : "";
+
+  const av = pr.avatar && skinsById[pr.avatar] ? skinCard(+pr.avatar) : null;
+  $("pAvatar").innerHTML = av
+    ? `<img referrerpolicy="no-referrer" alt="" src="${av.img}"
+         onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${av.imgAlt}'}">`
+    : esc((p.name || "?")[0].toUpperCase());
+
+  $("pName").textContent = p.name;
+  const t = TITLES.find(x => x.id === pr.title);
+  $("pTitle").textContent = t ? t.label : "";
+  $("pBio").textContent = pr.bio || "";
+
   $("pStats").innerHTML = `
     <div class="stat"><b>${p.unique}</b><small>/ ${total} skins (${pct}%)</small></div>
     <div class="stat"><b>${p.total}</b><small>cartes au total</small></div>
     <div class="stat"><b>${p.mythic}</b><small>mythiques</small></div>`;
+
   const ids = (p.showcase || []).filter(id => skinsById[id]);
   let html = ids.map(id => cardHTML(skinCard(+id))).join("");
   if (mine) for (let i = ids.length; i < SHOWCASE_MAX; i++) html += `<div class="slot">＋</div>`;
   $("pShowcase").innerHTML = html || `<p class="hint">Aucune carte en vitrine.</p>`;
   $("pEdit").hidden = !mine;
+  $("pCustom").hidden = !mine;
   $("pBack").hidden = mine;
 }
 
@@ -1253,6 +1290,109 @@ async function loadRanking() {
 }
 
 $("rankRefresh").onclick = loadRanking;
+
+// ---------- Personnalisation du profil ----------
+const TITLES = [
+  { id: "novice",     label: "Novice",                 ok: () => true },
+  { id: "collector",  label: "Collectionneur",         ok: s => s.unique >= 100 },
+  { id: "master",     label: "Maître collectionneur",  ok: s => s.unique >= 500 },
+  { id: "mythhunter", label: "Chasseur de mythiques",  ok: s => s.mythic >= 1 },
+  { id: "mythlord",   label: "Seigneur mythique",      ok: s => s.mythic >= 10 },
+  { id: "hoarder",    label: "Accumulateur",           ok: s => s.total >= 1000 }
+];
+const PF_COLORS = ["#ffd35a", "#0397ab", "#a335ee", "#e84057", "#3fbf6f", "#4a90e2", "#ff6fae"];
+let pfDraft = null, pickCb = null;
+
+const cardLabel = id => { const c = skinCard(+id); return `${c.name} — ${c.skinName}`; };
+
+function renderCardPicker() {
+  const q = norm($("pickSearch").value.trim());
+  const list = Object.keys(state.cards || {}).filter(id => state.cards[id] > 0).map(id => skinCard(+id))
+    .filter(c => !q || norm(c.name).includes(q) || norm(c.skinName).includes(q))
+    .sort((a, b) => rIdx(a.rarity) - rIdx(b.rarity) || a.name.localeCompare(b.name, "fr"));
+  $("pickList").innerHTML = list.slice(0, 150).map(c => `
+    <button class="pick ${c.rarity}" data-id="${c.id}">
+      <img loading="lazy" referrerpolicy="no-referrer" alt="" src="${c.img}"
+           onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
+      <span><b>${esc(c.name)}</b><br>${esc(c.skinName)}<br>
+      <small style="color:${RARITIES[c.rarity].color}">${RARITIES[c.rarity].label}</small></span>
+    </button>`).join("")
+    + (list.length > 150 ? `<p class="hint">Affine ta recherche pour voir les ${list.length - 150} autres.</p>` : "")
+    || `<p class="hint">Aucun résultat.</p>`;
+}
+
+function openCardPicker(title, cb) {
+  pickCb = cb;
+  $("pickTitle").textContent = title;
+  $("pickSearch").value = "";
+  renderCardPicker();
+  $("pickModal").hidden = false;
+}
+
+$("pickSearch").addEventListener("input", renderCardPicker);
+$("pickCancel").onclick = () => { $("pickModal").hidden = true; pickCb = null; };
+$("pickList").addEventListener("click", e => {
+  const b = e.target.closest(".pick");
+  if (!b) return;
+  const cb = pickCb;
+  $("pickModal").hidden = true;
+  pickCb = null;
+  if (cb) cb(+b.dataset.id);
+});
+
+function previewProfile() {
+  renderProfile({ ...myStats(), profile: pfDraft }, true);
+}
+
+function updatePfNames() {
+  $("pfBgName").textContent = pfDraft.bg ? cardLabel(pfDraft.bg) : "aucun";
+  $("pfAvName").textContent = pfDraft.avatar ? cardLabel(pfDraft.avatar) : "aucun";
+  previewProfile();
+}
+
+function openCustomize() {
+  if (!state) return;
+  const st = myStats();
+  pfDraft = { ...st.profile };
+  $("pfBio").value = pfDraft.bio;
+  $("pfTitle").innerHTML = `<option value="">Aucun</option>` + TITLES.filter(t => t.ok(st))
+    .map(t => `<option value="${t.id}"${t.id === pfDraft.title ? " selected" : ""}>${esc(t.label)}</option>`).join("");
+  const cur = pfDraft.color || PF_COLORS[0];
+  $("pfColors").innerHTML = PF_COLORS.map(c =>
+    `<button type="button" class="swatch${c === cur ? " sel" : ""}" data-c="${c}" style="background:${c}"></button>`).join("");
+  updatePfNames();
+  $("pfModal").hidden = false;
+}
+
+$("pCustom").onclick = openCustomize;
+$("pfColors").addEventListener("click", e => {
+  const b = e.target.closest(".swatch");
+  if (!b) return;
+  pfDraft.color = b.dataset.c;
+  $("pfColors").querySelectorAll(".swatch").forEach(x => x.classList.toggle("sel", x === b));
+  previewProfile();
+});
+$("pfTitle").addEventListener("change", () => { pfDraft.title = $("pfTitle").value; previewProfile(); });
+$("pfBio").addEventListener("input", () => { pfDraft.bio = $("pfBio").value.slice(0, 100); previewProfile(); });
+$("pfBgBtn").onclick = () => openCardPicker("Choisis ton fond (splash art)", id => { pfDraft.bg = id; updatePfNames(); });
+$("pfBgClear").onclick = () => { pfDraft.bg = 0; updatePfNames(); };
+$("pfAvBtn").onclick = () => openCardPicker("Choisis ton avatar", id => { pfDraft.avatar = id; updatePfNames(); });
+$("pfAvClear").onclick = () => { pfDraft.avatar = 0; updatePfNames(); };
+$("pfCancel").onclick = () => { $("pfModal").hidden = true; showProfile(); };
+
+$("pfSave").onclick = async () => {
+  pfDraft.bio = $("pfBio").value.trim().slice(0, 100);
+  pfDraft.title = $("pfTitle").value;
+  try {
+    await updateDoc(userRef(), { profile: pfDraft });
+    state.profile = { ...pfDraft };
+    $("pfModal").hidden = true;
+    showProfile();
+    syncLeaderboard();
+  } catch (e) {
+    alert(e.message);
+  }
+};
 
 // ---------- Quêtes : affichage et récompenses ----------
 function questRow(period, def, q) {
