@@ -45,39 +45,40 @@
       <button data-tab="friends">Amis <span id="friendsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="quests">Quêtes <span id="questsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="games">Jeux</button>
+      <button data-tab="adventure">Aventure</button>
       <button data-tab="ranking">Classement</button>
       <button data-tab="profile">Profil</button>
     </nav>
     <section id="tab-boosters">
-    <div class="booster-layout">
-      <div class="booster-main">
+      <div class="booster-layout">
+        <div class="booster-main">
 
-        <div id="chest" class="chest" role="button" tabindex="0" aria-label="Ouvrir un booster">
-          <div class="chest-glow"></div>
-          <img id="chestImg" alt="Coffre hextech"
-            src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/hextech-images/chest_generic.png">
-          <span id="chestCount" class="chest-count">x0</span>
+          <div id="chest" class="chest" role="button" tabindex="0" aria-label="Ouvrir un booster">
+            <div class="chest-glow"></div>
+            <img id="chestImg" alt="Coffre hextech"
+              src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/hextech-images/chest_generic.png">
+            <span id="chestCount" class="chest-count">x0</span>
+          </div>
+          <h2 class="boosters-title">Boosters : <span id="boosterCount">0</span> / 10</h2>
+          <p id="timer"></p>
+          <button id="openBtn" class="btn-play">Ouvrir un booster</button>
+          <div id="bonusBox" hidden>
+            <button id="bonusBtn" class="btn-play small">Booster bonus : <span id="bonusCount">0</span></button>
+            <p class="hint">Épique minimum garanti</p>
+          </div>
+          <div id="result" class="grid"></div>
+
         </div>
-        <h2 class="boosters-title">Boosters : <span id="boosterCount">0</span> / 10</h2>
-        <p id="timer"></p>
-        <button id="openBtn" class="btn-play">Ouvrir un booster</button>
-        <div id="bonusBox" hidden>
-          <button id="bonusBtn" class="btn-play small">Booster bonus : <span id="bonusCount">0</span></button>
-          <p class="hint">Épique minimum garanti</p>
-        </div>
-        <div id="result" class="grid"></div>
-        
+        <aside class="odds-box">
+          <h3>Chances par booster</h3>
+          <ul id="oddsList"></ul>
+          <div class="pity">
+            <div class="pity-top"><span>Garantie mythique</span><b id="pityTxt">0 / 200</b></div>
+            <div class="bar"><span id="pityBar"></span></div>
+            <small id="pityNote"></small>
+          </div>
+        </aside>
       </div>
-      <aside class="odds-box">
-        <h3>Chances par booster</h3>
-        <ul id="oddsList"></ul>
-        <div class="pity">
-          <div class="pity-top"><span>Garantie mythique</span><b id="pityTxt">0 / 200</b></div>
-          <div class="bar"><span id="pityBar"></span></div>
-          <small id="pityNote"></small>
-        </div>
-      </aside>
-    </div>
     </section>
     <section id="tab-collection" hidden>
       <h2>Galerie des champions <span class="count">(<span id="cardCount">0</span>)</span></h2>
@@ -143,62 +144,56 @@
       </div>
     </section>
 
-        <section id="tab-games" hidden>
-      <div class="game-switch">
-        <button id="gsDaily" class="ttab active">🔍 Champion du jour</button>
-        <button id="gsWheel" class="ttab">🎡 Roue de la chance</button>
+    <section id="tab-games" hidden>
+      <h2>🎡 Roue de la chance</h2>
+      <p class="hint">Tu as 5 lancers maximum, et tu en récupères 1 toutes les 20 minutes.</p>
+
+      <div class="wheel-wrap">
+        <div class="wheel-pointer">▼</div>
+        <div id="wheel"></div>
       </div>
 
-      <div id="game-daily">
-        <h2>🔍 Champion du jour</h2>
-        <p class="hint">Un champion mystère par jour, le même pour tout le monde. Chaque essai compare le rôle, la ressource, la portée et la difficulté. <span id="dailyRewards"></span></p>
-        <p class="hint">
-          <span class="dc ok sw">vert</span> identique ·
-          <span class="dc mid sw">orange</span> proche ou en partie ·
-          <span class="dc ko sw">rouge</span> différent ·
-          ↑ la réponse est plus haute · ↓ plus basse
-        </p>
-        <p id="dailyTimer" class="hint"></p>
+      <p class="spin-info">Lancers : <b id="spinCount">5</b> / 5 · <span id="spinTimer"></span></p>
+      <div style="text-align:center">
+        <button id="spinBtn" class="btn-play">Lancer la roue</button>
+        <p id="spinResult" class="spin-result"></p>
+      </div>
 
-        <div class="daily-input">
-          <input id="dailyInput" list="dailyList" placeholder="Nom d'un champion…" autocomplete="off">
-          <datalist id="dailyList"></datalist>
-          <button id="dailyBtn" class="btn-play small">Valider</button>
-        </div>
-        <p id="dailyMsg" class="daily-msg"></p>
-        <div id="dailyStatus" class="daily-status"></div>
-
-        <div class="daily-wrap">
-          <table class="daily-table">
-            <thead>
-              <tr><th>Champion</th><th>Rôle</th><th>Ressource</th><th>Portée</th><th>Difficulté</th></tr>
-            </thead>
-            <tbody id="dailyBody"></tbody>
-          </table>
+      <ul class="wheel-legend">
+        <li>📦 Booster (2/10)</li>
+        <li>🌟 Booster amélioré (1/10)</li>
+        <li>🔁 Relance (1/10)</li>
+        <li>💨 Perdu (6/10)</li>
+      </ul>
+    </section>
+    <section id="tab-adventure" hidden>
+      <div class="adv-top">
+        <h2>⚔️ Aventure</h2>
+        <div class="adv-gold">🪙 <b id="advGold">0</b> or</div>
+        <div class="adv-tabs">
+          <button id="advMapBtn" class="ttab active">🗺️ Carte</button>
+          <button id="advTeamBtn" class="ttab">🛡️ Équipe & boutique</button>
         </div>
       </div>
 
-      <div id="game-wheel" hidden>
-        <h2>🎡 Roue de la chance</h2>
-        <p class="hint">Tu as 5 lancers maximum, et tu en récupères 1 toutes les 20 minutes.</p>
-
-        <div class="wheel-wrap">
-          <div class="wheel-pointer">▼</div>
-          <div id="wheel"></div>
+      <div id="advMapView">
+        <div id="mapWrap" class="map-wrap">
+          <button id="mapBack" class="btn" hidden>← Carte du monde</button>
+          <svg id="runeMap" viewBox="0 0 1000 640" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div id="regionPanel" class="region-panel" hidden></div>
         </div>
+      </div>
 
-        <p class="spin-info">Lancers : <b id="spinCount">5</b> / 5 · <span id="spinTimer"></span></p>
-        <div style="text-align:center">
-          <button id="spinBtn" class="btn-play">Lancer la roue</button>
-          <p id="spinResult" class="spin-result"></p>
+      <div id="advTeamView" hidden>
+        <p class="hint">Choisis 3 cartes, sélectionne l'une d'elles, puis achète-lui des objets dans la boutique.</p>
+        <div id="advSlots" class="adv-slots"></div>
+        <h3>Boutique</h3>
+        <div class="trade-tools">
+          <input id="shopSearch" type="search" placeholder="Chercher un objet…">
+          <div id="shopChips" class="tchips"></div>
         </div>
-
-        <ul class="wheel-legend">
-          <li>📦 Booster (2/10)</li>
-          <li>🌟 Booster amélioré (1/10)</li>
-          <li>🔁 Relance (1/10)</li>
-          <li>💨 Perdu (6/10)</li>
-        </ul>
+        <p id="shopTarget" class="hint"></p>
+        <div id="shopGrid" class="shop-grid"></div>
       </div>
     </section>
 
@@ -387,6 +382,23 @@
       <input id="pickSearch" type="search" placeholder="Rechercher un champion ou un skin…">
       <div id="pickList" class="sc-list"></div>
       <div class="sc-actions"><button id="pickCancel" class="btn">Annuler</button></div>
+    </div>
+  </div>
+    <div id="battleModal" class="battle-full" hidden>
+    <div class="battle-top">
+      <h3 id="battleTitle"></h3>
+      <button id="bSkip" class="btn">Passer ⏭</button>
+    </div>
+    <div class="battle-arena">
+      <div id="bTeamP" class="b-team"></div>
+      <div class="b-vs">VS<div id="bClock"></div></div>
+      <div id="bTeamE" class="b-team"></div>
+    </div>
+    <div id="bLog" class="b-log"></div>
+    <div id="bResult" class="b-result" hidden>
+      <h2 id="bResTitle"></h2>
+      <p id="bResText"></p>
+      <button id="bClose" class="btn-play">Continuer</button>
     </div>
   </div>
   <script type="module" src="app.js?v=11"></script>

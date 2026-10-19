@@ -233,6 +233,7 @@ const cdUrl = p => p ? `${CD}/${p.replace("/lol-game-data/assets/", "").toLowerC
 
 async function loadGameData() {
   const versions = await (await fetch(`${DDRAGON}/api/versions.json`)).json();
+  ddVersion = versions[0];
   const d = await (await fetch(`${DDRAGON}/cdn/${versions[0]}/data/fr_FR/champion.json`)).json();
   champions = Object.values(d.data);
   champions.forEach(c => champByKey[c.key] = c);
@@ -247,6 +248,12 @@ async function loadGameData() {
     (pools[rarityOf(s)] ||= []).push(s);
     (skinsByChamp[Math.floor(s.id / 1000)] ||= []).push(s);
   });
+    try {
+    const itd = await (await fetch(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`)).json();
+    shopItems = buildShop(itd.data);
+  } catch (e) {
+    console.warn("objets :", e.message);
+  }
 }
 
 function skinCard(id) {
@@ -1578,6 +1585,531 @@ function showGame(which) {
 }
 $("gsDaily").onclick = () => showGame("daily");
 $("gsWheel").onclick = () => showGame("wheel");
+
+// ---------- Aventure PVE ----------
+let ddVersion = "", shopItems = [], mapRegion = null, mapVB = [0, 0, 1000, 640], mapAnim = 0;
+let advSel = 0, battleTimer = null;
+const shopF = { q: "", stat: "" };
+
+const LVL = 9, TEAM_SIZE = 3, BUILD_SLOTS = 3, SELL_RATE = 0.7;
+const RARITY_MULT = { common: 1, rare: 1.05, epic: 1.12, legendary: 1.2, mythic: 1.3 };
+const ITEM_STATS = {
+  FlatHPPoolMod:         { key: "hp",    label: "PV" },
+  FlatPhysicalDamageMod: { key: "ad",    label: "AD" },
+  FlatMagicDamageMod:    { key: "ap",    label: "AP" },
+  FlatArmorMod:          { key: "armor", label: "Armure" },
+  FlatSpellBlockMod:     { key: "mr",    label: "RM" }
+};
+const STAT_LABEL = { hp: "PV", ad: "AD", ap: "AP", armor: "Armure", mr: "RM" };
+const BATTLE_NAMES = ["Éclaireurs", "Garde locale", "Troupes d'élite", "Champion de la région"];
+const BATTLE_BOOSTERS = [0, 1, 1, 2];
+
+const REGIONS = [
+  { id: "freljord", lines: ["Freljord"], tier: 1, color: "#7fb8d6", label: [370, 85],
+    path: "M110 30 L610 30 L640 110 L520 150 L300 140 L150 130 Z",
+    desc: "Terres glacées, tribus et bêtes du nord.",
+    champs: ["Ashe", "Sejuani", "Tryndamere", "Anivia", "Braum", "Lissandra", "Volibear", "Olaf", "Gragas", "Udyr"] },
+  { id: "demacia", lines: ["Demacia"], tier: 1, color: "#b8a24a", label: [180, 255],
+    path: "M70 165 L285 160 L295 335 L180 350 L70 315 Z",
+    desc: "Royaume de la justice et de l'honneur.",
+    champs: ["Garen", "Lux", "JarvanIV", "Galio", "Fiora", "Quinn", "Sona", "Poppy", "XinZhao", "Vayne"] },
+  { id: "noxus", lines: ["Noxus"], tier: 1, color: "#a8323e", label: [400, 255],
+    path: "M305 165 L485 175 L495 270 L450 345 L315 335 Z",
+    desc: "Empire conquérant, la force fait loi.",
+    champs: ["Darius", "Draven", "Katarina", "Swain", "Talon", "Vladimir", "Sion", "Riven", "Samira"] },
+  { id: "piltover", lines: ["Piltover", "& Zaun"], tier: 2, color: "#3fa58f", label: [585, 245],
+    path: "M505 170 L650 180 L675 290 L590 345 L520 300 Z",
+    desc: "La cité du progrès et ses bas-fonds.",
+    champs: ["Caitlyn", "Vi", "Jayce", "Ezreal", "Heimerdinger", "Camille", "Ekko", "Jinx", "Warwick", "Blitzcrank", "Viktor"] },
+  { id: "ionia", lines: ["Ionia"], tier: 1, color: "#d98ab0", label: [815, 245],
+    path: "M700 150 L910 140 L940 300 L860 360 L730 340 L700 250 Z",
+    desc: "Terre d'équilibre entre esprit et nature.",
+    champs: ["Ahri", "Yasuo", "Yone", "Irelia", "Karma", "LeeSin", "Jhin", "Shen", "Zed", "Akali", "MasterYi"] },
+  { id: "void", lines: ["Le Vide"], tier: 4, color: "#5b2a86", label: [885, 75],
+    path: "M800 25 L955 25 L965 115 L860 125 Z",
+    desc: "Une menace venue d'au-delà de Runeterra.",
+    champs: ["Khazix", "Chogath", "Velkoz", "KogMaw", "RekSai", "Kaisa", "Malzahar", "Belveth"] },
+  { id: "bandle", lines: ["Bandle", "City"], fs: 15, tier: 2, color: "#e6a0d4", label: [58, 120],
+    path: "M15 95 L75 90 L105 140 L60 165 L15 150 Z",
+    desc: "Cité magique des yordles.",
+    champs: ["Teemo", "Tristana", "Veigar", "Lulu", "Rumble", "Corki", "Yuumi"] },
+  { id: "targon", lines: ["Targon"], tier: 3, color: "#8a6fd1", label: [375, 430],
+    path: "M300 370 L430 360 L470 470 L360 500 L290 450 Z",
+    desc: "La montagne sacrée qui touche les étoiles.",
+    champs: ["Leona", "Diana", "Pantheon", "AurelionSol", "Taric", "Soraka", "Zoe", "Aphelios"] },
+  { id: "shadowisles", lines: ["Îles", "obscures"], tier: 3, color: "#4fa089", label: [140, 480],
+    path: "M40 400 L230 390 L250 520 L140 590 L50 540 Z",
+    desc: "Archipel hanté par la Brume Noire.",
+    champs: ["Thresh", "Kalista", "Hecarim", "Karthus", "Yorick", "Maokai", "Viego", "Gwen", "Fiddlesticks"] },
+  { id: "shurima", lines: ["Shurima"], tier: 2, color: "#d9a441", label: [430, 575],
+    path: "M290 520 L560 500 L600 610 L380 625 L270 600 Z",
+    desc: "Le désert des empereurs déchus.",
+    champs: ["Azir", "Sivir", "Nasus", "Renekton", "Amumu", "Rammus", "Taliyah", "Xerath", "Skarner"] },
+  { id: "bilgewater", lines: ["Bilgewater"], fs: 18, tier: 2, color: "#4a7fb0", label: [705, 445],
+    path: "M620 380 L780 375 L800 480 L700 520 L610 470 Z",
+    desc: "Port de pirates, de monstres et de marins.",
+    champs: ["MissFortune", "Gangplank", "Graves", "TwistedFate", "Pyke", "Nautilus", "Illaoi", "Fizz", "TahmKench"] },
+  { id: "ixtal", lines: ["Ixtal"], tier: 3, color: "#4aa05a", label: [890, 495],
+    path: "M830 395 L950 390 L960 560 L870 610 L820 540 Z",
+    desc: "Jungle des mages élémentaires.",
+    champs: ["Qiyana", "Neeko", "Malphite", "Nidalee", "Zyra", "Rengar", "Milio"] }
+];
+
+const champById = id => champions.find(c => norm(c.id) === norm(id));
+const advOf = s => {
+  const a = (s.adv ||= {});
+  a.gold ??= 1000; a.cleared ||= {}; a.builds ||= {}; a.team ||= [];
+  return a;
+};
+const advView = () => {
+  const a = state?.adv || {};
+  return { gold: a.gold ?? 1000, cleared: a.cleared || {}, builds: a.builds || {}, team: a.team || [] };
+};
+
+async function mutateAdv(fn) {
+  state = await runTransaction(db, async tx => {
+    const snap = await tx.get(userRef());
+    const s = snap.data();
+    s.cards = s.cards || {};
+    fn(advOf(s), s);
+    tx.set(userRef(), s);
+    return s;
+  });
+}
+
+function buildShop(data) {
+  const seen = new Set();
+  return Object.entries(data).map(([id, it]) => {
+    const stats = {};
+    for (const [k, def] of Object.entries(ITEM_STATS)) if (it.stats?.[k] > 0) stats[def.key] = Math.round(it.stats[k]);
+    return { id, name: it.name, cost: it.gold?.total || 0, stats, it };
+  }).filter(x => {
+    const it = x.it;
+    if (!Object.keys(x.stats).length || !it.gold?.purchasable || x.cost < 800) return false;
+    if (!it.maps?.["11"] || it.requiredChampion || it.requiredAlly || it.hideFromAll || it.inStore === false) return false;
+    if (it.into?.length || seen.has(x.name)) return false;
+    seen.add(x.name);
+    return true;
+  }).sort((a, b) => a.cost - b.cost);
+}
+
+// ----- Unités et combat -----
+function baseUnit(champ, level, mult) {
+  const st = champ.stats || {}, inf = champ.info || {};
+  const g = (b, p) => ((st[b] || 0) + (st[p] || 0) * (level - 1)) * mult;
+  return {
+    hp: g("hp", "hpperlevel"),
+    ad: g("attackdamage", "attackdamageperlevel"),
+    ap: (inf.magic || 0) * 10 * (level / 9) * mult,
+    armor: g("armor", "armorperlevel"),
+    mr: g("spellblock", "spellblockperlevel"),
+    as: Math.max(0.4, (st.attackspeed || 0.65) * (1 + ((st.attackspeedperlevel || 2) / 100) * (level - 1))),
+    magic: (inf.magic || 0) >= 6
+  };
+}
+
+function playerUnit(skinId) {
+  const c = skinCard(+skinId), champ = champByKey[Math.floor(skinId / 1000)];
+  const u = baseUnit(champ, LVL, RARITY_MULT[c.rarity] || 1);
+  (advView().builds[skinId] || []).forEach(iid => {
+    const it = shopItems.find(x => x.id === String(iid));
+    if (it) for (const [k, v] of Object.entries(it.stats)) u[k] += v;
+  });
+  return Object.assign(u, { name: c.name, img: c.img, imgAlt: c.imgAlt, side: 0, id: +skinId });
+}
+
+function battlesOf(reg) {
+  return BATTLE_NAMES.map((name, i) => ({
+    idx: i, name,
+    level: Math.min(18, 5 + reg.tier * 2 + i * 2),
+    mult: +(0.8 + reg.tier * 0.05 + i * 0.08).toFixed(2),
+    gold: 150 + reg.tier * 100 + i * 120,
+    boosters: BATTLE_BOOSTERS[i]
+  }));
+}
+
+function enemyChamps(reg, b) {
+  const list = reg.champs.map(champById).filter(Boolean);
+  return [0, 1, 2].map(k => list[(b.idx * 2 + k) % list.length]);
+}
+
+function enemyTeam(reg, b) {
+  return enemyChamps(reg, b).map(c => {
+    const sc = skinCard(+c.key * 1000);
+    return Object.assign(baseUnit(c, b.level, b.mult), { name: c.name, img: sc.img, imgAlt: sc.imgAlt, side: 1 });
+  });
+}
+
+function simulate(U) {
+  U.forEach(u => { u.cur = u.hp; u.cd = 0; u.ult = 0; });
+  const frames = [], dt = 0.5;
+  const power = u => (u.magic ? u.ap * 0.9 + u.ad * 0.4 : u.ad);
+  const hurt = (a, d, m) => {
+    const r = Math.max(0, a.magic ? d.mr : d.armor);
+    d.cur = Math.max(0, d.cur - (power(a) * m * 100) / (100 + r));
+  };
+  let win = false;
+  for (let s = 0; s <= 240; s++) {
+    const log = [];
+    for (const u of U) {
+      if (u.cur <= 0) continue;
+      const foes = U.filter(x => x.side !== u.side && x.cur > 0);
+      if (!foes.length) continue;
+      u.cd += dt * u.as;
+      u.ult += dt;
+      const kill = x => { log.push(`${x.name} est vaincu`); foes.splice(foes.indexOf(x), 1); };
+      if (u.ult >= 10) {
+        u.ult -= 10;
+        const t = foes.reduce((m, x) => (x.cur < m.cur ? x : m));
+        hurt(u, t, 2.5);
+        log.push(`⚡ ${u.name} lance son ultime`);
+        if (t.cur <= 0) kill(t);
+      }
+      while (u.cd >= 1 && foes.length) {
+        u.cd -= 1;
+        hurt(u, foes[0], 1);
+        if (foes[0].cur <= 0) kill(foes[0]);
+      }
+    }
+    frames.push({ t: s * dt, hp: U.map(u => Math.round(u.cur)), log });
+    const pAlive = U.some(u => u.side === 0 && u.cur > 0), eAlive = U.some(u => u.side === 1 && u.cur > 0);
+    if (!pAlive || !eAlive) { win = pAlive; break; }
+  }
+  return { frames, win };
+}
+
+// ----- Carte interactive -----
+function buildMap() {
+  $("runeMap").innerHTML = REGIONS.map(r => `
+    <g class="reg" data-id="${r.id}">
+      <path d="${r.path}" fill="${r.color}"/>
+      <text x="${r.label[0]}" y="${r.label[1]}" font-size="${r.fs || 20}">
+        ${r.lines.map((l, i) => `<tspan x="${r.label[0]}" dy="${i ? 22 : 0}">${esc(l)}</tspan>`).join("")}
+        <tspan class="reg-prog" x="${r.label[0]}" dy="22" data-prog="${r.id}"></tspan>
+      </text>
+    </g>`).join("");
+}
+buildMap();
+
+function renderMap() {
+  const a = advView();
+  REGIONS.forEach(r => {
+    const n = battlesOf(r).filter(b => a.cleared[`${r.id}_${b.idx}`]).length;
+    const el = document.querySelector(`[data-prog="${r.id}"]`);
+    if (el) el.textContent = `${n}/${BATTLE_NAMES.length}`;
+    document.querySelector(`.reg[data-id="${r.id}"]`)?.classList.toggle("done", n === BATTLE_NAMES.length);
+  });
+}
+
+function zoomTo(vb) {
+  const from = mapVB.slice(), t0 = performance.now(), dur = 600;
+  cancelAnimationFrame(mapAnim);
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur);
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    mapVB = from.map((v, i) => v + (vb[i] - v) * e);
+    $("runeMap").setAttribute("viewBox", mapVB.join(" "));
+    if (k < 1) mapAnim = requestAnimationFrame(step);
+  };
+  mapAnim = requestAnimationFrame(step);
+}
+
+function regionViewBox(id) {
+  const b = document.querySelector(`.reg[data-id="${id}"] path`).getBBox();
+  const pad = 40, ar = 1000 / 640;
+  let w = b.width + pad * 2, h = b.height + pad * 2;
+  if (w / h < ar) w = h * ar; else h = w / ar;
+  return [b.x + b.width / 2 - w / 2, b.y + b.height / 2 - h / 2, w, h];
+}
+
+function openRegion(id) {
+  mapRegion = id;
+  $("mapWrap").classList.add("zoomed");
+  $("mapBack").hidden = false;
+  $("regionPanel").hidden = false;
+  renderRegionPanel();
+  zoomTo(regionViewBox(id));
+}
+
+function closeRegion() {
+  mapRegion = null;
+  $("mapWrap").classList.remove("zoomed");
+  $("mapBack").hidden = true;
+  $("regionPanel").hidden = true;
+    zoomTo([0, 0, 1000, 640]);
+}
+
+function renderRegionPanel() {
+  const reg = REGIONS.find(r => r.id === mapRegion);
+  if (!reg) return;
+  const a = advView();
+  $("regionPanel").innerHTML = `<h3>${esc(reg.lines.join(" "))}</h3><p class="hint">${esc(reg.desc)}</p>`
+    + battlesOf(reg).map(b => {
+      const done = a.cleared[`${reg.id}_${b.idx}`];
+      const locked = b.idx > 0 && !a.cleared[`${reg.id}_${b.idx - 1}`];
+      const foes = enemyChamps(reg, b).map(c => {
+        const sc = skinCard(+c.key * 1000);
+        return `<img referrerpolicy="no-referrer" alt="${esc(c.name)}" title="${esc(c.name)}" src="${sc.img}"
+          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${sc.imgAlt}'}">`;
+      }).join("");
+      return `<div class="brow${locked ? " lock" : ""}">
+        <div><b>${esc(b.name)}</b> ${done ? "✔" : ""}
+          <small>Niveau ${b.level} · 🪙 ${b.gold}${!done && b.boosters ? ` · 📦 ${b.boosters} (1re victoire)` : ""}</small>
+          <div class="eic">${foes}</div></div>
+        <button class="btn-play small" data-b="${b.idx}"${locked ? " disabled" : ""}>Combattre</button>
+      </div>`;
+    }).join("");
+}
+
+$("runeMap").addEventListener("click", e => {
+  const g = e.target.closest(".reg");
+  if (g && !mapRegion) openRegion(g.dataset.id);
+});
+$("mapBack").onclick = closeRegion;
+$("regionPanel").addEventListener("click", e => {
+  const b = e.target.closest("[data-b]");
+  if (b && !b.disabled) startBattle(mapRegion, +b.dataset.b);
+});
+
+// ----- Équipe et boutique -----
+const itemImg = id => `${DDRAGON}/cdn/${ddVersion}/img/item/${id}.png`;
+const itemById = id => shopItems.find(x => x.id === String(id));
+const statsTxt = s => Object.entries(s).map(([k, v]) => `+${v} ${STAT_LABEL[k]}`).join(" · ");
+
+function validTeam() {
+  return advView().team.filter(id => state.cards?.[id] > 0 && skinsById[id]).slice(0, TEAM_SIZE);
+}
+
+function renderAdvTeam() {
+  if (!state || !skinList.length) return;
+  const a = advView(), team = validTeam();
+  if (!team.includes(advSel)) advSel = team[0] || 0;
+
+  let html = "";
+  for (let i = 0; i < TEAM_SIZE; i++) {
+    const id = team[i];
+    if (!id) { html += `<div class="aslot"><button class="aempty" data-act="pick" data-i="${i}">＋ Choisir une carte</button></div>`; continue; }
+    const c = skinCard(id), u = playerUnit(id), build = a.builds[id] || [];
+    const slots = Array.from({ length: BUILD_SLOTS }, (_, k) => {
+      const it = itemById(build[k]);
+      return it
+        ? `<button class="aitem" data-act="sell" data-id="${id}" data-k="${k}" title="Revendre ${esc(it.name)} (${Math.floor(it.cost * SELL_RATE)} or)"><img src="${itemImg(it.id)}" alt=""></button>`
+        : `<span class="aitem"></span>`;
+    }).join("");
+    html += `<div class="aslot${id === advSel ? " sel" : ""}" data-act="select" data-id="${id}">
+      <img referrerpolicy="no-referrer" alt="" src="${c.img}" onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
+      <div class="ainfo">
+        <b>${esc(c.name)}</b><small>${esc(c.skinName)} · <span style="color:${RARITIES[c.rarity].color}">${RARITIES[c.rarity].label}</span></small>
+        <small>❤ ${Math.round(u.hp)} · ⚔ ${Math.round(u.ad)} · ✨ ${Math.round(u.ap)}<br>🛡 ${Math.round(u.armor)} · 🔮 ${Math.round(u.mr)}</small>
+        <div class="abuild">${slots}</div>
+        <div class="abtns">
+          <button class="btn" data-act="pick" data-i="${i}">Changer</button>
+          <button class="btn" data-act="remove" data-id="${id}">Retirer</button>
+        </div>
+      </div></div>`;
+  }
+  $("advSlots").innerHTML = html;
+  renderShop();
+}
+
+function renderShop() {
+  const a = advView();
+  const labels = [["", "Tous"], ...Object.entries(STAT_LABEL)];
+  $("shopChips").innerHTML = labels.map(([k, l]) =>
+    `<button type="button" class="tchip${shopF.stat === k ? " on" : ""}" data-s="${k}">${l}</button>`).join("");
+
+  const target = advSel ? skinCard(advSel) : null;
+  const build = target ? (a.builds[advSel] || []) : [];
+  $("shopTarget").textContent = target
+    ? `Objets pour ${target.name} (${build.length}/${BUILD_SLOTS}). Clique sur un objet équipé pour le revendre à ${SELL_RATE * 100} %.`
+    : "Choisis d'abord une carte dans ton équipe.";
+
+  if (!shopItems.length) { $("shopGrid").innerHTML = `<p class="hint">Objets indisponibles.</p>`; return; }
+  const q = norm(shopF.q.trim());
+  const list = shopItems.filter(x => (!shopF.stat || x.stats[shopF.stat]) && (!q || norm(x.name).includes(q))).slice(0, 80);
+  $("shopGrid").innerHTML = list.map(x => `
+    <div class="sitem"><img loading="lazy" src="${itemImg(x.id)}" alt="">
+      <div class="sinfo"><b>${esc(x.name)}</b><small>${statsTxt(x.stats)}</small></div>
+      <button class="btn" data-buy="${x.id}"${!target || build.length >= BUILD_SLOTS || a.gold < x.cost ? " disabled" : ""}>🪙 ${x.cost}</button>
+    </div>`).join("") || `<p class="hint">Aucun objet.</p>`;
+}
+
+$("shopSearch").addEventListener("input", () => { shopF.q = $("shopSearch").value; renderShop(); });
+$("shopChips").addEventListener("click", e => {
+  const b = e.target.closest("[data-s]");
+  if (b) { shopF.stat = b.dataset.s; renderShop(); }
+});
+
+$("shopGrid").addEventListener("click", async e => {
+  const b = e.target.closest("[data-buy]");
+  if (!b || b.disabled || !advSel) return;
+  const it = itemById(b.dataset.buy), id = advSel;
+  try {
+    await mutateAdv((a, s) => {
+      if (!(s.cards[id] > 0)) throw new Error("Tu ne possèdes plus cette carte.");
+      const bl = (a.builds[id] ||= []);
+      if (bl.length >= BUILD_SLOTS) throw new Error("Cette carte porte déjà 3 objets.");
+      if (a.gold < it.cost) throw new Error("Pas assez d'or.");
+      a.gold -= it.cost;
+      bl.push(it.id);
+    });
+    render();
+  } catch (err) { alert(err.message); }
+});
+
+$("advSlots").addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act, id = +b.dataset.id;
+  if (act === "select") { advSel = id; renderAdvTeam(); return; }
+  if (act === "pick") {
+    const i = +b.dataset.i;
+    openCardPicker("Choisis une carte pour ton équipe", async newId => {
+      try {
+        await mutateAdv(a => {
+          const t = validTeamOf(a);
+          if (t.includes(newId)) throw new Error("Cette carte est déjà dans l'équipe.");
+          t[Math.min(i, t.length)] = newId;
+          a.team = t.slice(0, TEAM_SIZE);
+        });
+        advSel = newId;
+        render();
+      } catch (err) { alert(err.message); }
+    });
+    return;
+  }
+  if (act === "remove") {
+    try {
+      await mutateAdv(a => { a.team = validTeamOf(a).filter(x => x !== id); });
+      render();
+    } catch (err) { alert(err.message); }
+    return;
+  }
+  if (act === "sell") {
+    const k = +b.dataset.k;
+    try {
+      await mutateAdv(a => {
+        const bl = a.builds[id] || [];
+        const it = itemById(bl[k]);
+        if (!it) return;
+        bl.splice(k, 1);
+        a.gold += Math.floor(it.cost * SELL_RATE);
+      });
+      render();
+    } catch (err) { alert(err.message); }
+  }
+});
+
+function validTeamOf(a) {
+  return (a.team || []).filter(x => x && skinsById[x]);
+}
+
+// ----- Combat animé -----
+let battleBusy = false;
+
+function unitHTML(u, i) {
+  return `<div class="bunit" data-u="${i}">
+    <img referrerpolicy="no-referrer" alt="" src="${u.img}" onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${u.imgAlt}'}">
+    <b>${esc(u.name)}</b>
+    <div class="hpbar"><span></span></div>
+    <small data-hp>${Math.round(u.hp)} / ${Math.round(u.hp)}</small>
+  </div>`;
+}
+
+async function startBattle(regId, idx) {
+  if (battleBusy || !state) return;
+  const team = validTeam();
+  if (!team.length) {
+    alert("Compose d'abord ton équipe dans l'onglet « Équipe & boutique ».");
+    return;
+  }
+  const reg = REGIONS.find(r => r.id === regId), b = battlesOf(reg)[idx];
+  const U = [...team.map(playerUnit), ...enemyTeam(reg, b)];
+  const { frames, win } = simulate(U);
+  const key = `${regId}_${idx}`;
+  battleBusy = true;
+
+  let first = false, gold = 0;
+  try {
+    if (win) {
+      await mutateAdv((a, s) => {
+        first = !a.cleared[key];
+        gold = b.gold;
+        a.gold += gold;
+        if (first) {
+          a.cleared[key] = true;
+          if (b.boosters) s.boosters = (s.boosters || 0) + b.boosters;
+        }
+      });
+    }
+  } catch (err) {
+    battleBusy = false;
+    alert(err.message);
+    return;
+  }
+
+  $("battleTitle").textContent = `${reg.lines.join(" ")} — ${b.name}`;
+  $("bTeamP").innerHTML = U.map((u, i) => (u.side === 0 ? unitHTML(u, i) : "")).join("");
+  $("bTeamE").innerHTML = U.map((u, i) => (u.side === 1 ? unitHTML(u, i) : "")).join("");
+  $("bLog").innerHTML = "";
+  $("bResult").hidden = true;
+  $("battleModal").hidden = false;
+
+  let f = 0;
+  const paint = fr => {
+    U.forEach((u, i) => {
+      const el = document.querySelector(`.bunit[data-u="${i}"]`);
+      if (!el) return;
+      const hp = fr.hp[i];
+      el.querySelector(".hpbar span").style.width = `${(hp / u.hp) * 100}%`;
+      el.querySelector("[data-hp]").textContent = `${hp} / ${Math.round(u.hp)}`;
+      el.classList.toggle("dead", hp <= 0);
+    });
+    $("bClock").textContent = `${fr.t.toFixed(0)} s`;
+    if (fr.log.length) $("bLog").innerHTML = fr.log.slice(-3).map(esc).join("<br>") + "<br>" + $("bLog").innerHTML;
+  };
+  const finish = () => {
+    clearInterval(battleTimer);
+    paint(frames[frames.length - 1]);
+    $("bResTitle").textContent = win ? "Victoire !" : "Défaite";
+    $("bResText").innerHTML = win
+      ? `+${gold} or${first && b.boosters ? ` · +${b.boosters} booster${b.boosters > 1 ? "s" : ""} 🎉` : ""}`
+      : "Améliore tes objets ou change d'équipe, puis réessaie.";
+    $("bResult").hidden = false;
+    $("bSkip").hidden = true;
+    battleBusy = false;
+    render();
+  };
+  $("bSkip").hidden = false;
+  $("bSkip").onclick = finish;
+  paint(frames[0]);
+  battleTimer = setInterval(() => {
+    f++;
+    if (f >= frames.length) { finish(); return; }
+    paint(frames[f]);
+  }, 140);
+}
+
+$("bClose").onclick = () => { $("battleModal").hidden = true; clearInterval(battleTimer); battleBusy = false; render(); };
+
+// ----- Onglets de l'Aventure -----
+function showAdv(v) {
+  $("advMapView").hidden = v !== "map";
+  $("advTeamView").hidden = v !== "team";
+  $("advMapBtn").classList.toggle("active", v === "map");
+  $("advTeamBtn").classList.toggle("active", v === "team");
+  if (v === "team") renderAdvTeam();
+}
+$("advMapBtn").onclick = () => showAdv("map");
+$("advTeamBtn").onclick = () => showAdv("team");
+
+function renderAdventure() {
+  if (!state || !skinList.length) return;
+  $("advGold").textContent = advView().gold;
+  renderMap();
+  if (mapRegion) renderRegionPanel();
+  if (!$("advTeamView").hidden) renderAdvTeam();
+}
 
 // ---------- Quêtes : affichage et récompenses ----------
 function questRow(period, def, q) {
