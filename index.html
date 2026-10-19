@@ -143,27 +143,63 @@
       </div>
     </section>
 
-    <section id="tab-games" hidden>
-      <h2>🎡 Roue de la chance</h2>
-      <p class="hint">Tu as 5 lancers maximum, et tu en récupères 1 toutes les 20 minutes.</p>
-
-      <div class="wheel-wrap">
-        <div class="wheel-pointer">▼</div>
-        <div id="wheel"></div>
+        <section id="tab-games" hidden>
+      <div class="game-switch">
+        <button id="gsDaily" class="ttab active">🔍 Champion du jour</button>
+        <button id="gsWheel" class="ttab">🎡 Roue de la chance</button>
       </div>
 
-      <p class="spin-info">Lancers : <b id="spinCount">5</b> / 5 · <span id="spinTimer"></span></p>
-      <div style="text-align:center">
-        <button id="spinBtn" class="btn-play">Lancer la roue</button>
-        <p id="spinResult" class="spin-result"></p>
+      <div id="game-daily">
+        <h2>🔍 Champion du jour</h2>
+        <p class="hint">Un champion mystère par jour, le même pour tout le monde. Chaque essai compare le rôle, la ressource, la portée et la difficulté. <span id="dailyRewards"></span></p>
+        <p class="hint">
+          <span class="dc ok sw">vert</span> identique ·
+          <span class="dc mid sw">orange</span> proche ou en partie ·
+          <span class="dc ko sw">rouge</span> différent ·
+          ↑ la réponse est plus haute · ↓ plus basse
+        </p>
+        <p id="dailyTimer" class="hint"></p>
+
+        <div class="daily-input">
+          <input id="dailyInput" list="dailyList" placeholder="Nom d'un champion…" autocomplete="off">
+          <datalist id="dailyList"></datalist>
+          <button id="dailyBtn" class="btn-play small">Valider</button>
+        </div>
+        <p id="dailyMsg" class="daily-msg"></p>
+        <div id="dailyStatus" class="daily-status"></div>
+
+        <div class="daily-wrap">
+          <table class="daily-table">
+            <thead>
+              <tr><th>Champion</th><th>Rôle</th><th>Ressource</th><th>Portée</th><th>Difficulté</th></tr>
+            </thead>
+            <tbody id="dailyBody"></tbody>
+          </table>
+        </div>
       </div>
 
-      <ul class="wheel-legend">
-        <li>📦 Booster (2/10)</li>
-        <li>🌟 Booster amélioré (1/10)</li>
-        <li>🔁 Relance (1/10)</li>
-        <li>💨 Perdu (6/10)</li>
-      </ul>
+      <div id="game-wheel" hidden>
+        <h2>🎡 Roue de la chance</h2>
+        <p class="hint">Tu as 5 lancers maximum, et tu en récupères 1 toutes les 20 minutes.</p>
+
+        <div class="wheel-wrap">
+          <div class="wheel-pointer">▼</div>
+          <div id="wheel"></div>
+        </div>
+
+        <p class="spin-info">Lancers : <b id="spinCount">5</b> / 5 · <span id="spinTimer"></span></p>
+        <div style="text-align:center">
+          <button id="spinBtn" class="btn-play">Lancer la roue</button>
+          <p id="spinResult" class="spin-result"></p>
+        </div>
+
+        <ul class="wheel-legend">
+          <li>📦 Booster (2/10)</li>
+          <li>🌟 Booster amélioré (1/10)</li>
+          <li>🔁 Relance (1/10)</li>
+          <li>💨 Perdu (6/10)</li>
+        </ul>
+      </div>
     </section>
 
     <section id="tab-quests" hidden>

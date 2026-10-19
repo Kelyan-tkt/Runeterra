@@ -547,3 +547,21 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
 .odds-box .bar span { display: block; height: 100%; background: #e84057; border-radius: 99px; transition: width .4s; }
 .odds-box small { display: block; margin-top: 6px; opacity: .7; }
 @media (max-width: 720px) { .odds-box { flex: 1 1 100%; } }
+
+.game-switch { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.daily-input { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 6px; }
+.daily-input input { flex: 1 1 240px; min-width: 0; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15); background: #14161c; color: inherit; }
+.daily-msg { min-height: 1.4em; color: #ff8a8a; margin: 4px 0; }
+.daily-status { margin: 8px 0 14px; font-weight: 700; }
+.daily-wrap { overflow-x: auto; }
+.daily-table { width: 100%; border-collapse: separate; border-spacing: 6px; min-width: 560px; }
+.daily-table th { font-size: .85rem; opacity: .7; text-align: center; }
+.daily-table td { text-align: center; padding: 10px 8px; border-radius: 8px; font-weight: 700; background: rgba(255,255,255,.06); }
+.daily-table td.dname { display: flex; align-items: center; gap: 10px; text-align: left; background: rgba(255,255,255,.04); }
+.dname img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; object-position: top; }
+.dc.ok  { background: #2e9e5b !important; color: #fff; }
+.dc.mid { background: #d98a1f !important; color: #fff; }
+.dc.ko  { background: #b83c4a !important; color: #fff; }
+.sw { padding: 2px 8px; border-radius: 6px; }
+.daily-table tbody tr:first-child td { animation: dcIn .45s ease; }
+@keyframes dcIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
