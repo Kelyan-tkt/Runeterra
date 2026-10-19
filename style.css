@@ -504,3 +504,35 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   .wheel-wrap { transform: scale(.8); transform-origin: top center; margin-bottom: -55px; }
   .p-actions .btn { flex: 1 1 100%; }
 }
+
+.trade-full { position: fixed; inset: 0; z-index: 80; background: #0e0f13; display: flex; flex-direction: column; padding: 14px 18px; gap: 12px; }
+.trade-full[hidden] { display: none; }
+.trade-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.trade-top h3 { margin: 0; }
+.trade-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+.ttab { padding: 12px 22px; border-radius: 999px; border: 1px solid rgba(255,255,255,.15); background: #16181f; color: inherit; font-weight: 700; cursor: pointer; }
+.ttab.active { background: #f1ede6; color: #111; }
+.trade-tools { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.trade-tools input { flex: 1 1 260px; min-width: 0; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: #14161c; color: inherit; }
+.tchips { display: flex; gap: 8px; flex-wrap: wrap; }
+.tchip { padding: 10px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: #14161c; color: inherit; font-weight: 700; cursor: pointer; }
+.tchip.on { background: #f1ede6; color: #111; }
+.tchip:disabled { opacity: .35; cursor: not-allowed; }
+.trade-lock { padding: 8px 12px; border-radius: 10px; background: rgba(255,211,90,.12); display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.trade-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; align-content: start; padding: 4px; }
+.tcard { position: relative; display: flex; flex-direction: column; gap: 3px; text-align: left; background: none; border: none; color: inherit; cursor: pointer; padding: 0; }
+.tcard img { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; border-radius: 12px; border: 3px solid var(--rc); }
+.tcard.sel img { box-shadow: 0 0 0 3px #fff, 0 0 18px var(--rc); }
+.tcard.sel::after { content: "✓"; position: absolute; top: 6px; right: 8px; background: #fff; color: #111; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; }
+.tbadge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.7); color: var(--rc); font-weight: 900; padding: 2px 8px; border-radius: 6px; z-index: 1; }
+.tmiss { align-self: flex-start; background: #3fbf6f; color: #06210f; font-weight: 700; font-size: .78rem; padding: 3px 10px; border-radius: 999px; }
+.tqty { opacity: .6; font-size: .85rem; }
+.trade-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,.1); padding-top: 10px; }
+.trade-summary { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.trade-summary small { display: block; opacity: .6; }
+.trade-send { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .trade-full { padding: 10px; }
+  .trade-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+  .ttab { padding: 10px 14px; }
+}

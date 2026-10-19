@@ -1536,77 +1536,153 @@ async function sendFriendRequest() {
 $("friendAdd").onclick = sendFriendRequest;
 
 // ---------- Échanges (même rareté uniquement) ----------
-let tradeFriend = null, tradeData = null;
+let tradeFriend = null, tradeData = null, tradeTab = "mine";
+const tradeSel = { mine: 0, theirs: 0 };
+const tradeFilt = { q: "", rarity: "", dupes: false, missing: false };
+const RAR_LETTER = { mythic: "M", legendary: "L", epic: "E", rare: "R", common: "C" };
 
-function optionList(entries) {
-  return entries
-    .map(([id, q]) => ({ c: skinCard(+id), q }))
-    .sort((a, b) => rIdx(a.c.rarity) - rIdx(b.c.rarity) || a.c.name.localeCompare(b.c.name, "fr"))
-    .map(({ c, q }) => `<option value="${c.id}">${esc(c.name)} — ${esc(c.skinName)} (${RARITIES[c.rarity].label}) · ${q > 1 ? "×" + q : "exemplaire unique"}</option>`)
-    .join("");
+function closeTrade() {
+  $("tradeModal").hidden = true;
+  tradeFriend = null;
+  tradeData = null;
 }
 
-function tradePreview() {
-  const m = $("tradeMine").value, t = $("tradeTheirs").value;
-  $("tradeMinePrev").innerHTML = m ? cardHTML(skinCard(+m)) : "";
-  $("tradeTheirsPrev").innerHTML = t ? cardHTML(skinCard(+t)) : "";
+function renderTrade() {
+  if (!tradeFriend || !tradeData) return;
+  const tab = tradeTab, other = tab === "mine" ? "theirs" : "mine";
+  const src = tab === "mine" ? (state.cards || {}) : tradeData.theirs;
+  const oth = tab === "mine" ? tradeData.theirs : (state.cards || {});
+  const lock = tradeSel[other] ? skinCard(tradeSel[other]).rarity : "";
+  const rar = lock || tradeFilt.rarity;
+  const q = norm(tradeFilt.q.trim());
+  const dupLabel = tab === "mine" ? "Mes doubles" : "Ses doubles";
+  const missLabel = tab === "mine" ? "Il lui manque" : "Il me manque";
+
+  $("tradeTabMine").classList.toggle("active", tab === "mine");
+  $("tradeTabTheirs").classList.toggle("active", tab === "theirs");
+  $("tradeTabMine").textContent = "Mes cartes" + (tradeSel.mine ? " ✓" : "");
+  $("tradeTabTheirs").textContent = `Cartes de ${tradeFriend.name}` + (tradeSel.theirs ? " ✓" : "");
+
+  const chip = (attrs, label, on, dis) =>
+    `<button type="button" class="tchip${on ? " on" : ""}" ${attrs}${dis ? " disabled" : ""}>${label}</button>`;
+  $("tradeChips").innerHTML =
+    chip('data-f="dupes"', dupLabel, tradeFilt.dupes, false) +
+    chip('data-f="missing"', missLabel, tradeFilt.missing, false) +
+    chip('data-r=""', "Toutes", !rar, !!lock) +
+    RARITY_ORDER.map(r =>
+      chip(`data-r="${r}" title="${RARITIES[r].label}"`, RAR_LETTER[r], rar === r, !!lock && lock !== r)).join("");
+
+  $("tradeLock").hidden = !lock;
+  if (lock) $("tradeLockTxt").textContent = `Rareté imposée : ${RARITIES[lock].label} (échange entre cartes de même rareté)`;
+
+  const list = Object.keys(src).filter(id => src[id] > 0).map(id => skinCard(+id))
+    .filter(c => (!rar || c.rarity === rar)
+      && (!q || norm(c.name).includes(q) || norm(c.skinName).includes(q))
+      && (!tradeFilt.dupes || src[c.id] >= 2)
+      && (!tradeFilt.missing || !(oth[c.id] > 0)))
+    .sort((a, b) => rIdx(a.rarity) - rIdx(b.rarity) || a.name.localeCompare(b.name, "fr"));
+
+  $("tradeGrid").innerHTML = list.slice(0, 300).map(c => `
+    <button type="button" class="tcard${tradeSel[tab] === c.id ? " sel" : ""}" data-id="${c.id}" style="--rc:${RARITIES[c.rarity].color}">
+      <span class="tbadge">${RAR_LETTER[c.rarity]}</span>
+      <img loading="lazy" referrerpolicy="no-referrer" alt="" src="${c.img}"
+           onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
+      <b>${esc(c.name)}</b>
+      <small>${esc(c.skinName)}</small>
+      ${oth[c.id] > 0 ? "" : `<span class="tmiss">${missLabel}</span>`}
+      <span class="tqty">×${src[c.id]} dispo</span>
+    </button>`).join("")
+    + (list.length > 300 ? `<p class="hint">Affine ta recherche pour voir les ${list.length - 300} autres.</p>` : "")
+    || `<p class="hint">Aucune carte ne correspond.</p>`;
+
+  const side = id => (id ? mini(id) : `<span class="hint">—</span>`);
+  $("tradeSummary").innerHTML =
+    `<div><small>Tu donnes</small>${side(tradeSel.mine)}</div><span class="arrow">⇄</span>` +
+    `<div><small>Tu reçois</small>${side(tradeSel.theirs)}</div>`;
+
+  const same = tradeSel.mine && tradeSel.mine === tradeSel.theirs;
+  $("tradeMsg").textContent = same ? "Choisis deux cartes différentes." : "";
+  $("tradeSend").disabled = !(tradeSel.mine && tradeSel.theirs) || same;
 }
 
-function updateTheirsOptions() {
-  const m = $("tradeMine").value;
-  if (!m || !tradeData) { $("tradeTheirs").innerHTML = ""; tradePreview(); return; }
-  const r = skinCard(+m).rarity;
-  const filtered = tradeData.theirs.filter(([id]) => skinCard(+id).rarity === r);
-  $("tradeTheirs").innerHTML = optionList(filtered);
-  $("tradeMsg").textContent = filtered.length ? ""
-      : `${tradeFriend.name} n'a aucune carte de rareté « ${RARITIES[r].label} ».`;
-  tradePreview();
+function setTradeTab(t) {
+  tradeTab = t;
+  tradeFilt.q = "";
+  $("tradeSearch").value = "";
+  renderTrade();
+  $("tradeGrid").scrollTop = 0;
 }
 
 async function openTrade(friendUid, friendName) {
   try {
     const snap = await getDoc(doc(db, "users", friendUid));
-    const theirs = Object.entries(snap.data()?.cards || {}).filter(([, q]) => q >= 1);
-    const mine = Object.entries(state.cards || {}).filter(([, q]) => q >= 1);
-    if (!mine.length) { alert("Tu n'as aucune carte à proposer."); return; }
-    if (!theirs.length) { alert(`${friendName} n'a aucune carte à échanger.`); return; }
+    const theirs = {};
+    Object.entries(snap.data()?.cards || {}).forEach(([id, q]) => { if (q > 0) theirs[id] = q; });
+    const mineCount = Object.keys(state.cards || {}).filter(id => state.cards[id] > 0).length;
+    if (!mineCount) { alert("Tu n'as aucune carte à proposer."); return; }
+    if (!Object.keys(theirs).length) { alert(`${friendName} n'a aucune carte à échanger.`); return; }
+
     tradeFriend = { uid: friendUid, name: friendName };
-    tradeData = { mine, theirs };
+    tradeData = { theirs };
+    tradeSel.mine = 0; tradeSel.theirs = 0;
+    Object.assign(tradeFilt, { q: "", rarity: "", dupes: false, missing: false });
+    tradeTab = "mine";
     $("tradeWith").textContent = friendName;
-    $("tradeMine").innerHTML = optionList(mine);
-    $("tradeMsg").textContent = "";
-    updateTheirsOptions();
+    $("tradeSearch").value = "";
+    renderTrade();
     $("tradeModal").hidden = false;
+    $("tradeGrid").scrollTop = 0;
   } catch (e) {
     alert("Impossible de charger la collection de ton ami : " + e.message);
   }
 }
 
-$("tradeMine").addEventListener("change", updateTheirsOptions);
-$("tradeTheirs").addEventListener("change", tradePreview);
-$("tradeCancel").onclick = () => { $("tradeModal").hidden = true; tradeFriend = null; };
+$("tradeTabMine").onclick = () => setTradeTab("mine");
+$("tradeTabTheirs").onclick = () => setTradeTab("theirs");
+$("tradeSearch").addEventListener("input", () => { tradeFilt.q = $("tradeSearch").value; renderTrade(); });
+$("tradeReset").onclick = () => { tradeSel.mine = 0; tradeSel.theirs = 0; renderTrade(); };
+$("tradeCancel").onclick = closeTrade;
+
+$("tradeChips").addEventListener("click", e => {
+  const b = e.target.closest(".tchip");
+  if (!b || b.disabled) return;
+  if (b.dataset.f) tradeFilt[b.dataset.f] = !tradeFilt[b.dataset.f];
+  else tradeFilt.rarity = b.dataset.r;
+  renderTrade();
+});
+
+$("tradeGrid").addEventListener("click", e => {
+  const b = e.target.closest(".tcard");
+  if (!b) return;
+  const id = +b.dataset.id;
+  const other = tradeTab === "mine" ? "theirs" : "mine";
+  tradeSel[tradeTab] = tradeSel[tradeTab] === id ? 0 : id;
+  if (tradeSel[tradeTab] && !tradeSel[other]) setTradeTab(other);   // passe à l'autre onglet
+  else renderTrade();
+});
 
 $("tradeSend").onclick = async () => {
   if (!tradeFriend) return;
-  const offerId = +$("tradeMine").value, wantId = +$("tradeTheirs").value;
+  const offerId = tradeSel.mine, wantId = tradeSel.theirs;
   if (!offerId || !wantId) { $("tradeMsg").textContent = "Choisis une carte à donner et une carte à recevoir."; return; }
   if (offerId === wantId) { $("tradeMsg").textContent = "Choisis deux cartes différentes."; return; }
   if (skinCard(offerId).rarity !== skinCard(wantId).rarity) {
     $("tradeMsg").textContent = "Les deux cartes doivent avoir la même rareté.";
     return;
   }
+  $("tradeSend").disabled = true;
   try {
     await addDoc(collection(db, "trades"), {
       from: user.uid, fromName: myName(),
       to: tradeFriend.uid, toName: tradeFriend.name,
       offerId, wantId, status: "pending", createdAt: Date.now()
     });
-    $("tradeModal").hidden = true;
-    tradeFriend = null;
+    closeTrade();
     alert("Proposition envoyée !");
     refreshSocial();
   } catch (e) {
     $("tradeMsg").textContent = "Erreur : " + e.message;
+    $("tradeSend").disabled = false;
   }
 };
 

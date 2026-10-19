@@ -216,20 +216,37 @@
     <div id="vStrip"></div>
   </div>
 
-  <div id="tradeModal" hidden>
-    <div class="panel trade-box">
-      <h2>Échange avec <span id="tradeWith"></span></h2>
-      <p class="hint">Seules des cartes de même rareté peuvent être échangées.</p>
-      <div class="trade-cols">
-        <div><h3>Tu donnes</h3><select id="tradeMine"></select><div id="tradeMinePrev"></div></div>
-        <div class="trade-arrow">⇄</div>
-        <div><h3>Tu reçois</h3><select id="tradeTheirs"></select><div id="tradeTheirsPrev"></div></div>
-      </div>
-      <p id="tradeMsg"></p>
-      <button id="tradeSend" class="btn-play small">Proposer l'échange</button>
-      <button id="tradeCancel" class="btn">Annuler</button>
+<div id="tradeModal" class="trade-full" hidden>
+  <div class="trade-top">
+    <h3>Échange avec <span id="tradeWith"></span></h3>
+    <button id="tradeCancel" class="btn">✕ Fermer</button>
+  </div>
+
+  <div class="trade-tabs">
+    <button id="tradeTabMine" class="ttab active">Mes cartes</button>
+    <button id="tradeTabTheirs" class="ttab">Cartes de …</button>
+  </div>
+
+  <div class="trade-tools">
+    <input id="tradeSearch" type="search" placeholder="Chercher une carte…">
+    <div id="tradeChips" class="tchips"></div>
+  </div>
+
+  <div id="tradeLock" class="trade-lock" hidden>
+    <span id="tradeLockTxt"></span>
+    <button id="tradeReset" class="btn">Changer de rareté</button>
+  </div>
+
+  <div id="tradeGrid" class="trade-grid"></div>
+
+  <div class="trade-foot">
+    <div id="tradeSummary" class="trade-summary"></div>
+    <div class="trade-send">
+      <small id="tradeMsg"></small>
+      <button id="tradeSend" class="btn-play" disabled>Proposer l'échange</button>
     </div>
   </div>
+</div>
 
     <div id="recycleModal" hidden>
     <div class="panel trade-box">
