@@ -313,8 +313,10 @@ function drawRecycleCard() {
 let recSel = {}, recFilter = "";
 
 function recycleRows() {
-  return Object.entries(state.cards || {}).filter(([, q]) => q >= 2)
-    .map(([id, q]) => ({ c: skinCard(+id), avail: q - 1 }))
+  const res = reservedMap();
+  return Object.entries(state.cards || {})
+    .map(([id, q]) => ({ c: skinCard(+id), avail: q - 1 - (res[id] || 0) }))
+    .filter(r => r.avail >= 1)
     .sort((a, b) => rIdx(a.c.rarity) - rIdx(b.c.rarity) || a.c.name.localeCompare(b.c.name, "fr"));
 }
 
@@ -1536,6 +1538,26 @@ async function sendFriendRequest() {
 $("friendAdd").onclick = sendFriendRequest;
 
 // ---------- Échanges (même rareté uniquement) ----------
+// copies réservées par mes propositions d'échange en attente
+function reservedMap() {
+  const r = {};
+  tradesOut.filter(t => t.status === "pending").forEach(t => {
+    r[t.offerId] = (r[t.offerId] || 0) + 1;
+  });
+  return r;
+}
+
+// mes cartes réellement disponibles (possédées moins réservées)
+function availCards(res = reservedMap()) {
+  const out = {};
+  for (const [id, q] of Object.entries(state.cards || {})) {
+    const a = q - (res[id] || 0);
+    if (a > 0) out[id] = a;
+  }
+  return out;
+}
+
+const availQty = id => (state.cards?.[id] || 0) - (reservedMap()[id] || 0);
 let tradeFriend = null, tradeData = null, tradeTab = "mine";
 const tradeSel = { mine: 0, theirs: 0 };
 const tradeFilt = { q: "", rarity: "", dupes: false, missing: false };
@@ -1550,7 +1572,8 @@ function closeTrade() {
 function renderTrade() {
   if (!tradeFriend || !tradeData) return;
   const tab = tradeTab, other = tab === "mine" ? "theirs" : "mine";
-  const src = tab === "mine" ? (state.cards || {}) : tradeData.theirs;
+  const res = reservedMap();
+  const src = tab === "mine" ? availCards(res) : tradeData.theirs;
   const oth = tab === "mine" ? tradeData.theirs : (state.cards || {});
   const lock = tradeSel[other] ? skinCard(tradeSel[other]).rarity : "";
   const rar = lock || tradeFilt.rarity;
@@ -1590,7 +1613,7 @@ function renderTrade() {
       <b>${esc(c.name)}</b>
       <small>${esc(c.skinName)}</small>
       ${oth[c.id] > 0 ? "" : `<span class="tmiss">${missLabel}</span>`}
-      <span class="tqty">×${src[c.id]} dispo</span>
+            <span class="tqty">×${src[c.id]} dispo${tab === "mine" && res[c.id] ? ` · ${res[c.id]} réservée${res[c.id] > 1 ? "s" : ""}` : ""}</span>
     </button>`).join("")
     + (list.length > 300 ? `<p class="hint">Affine ta recherche pour voir les ${list.length - 300} autres.</p>` : "")
     || `<p class="hint">Aucune carte ne correspond.</p>`;
@@ -1670,6 +1693,11 @@ $("tradeSend").onclick = async () => {
     $("tradeMsg").textContent = "Les deux cartes doivent avoir la même rareté.";
     return;
   }
+    if (availQty(offerId) < 1) {
+    $("tradeMsg").textContent = "Cette carte est déjà proposée dans un autre échange en attente.";
+    renderTrade();
+    return;
+  }
   $("tradeSend").disabled = true;
   try {
     await addDoc(collection(db, "trades"), {
@@ -1679,7 +1707,7 @@ $("tradeSend").onclick = async () => {
     });
     closeTrade();
     alert("Proposition envoyée !");
-    refreshSocial();
+    await refreshSocial();
   } catch (e) {
     $("tradeMsg").textContent = "Erreur : " + e.message;
     $("tradeSend").disabled = false;
@@ -1691,6 +1719,10 @@ async function acceptTrade(id) {
   if (!t) return;
   if (skinCard(t.offerId).rarity !== skinCard(t.wantId).rarity) {
     alert("Cet échange est refusé : les deux cartes n'ont pas la même rareté.");
+    return;
+  }
+  if (availQty(t.wantId) < 1) {
+    alert("La carte demandée est réservée dans une de tes propositions en attente. Annule-la d'abord.");
     return;
   }
   const tradeRef = doc(db, "trades", id);
