@@ -968,6 +968,7 @@ function render() {
   tickSpins();
   syncLeaderboard();
   renderOdds();
+  renderAdventure();
   if (!$("tab-profile").hidden && $("pBack").hidden) renderProfile(myStats(), true);
   if (vw && !$("viewer").hidden) renderViewer();
 }
