@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Runeterra</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lato:wght@400;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=11">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
 </head>
+
 <body>
   <header class="topbar">
     <a class="brand" href="./">
-  <img src="logo.png" alt="Runeterra" class="logo">
-  <span>Runeterra</span>
-</a>
+      <img src="logo.png" alt="Runeterra" class="logo">
+      <span>Runeterra</span>
+    </a>
     <div id="userBox" hidden>
       <span id="userName"></span>
       <button id="logoutBtn" class="btn">Déconnexion</button>
@@ -26,7 +29,8 @@
   <section id="loginView" class="panel login">
     <h2>Connexion</h2>
     <input id="username" placeholder="Pseudo" maxlength="20" autocomplete="username"><br>
-    <input id="password" type="password" placeholder="Mot de passe (6 caractères min)" autocomplete="current-password"><br>
+    <input id="password" type="password" placeholder="Mot de passe (6 caractères min)"
+      autocomplete="current-password"><br>
     <div class="login-actions">
       <button id="loginBtn" class="btn-play">Se connecter</button>
       <button id="registerBtn" class="btn">Créer un compte</button>
@@ -45,22 +49,35 @@
       <button data-tab="profile">Profil</button>
     </nav>
 
-    <section id="tab-boosters">
-      <div id="chest" class="chest" role="button" tabindex="0" aria-label="Ouvrir un booster">
-        <div class="chest-glow"></div>
-        <img id="chestImg" alt="Coffre hextech"
-             src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/hextech-images/chest_generic.png">
-        <span id="chestCount" class="chest-count">x0</span>
+    <div class="booster-layout">
+      <div class="booster-main">
+        <section id="tab-boosters">
+          <div id="chest" class="chest" role="button" tabindex="0" aria-label="Ouvrir un booster">
+            <div class="chest-glow"></div>
+            <img id="chestImg" alt="Coffre hextech"
+              src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/hextech-images/chest_generic.png">
+            <span id="chestCount" class="chest-count">x0</span>
+          </div>
+          <h2 class="boosters-title">Boosters : <span id="boosterCount">0</span> / 10</h2>
+          <p id="timer"></p>
+          <button id="openBtn" class="btn-play">Ouvrir un booster</button>
+          <div id="bonusBox" hidden>
+            <button id="bonusBtn" class="btn-play small">Booster bonus : <span id="bonusCount">0</span></button>
+            <p class="hint">Épique minimum garanti</p>
+          </div>
+          <div id="result" class="grid"></div>
+        </section>
       </div>
-      <h2 class="boosters-title">Boosters : <span id="boosterCount">0</span> / 10</h2>
-      <p id="timer"></p>
-      <button id="openBtn" class="btn-play">Ouvrir un booster</button>
-      <div id="bonusBox" hidden>
-        <button id="bonusBtn" class="btn-play small">Booster bonus : <span id="bonusCount">0</span></button>
-        <p class="hint">Épique minimum garanti</p>
-      </div>
-      <div id="result" class="grid"></div>
-    </section>
+      <aside class="odds-box">
+        <h3>Chances par booster</h3>
+        <ul id="oddsList"></ul>
+        <div class="pity">
+          <div class="pity-top"><span>Garantie mythique</span><b id="pityTxt">0 / 200</b></div>
+          <div class="bar"><span id="pityBar"></span></div>
+          <small id="pityNote"></small>
+        </div>
+      </aside>
+    </div>
 
     <section id="tab-collection" hidden>
       <h2>Galerie des champions <span class="count">(<span id="cardCount">0</span>)</span></h2>
@@ -104,41 +121,50 @@
       </div>
       <div class="social-grid">
         <div class="panel social-box">
-          <h3>Demandes reçues</h3><ul id="reqIn" class="list"></ul>
-          <h3>Demandes envoyées</h3><ul id="reqOut" class="list"></ul>
+          <h3>Demandes reçues</h3>
+          <ul id="reqIn" class="list"></ul>
+          <h3>Demandes envoyées</h3>
+          <ul id="reqOut" class="list"></ul>
         </div>
         <div class="panel social-box">
-          <h3>Mes amis</h3><ul id="friendList" class="list"></ul>
+          <h3>Mes amis</h3>
+          <ul id="friendList" class="list"></ul>
         </div>
       </div>
       <div class="social-grid">
-        <div class="panel social-box"><h3>Échanges reçus</h3><ul id="tradesIn" class="list"></ul></div>
-        <div class="panel social-box"><h3>Échanges envoyés</h3><ul id="tradesOut" class="list"></ul></div>
+        <div class="panel social-box">
+          <h3>Échanges reçus</h3>
+          <ul id="tradesIn" class="list"></ul>
+        </div>
+        <div class="panel social-box">
+          <h3>Échanges envoyés</h3>
+          <ul id="tradesOut" class="list"></ul>
+        </div>
       </div>
     </section>
 
     <section id="tab-games" hidden>
-  <h2>🎡 Roue de la chance</h2>
-  <p class="hint">Tu as 5 lancers maximum, et tu en récupères 1 toutes les 20 minutes.</p>
+      <h2>🎡 Roue de la chance</h2>
+      <p class="hint">Tu as 5 lancers maximum, et tu en récupères 1 toutes les 20 minutes.</p>
 
-  <div class="wheel-wrap">
-    <div class="wheel-pointer">▼</div>
-    <div id="wheel"></div>
-  </div>
+      <div class="wheel-wrap">
+        <div class="wheel-pointer">▼</div>
+        <div id="wheel"></div>
+      </div>
 
-  <p class="spin-info">Lancers : <b id="spinCount">5</b> / 5 · <span id="spinTimer"></span></p>
-  <div style="text-align:center">
-    <button id="spinBtn" class="btn-play">Lancer la roue</button>
-    <p id="spinResult" class="spin-result"></p>
-  </div>
+      <p class="spin-info">Lancers : <b id="spinCount">5</b> / 5 · <span id="spinTimer"></span></p>
+      <div style="text-align:center">
+        <button id="spinBtn" class="btn-play">Lancer la roue</button>
+        <p id="spinResult" class="spin-result"></p>
+      </div>
 
-  <ul class="wheel-legend">
-    <li>📦 Booster (2/10)</li>
-    <li>🌟 Booster amélioré (1/10)</li>
-    <li>🔁 Relance (1/10)</li>
-    <li>💨 Perdu (6/10)</li>
-  </ul>
-</section>
+      <ul class="wheel-legend">
+        <li>📦 Booster (2/10)</li>
+        <li>🌟 Booster amélioré (1/10)</li>
+        <li>🔁 Relance (1/10)</li>
+        <li>💨 Perdu (6/10)</li>
+      </ul>
+    </section>
 
     <section id="tab-quests" hidden>
       <h2>Quêtes</h2>
@@ -155,39 +181,39 @@
       </div>
     </section>
     <section id="tab-ranking" hidden>
-  <h2>🏆 Classement</h2>
-  <div style="text-align:center;margin-bottom:14px">
-    <button id="rankRefresh" class="btn">Actualiser</button>
-  </div>
-  <div class="rank-cols">
-    <div>
-      <h3>Cartes possédées</h3>
-      <ul id="rankCards" class="rank"></ul>
-    </div>
-    <div>
-      <h3>Cartes mythiques</h3>
-      <ul id="rankMythic" class="rank"></ul>
-    </div>
-  </div>
-</section>
-<section id="tab-profile" hidden>
-  <div class="profile-head">
-    <div id="pAvatar" class="p-avatar"></div>
-    <div class="p-id">
-      <h2 id="pName">Profil</h2>
-      <div id="pTitle" class="p-title"></div>
-      <p id="pBio" class="p-bio"></p>
-    </div>
-    <div class="p-actions">
-      <button id="pCustom" class="btn">Personnaliser</button>
-      <button id="pEdit" class="btn">Modifier la vitrine</button>
-      <button id="pBack" class="btn" hidden>← Mon profil</button>
-    </div>
-  </div>
-  <div id="pStats" class="p-stats"></div>
-  <h3>Vitrine</h3>
-  <div id="pShowcase" class="showcase"></div>
-</section>
+      <h2>🏆 Classement</h2>
+      <div style="text-align:center;margin-bottom:14px">
+        <button id="rankRefresh" class="btn">Actualiser</button>
+      </div>
+      <div class="rank-cols">
+        <div>
+          <h3>Cartes possédées</h3>
+          <ul id="rankCards" class="rank"></ul>
+        </div>
+        <div>
+          <h3>Cartes mythiques</h3>
+          <ul id="rankMythic" class="rank"></ul>
+        </div>
+      </div>
+    </section>
+    <section id="tab-profile" hidden>
+      <div class="profile-head">
+        <div id="pAvatar" class="p-avatar"></div>
+        <div class="p-id">
+          <h2 id="pName">Profil</h2>
+          <div id="pTitle" class="p-title"></div>
+          <p id="pBio" class="p-bio"></p>
+        </div>
+        <div class="p-actions">
+          <button id="pCustom" class="btn">Personnaliser</button>
+          <button id="pEdit" class="btn">Modifier la vitrine</button>
+          <button id="pBack" class="btn" hidden>← Mon profil</button>
+        </div>
+      </div>
+      <div id="pStats" class="p-stats"></div>
+      <h3>Vitrine</h3>
+      <div id="pShowcase" class="showcase"></div>
+    </section>
   </main>
 
   <div id="reveal" hidden>
@@ -202,7 +228,9 @@
 
   <div id="viewer" hidden>
     <button id="vClose" class="btn" aria-label="Fermer">✕</button>
-    <div class="v-head"><h2 id="vChamp"></h2><small id="vCount"></small></div>
+    <div class="v-head">
+      <h2 id="vChamp"></h2><small id="vCount"></small>
+    </div>
     <div class="v-stage">
       <button id="vPrev" class="v-arrow" aria-label="Skin précédent">‹</button>
       <div id="vFrame">
@@ -216,42 +244,43 @@
     <div id="vStrip"></div>
   </div>
 
-<div id="tradeModal" class="trade-full" hidden>
-  <div class="trade-top">
-    <h3>Échange avec <span id="tradeWith"></span></h3>
-    <button id="tradeCancel" class="btn">✕ Fermer</button>
-  </div>
+  <div id="tradeModal" class="trade-full" hidden>
+    <div class="trade-top">
+      <h3>Échange avec <span id="tradeWith"></span></h3>
+      <button id="tradeCancel" class="btn">✕ Fermer</button>
+    </div>
 
-  <div class="trade-tabs">
-    <button id="tradeTabMine" class="ttab active">Mes cartes</button>
-    <button id="tradeTabTheirs" class="ttab">Cartes de …</button>
-  </div>
+    <div class="trade-tabs">
+      <button id="tradeTabMine" class="ttab active">Mes cartes</button>
+      <button id="tradeTabTheirs" class="ttab">Cartes de …</button>
+    </div>
 
-  <div class="trade-tools">
-    <input id="tradeSearch" type="search" placeholder="Chercher une carte…">
-    <div id="tradeChips" class="tchips"></div>
-  </div>
+    <div class="trade-tools">
+      <input id="tradeSearch" type="search" placeholder="Chercher une carte…">
+      <div id="tradeChips" class="tchips"></div>
+    </div>
 
-  <div id="tradeLock" class="trade-lock" hidden>
-    <span id="tradeLockTxt"></span>
-    <button id="tradeReset" class="btn">Changer de rareté</button>
-  </div>
+    <div id="tradeLock" class="trade-lock" hidden>
+      <span id="tradeLockTxt"></span>
+      <button id="tradeReset" class="btn">Changer de rareté</button>
+    </div>
 
-  <div id="tradeGrid" class="trade-grid"></div>
+    <div id="tradeGrid" class="trade-grid"></div>
 
-  <div class="trade-foot">
-    <div id="tradeSummary" class="trade-summary"></div>
-    <div class="trade-send">
-      <small id="tradeMsg"></small>
-      <button id="tradeSend" class="btn-play" disabled>Proposer l'échange</button>
+    <div class="trade-foot">
+      <div id="tradeSummary" class="trade-summary"></div>
+      <div class="trade-send">
+        <small id="tradeMsg"></small>
+        <button id="tradeSend" class="btn-play" disabled>Proposer l'échange</button>
+      </div>
     </div>
   </div>
-</div>
 
-    <div id="recycleModal" hidden>
+  <div id="recycleModal" hidden>
     <div class="panel trade-box">
       <h2>Recycler des doublons</h2>
-      <p class="hint">Choisis exactement <b id="recNeed">3</b> doublons. Tu gardes toujours un exemplaire de chaque carte.</p>
+      <p class="hint">Choisis exactement <b id="recNeed">3</b> doublons. Tu gardes toujours un exemplaire de chaque
+        carte.</p>
       <div id="recFilter" class="chips">
         <button class="btn" data-r="">Toutes</button>
         <button class="btn" data-r="common">Commune</button>
@@ -276,55 +305,56 @@
   </div>
 
   <div id="showcaseModal" class="sc-modal" hidden>
-  <div class="sc-box">
-    <h3>Ta vitrine <small id="scCount"></small></h3>
-    <input id="scSearch" type="search" placeholder="Rechercher un champion ou un skin…">
-    <div id="scList" class="sc-list"></div>
-    <div class="sc-actions">
-      <button id="scClear" class="btn">Vider</button>
-      <button id="scCancel" class="btn">Annuler</button>
-      <button id="scSave" class="btn-play small">Enregistrer</button>
+    <div class="sc-box">
+      <h3>Ta vitrine <small id="scCount"></small></h3>
+      <input id="scSearch" type="search" placeholder="Rechercher un champion ou un skin…">
+      <div id="scList" class="sc-list"></div>
+      <div class="sc-actions">
+        <button id="scClear" class="btn">Vider</button>
+        <button id="scCancel" class="btn">Annuler</button>
+        <button id="scSave" class="btn-play small">Enregistrer</button>
+      </div>
     </div>
   </div>
-</div>
-<div id="pfModal" class="sc-modal" hidden>
-  <div class="sc-box">
-    <h3>Personnaliser le profil</h3>
-    <label>Description (100 caractères max)
-      <input id="pfBio" maxlength="100" placeholder="Ex : chasseur de skins mythiques">
-    </label>
-    <label>Titre
-      <select id="pfTitle"></select>
-    </label>
-    <div>Couleur
-      <div id="pfColors" class="pf-colors"></div>
-    </div>
-    <div class="pf-row">
-      <span>Fond : <b id="pfBgName">aucun</b></span>
-      <button id="pfBgBtn" class="btn">Choisir</button>
-      <button id="pfBgClear" class="btn">Retirer</button>
-    </div>
-    <div class="pf-row">
-      <span>Avatar : <b id="pfAvName">aucun</b></span>
-      <button id="pfAvBtn" class="btn">Choisir</button>
-      <button id="pfAvClear" class="btn">Retirer</button>
-    </div>
-    <div class="sc-actions">
-      <button id="pfCancel" class="btn">Annuler</button>
-      <button id="pfSave" class="btn-play small">Enregistrer</button>
+  <div id="pfModal" class="sc-modal" hidden>
+    <div class="sc-box">
+      <h3>Personnaliser le profil</h3>
+      <label>Description (100 caractères max)
+        <input id="pfBio" maxlength="100" placeholder="Ex : chasseur de skins mythiques">
+      </label>
+      <label>Titre
+        <select id="pfTitle"></select>
+      </label>
+      <div>Couleur
+        <div id="pfColors" class="pf-colors"></div>
+      </div>
+      <div class="pf-row">
+        <span>Fond : <b id="pfBgName">aucun</b></span>
+        <button id="pfBgBtn" class="btn">Choisir</button>
+        <button id="pfBgClear" class="btn">Retirer</button>
+      </div>
+      <div class="pf-row">
+        <span>Avatar : <b id="pfAvName">aucun</b></span>
+        <button id="pfAvBtn" class="btn">Choisir</button>
+        <button id="pfAvClear" class="btn">Retirer</button>
+      </div>
+      <div class="sc-actions">
+        <button id="pfCancel" class="btn">Annuler</button>
+        <button id="pfSave" class="btn-play small">Enregistrer</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="pickModal" class="sc-modal" hidden style="z-index:70">
-  <div class="sc-box">
-    <h3 id="pickTitle">Choisis une carte</h3>
-    <input id="pickSearch" type="search" placeholder="Rechercher un champion ou un skin…">
-    <div id="pickList" class="sc-list"></div>
-    <div class="sc-actions"><button id="pickCancel" class="btn">Annuler</button></div>
+  <div id="pickModal" class="sc-modal" hidden style="z-index:70">
+    <div class="sc-box">
+      <h3 id="pickTitle">Choisis une carte</h3>
+      <input id="pickSearch" type="search" placeholder="Rechercher un champion ou un skin…">
+      <div id="pickList" class="sc-list"></div>
+      <div class="sc-actions"><button id="pickCancel" class="btn">Annuler</button></div>
+    </div>
   </div>
-</div>
   <script type="module" src="app.js?v=11"></script>
   <script type="module" src="ui.js?v=11"></script>
 </body>
+
 </html>

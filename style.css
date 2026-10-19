@@ -536,3 +536,14 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   .trade-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
   .ttab { padding: 10px 14px; }
 }
+.booster-layout { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.booster-main { flex: 1 1 420px; min-width: 0; }
+.odds-box { flex: 0 0 260px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 16px; }
+.odds-box h3 { margin: 0 0 10px; font-size: 1rem; }
+.odds-box ul { list-style: none; padding: 0; margin: 0 0 14px; }
+.odds-box li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.pity-top { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.odds-box .bar { height: 8px; background: rgba(255,255,255,.1); border-radius: 99px; overflow: hidden; }
+.odds-box .bar span { display: block; height: 100%; background: #e84057; border-radius: 99px; transition: width .4s; }
+.odds-box small { display: block; margin-top: 6px; opacity: .7; }
+@media (max-width: 720px) { .odds-box { flex: 1 1 100%; } }

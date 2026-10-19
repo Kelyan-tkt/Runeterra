@@ -42,6 +42,7 @@ const RARITIES = {
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
 const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
+const PITY_MAX = 200;
 const MAX_SPINS = 5;
 const SPIN_REFILL_MS = 20 * 60 * 1000;
 const WHEEL = [
@@ -263,10 +264,11 @@ function skinCard(id) {
   };
 }
 
-function drawBooster(n) {
+function drawBooster(n, forceMythic = false) {
   const picks = [];
   for (const r of ["rare", "epic", "legendary", "mythic"]) {
-    if (pools[r]?.length && Math.random() < RARITIES[r].chance) picks.push(r);
+    if (!pools[r]?.length) continue;
+    if (Math.random() < RARITIES[r].chance || (forceMythic && r === "mythic")) picks.push(r);
   }
   while (picks.length < n) picks.push("common");
   picks.sort((a, b) => rIdx(b) - rIdx(a));
@@ -283,10 +285,15 @@ function drawBooster(n) {
   return cards;
 }
 
-function drawBonusBooster(n) {
-  const total = Object.values(BONUS_TOP).reduce((a, b) => a + b, 0);
-  let x = Math.random() * total, top = "epic";
-  for (const [r, w] of Object.entries(BONUS_TOP)) { x -= w; if (x < 0) { top = r; break; } }
+function drawBonusBooster(n, forceMythic = false) {
+  let top = "epic";
+  if (forceMythic) {
+    top = "mythic";
+  } else {
+    const total = Object.values(BONUS_TOP).reduce((a, b) => a + b, 0);
+    let x = Math.random() * total;
+    for (const [r, w] of Object.entries(BONUS_TOP)) { x -= w; if (x < 0) { top = r; break; } }
+  }
   const pool = pools[top]?.length ? pools[top] : (pools.epic?.length ? pools.epic : skinList);
   const topCard = skinCard(pool[Math.floor(Math.random() * pool.length)].id);
   return [...drawBooster(n - 1), topCard].sort((a, b) => rIdx(b.rarity) - rIdx(a.rarity));
@@ -520,8 +527,7 @@ $("recycleAll").onclick = recycleAll;
 async function openBooster() {
   $("openBtn").disabled = true;
   try {
-    const drawn = drawBooster(CARDS_PER_BOOSTER);
-
+    let drawn;
     state = await runTransaction(db, async tx => {
       const snap = await tx.get(userRef());
       let s = applyRefill(snap.data());
@@ -529,7 +535,9 @@ async function openBooster() {
       if (s.boosters >= MAX_BOOSTERS) s.lastRefill = Date.now();
       s.boosters -= 1;
       s.cards = s.cards || {};
+      drawn = drawBooster(CARDS_PER_BOOSTER, (s.mythicPity || 0) >= PITY_MAX);
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
+      s.mythicPity = drawn.some(c => c.rarity === "mythic") ? 0 : (s.mythicPity || 0) + 1;
       ensureObtained(s);
       addProgress(s, "open");
       tx.set(userRef(), s);
@@ -548,15 +556,16 @@ async function openBonusBooster() {
   if (rv) return;
   $("bonusBtn").disabled = true;
   try {
-    const drawn = drawBonusBooster(CARDS_PER_BOOSTER);
-
+    let drawn;
     state = await runTransaction(db, async tx => {
       const snap = await tx.get(userRef());
       const s = snap.data();
       if ((s.bonusBoosters || 0) <= 0) throw new Error("Aucun booster bonus disponible.");
       s.bonusBoosters -= 1;
       s.cards = s.cards || {};
+      drawn = drawBonusBooster(CARDS_PER_BOOSTER, (s.mythicPity || 0) >= PITY_MAX);
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
+      s.mythicPity = drawn.some(c => c.rarity === "mythic") ? 0 : (s.mythicPity || 0) + 1;
       ensureObtained(s);
       tx.set(userRef(), s);
       return s;
@@ -951,6 +960,7 @@ function render() {
   renderQuests();
   tickSpins();
   syncLeaderboard();
+  renderOdds();
   if (!$("tab-profile").hidden && $("pBack").hidden) renderProfile(myStats(), true);
   if (vw && !$("viewer").hidden) renderViewer();
 }
@@ -962,6 +972,22 @@ function tickTimer() {
   if (left <= 0) { render(); return; }
   const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
   $("timer").textContent = `Prochain booster dans ${m}:${String(s).padStart(2, "0")}`;
+}
+function renderOdds() {
+  if (!state) return;
+  $("oddsList").innerHTML = RARITY_ORDER.map(r => {
+    const ch = RARITIES[r].chance;
+    const val = r === "common" ? "le reste"
+      : (ch * 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " %";
+    return `<li><span><span style="color:${RARITIES[r].color}">●</span> ${RARITIES[r].label}</span><b>${val}</b></li>`;
+  }).join("");
+
+  const n = state.mythicPity || 0;
+  $("pityTxt").textContent = `${Math.min(n, PITY_MAX)} / ${PITY_MAX}`;
+  $("pityBar").style.width = `${Math.min(100, (n / PITY_MAX) * 100)}%`;
+  $("pityNote").textContent = n >= PITY_MAX
+    ? "Ton prochain booster contient un mythique !"
+    : `Un mythique est garanti après ${PITY_MAX} boosters sans mythique.`;
 }
 
 function tickQuestTimers() {
