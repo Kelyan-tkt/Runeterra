@@ -381,10 +381,14 @@ function updateRecycleUI() {
     const id = li.dataset.id, avail = +li.dataset.avail, n = recSel[id] || 0;
     li.querySelector("[data-n]").textContent = n;
     li.querySelector('[data-d="-1"]').disabled = n <= 0;
-    li.querySelector('[data-d="1"]').disabled = n >= avail || total >= DUPES_PER_CRAFT;
+    li.querySelector('[data-d="1"]').disabled = n >= avail;
   });
-  $("recycleCount").textContent = `${total} / ${DUPES_PER_CRAFT} sélectionnés`;
-  $("recycleGo").disabled = total !== DUPES_PER_CRAFT;
+  const k = Math.floor(total / DUPES_PER_CRAFT), rest = total % DUPES_PER_CRAFT;
+  $("recycleCount").textContent =
+    `${total} doublon${total > 1 ? "s" : ""} sélectionné${total > 1 ? "s" : ""} → ${k} carte${k > 1 ? "s" : ""}`
+    + (rest ? ` (encore ${DUPES_PER_CRAFT - rest} pour une carte de plus)` : "");
+  $("recycleGo").textContent = k ? `Recycler (${k} carte${k > 1 ? "s" : ""})` : "Recycler";
+  $("recycleGo").disabled = !total || rest !== 0;
   updateBulkBtn();
 }
 
@@ -489,43 +493,22 @@ function updateBulkBtn() {
   b.disabled = k === 0;
 }
 
-async function recycleAll() {
+function recycleAll() {
   const { rows, k } = bulkPlan();
-  if (!k) return;
-
-  // tirage des nouvelles cartes (sans doublon entre elles, jamais déjà possédées)
-    const newCards = Array.from({ length: k }, drawRecycleCard);
-
-  // doublons à consommer : exactement 3 par carte obtenue
-  const need = newCards.length * DUPES_PER_CRAFT;
+  if (!k) {
+    alert(`Pas assez de doublons${recFilter ? " de cette rareté" : ""} (il en faut ${DUPES_PER_CRAFT}).`);
+    return;
+  }
+  let left = k * DUPES_PER_CRAFT;
   const sel = {};
-  let left = need;
   for (const r of rows) {
     if (left <= 0) break;
     const take = Math.min(r.avail, left);
     sel[r.c.id] = take;
     left -= take;
   }
-
-  const risky = Object.keys(sel).some(id => ["legendary", "mythic"].includes(skinCard(+id).rarity));
-  const scope = recFilter ? `de rareté « ${RARITIES[recFilter].label} »` : "(toutes raretés)";
-  const n = newCards.length;
-  const ok = confirm(`Recycler ${need} doublons ${scope} pour obtenir ${n} nouvelle${n > 1 ? "s" : ""} carte${n > 1 ? "s" : ""} ?`
-    + (risky ? "\nAttention : cela inclut des cartes légendaires ou mythiques." : ""));
-  if (!ok) return;
-
-  $("recycleAll").disabled = true;
-  $("recycleGo").disabled = true;
-  try {
-    await applyRecycle(sel, newCards);
-    $("recycleModal").hidden = true;
-    $("result").innerHTML = "";
-    startReveal(newCards);
-  } catch (e) {
-    alert(e.message);
-    renderRecycleList();
-  }
-  render();
+  recSel = sel;
+  renderRecycleList();
 }
 
 $("recycleAll").onclick = recycleAll;
