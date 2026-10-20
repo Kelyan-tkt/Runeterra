@@ -629,3 +629,13 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   .bunit { grid-template-columns: 48px 1fr; }
   .bunit img { width: 48px; height: 64px; }
 }
+
+#reveal { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#revealRow {
+  display: flex; flex-wrap: wrap; justify-content: center; align-content: center;
+  gap: 12px; width: 100%; max-width: 1200px; margin: auto;
+  max-height: 68vh; overflow-y: auto; padding: 10px;
+}
+#revealRow.many .flip { zoom: .75; }
+#revealRow.huge .flip { zoom: .55; }
+.reveal-actions { position: sticky; bottom: 0; padding: 12px 0; z-index: 2; display: flex; gap: 10px; justify-content: center; }

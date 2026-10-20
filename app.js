@@ -591,6 +591,10 @@ function startReveal(cards) {
         <div class="flip-front">${cardHTML(c)}</div>
       </div>
     </div>`).join("");
+  const row = $("revealRow");
+  row.classList.toggle("many", cards.length > 8 && cards.length <= 20);
+  row.classList.toggle("huge", cards.length > 20);
+  row.scrollTop = 0;
   $("revealAll").hidden = cards.length < 2;
   $("revealClose").hidden = true;
   $("reveal").hidden = false;
