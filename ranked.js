@@ -1,451 +1,329 @@
 import { doc, runTransaction } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-// Arène tactique PvE. Interface conservée : initRanked({db,user,champions,card,week}).
+// Chasse aux boss : prototype d'entraînement uniquement.
+// Aucun point, récompense, reset hebdomadaire ou recherche de joueurs.
+// Interface conservée : initRanked({ db, user, champions, card, week }).
 const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"];
-const LANES = ["Top", "Mid", "Bot"];
-const HOME = [0, 1, 1, 2, 2];
-const LIMIT = 24;
-const VERSION = 2;
-const RANKS = [
-  ["Fer",0,1,0],["Bronze",100,2,0],["Argent",250,3,0],
-  ["Or",450,4,1],["Platine",700,5,1],["Émeraude",1000,6,2],
-  ["Diamant",1400,8,2],["Maître",1900,10,3],
-  ["Grand Maître",2500,12,4],["Challenger",3200,15,5]
-];
 const POOL = {
-  Top: ["Garen","Darius","Fiora","Camille","Ornn","Malphite","Sett","Shen","Renekton","Aatrox","Jax","Gwen","Teemo","Nasus","Riven","Poppy","Tryndamere","Irelia","Yorick","Sion"],
-  Jungle: ["Warwick","Vi","LeeSin","MasterYi","Amumu","Sejuani","Volibear","Khazix","Rengar","Evelynn","Nocturne","Nunu","Hecarim","Udyr","Gragas","Briar","Lillia","Kayn","Kindred","Viego"],
-  Mid: ["Ahri","Lux","Annie","Viktor","Syndra","Orianna","Zed","Yasuo","Yone","Veigar","Katarina","Akali","Azir","Vex","Malzahar","Zoe","Leblanc","Taliyah","Anivia","AurelionSol"],
-  ADC: ["Ashe","Caitlyn","Jinx","Ezreal","MissFortune","Jhin","Lucian","Vayne","Kaisa","Tristana","Xayah","Sivir","Varus","Draven","Aphelios","KogMaw","Kalista","Samira","Nilah","Smolder"],
-  Support: ["Braum","Leona","Nautilus","Thresh","Lulu","Soraka","Sona","Nami","Janna","Yuumi","Rakan","Milio","Renata","Blitzcrank","Karma","Alistar","Taric","Zilean","Bard","Senna"]
+  Top:["Garen","Darius","Fiora","Camille","Ornn","Malphite","Sett","Shen","Renekton","Aatrox","Jax","Gwen","Teemo","Nasus","Riven","Poppy","Tryndamere","Irelia","Yorick","Sion"],
+  Jungle:["Warwick","Vi","LeeSin","MasterYi","Amumu","Sejuani","Volibear","Khazix","Rengar","Evelynn","Nocturne","Nunu","Hecarim","Udyr","Gragas","Briar","Lillia","Kayn","Kindred","Viego"],
+  Mid:["Ahri","Lux","Annie","Viktor","Syndra","Orianna","Zed","Yasuo","Yone","Veigar","Katarina","Akali","Azir","Vex","Malzahar","Zoe","Leblanc","Taliyah","Anivia","AurelionSol"],
+  ADC:["Ashe","Caitlyn","Jinx","Ezreal","MissFortune","Jhin","Lucian","Vayne","Kaisa","Tristana","Xayah","Sivir","Varus","Draven","Aphelios","KogMaw","Kalista","Samira","Nilah","Smolder"],
+  Support:["Braum","Leona","Nautilus","Thresh","Lulu","Soraka","Sona","Nami","Janna","Yuumi","Rakan","Milio","Renata","Blitzcrank","Karma","Alistar","Taric","Zilean","Bard","Senna"]
 };
-const SKILLS = [
-  ["Rempart", "Protège un allié de sa voie : les dégâts de champions qu'il reçoit sont redirigés vers le Top et réduits de moitié. Le Top se protège aussi. Recharge : 3 manches."],
-  ["Gank", "Rejoint la voie d'un ennemi et lui inflige 80 dégâts de base. La voie et la cible sont choisies par toi. Recharge : 3 manches."],
-  ["Onde", "Inflige 38 dégâts de base à chaque champion ennemi de sa voie et 80 à la vague ennemie. Recharge : 3 manches."],
-  ["Tir précis", "Inflige 85 dégâts de base à un champion de sa voie. Recharge : 3 manches."],
-  ["Bouclier", "Absorbe les 75 prochains dégâts reçus par un allié de sa voie pendant cette manche. Recharge : 3 manches."]
+const ROLE_TEXT = [
+  "Front solide : réduit tous les dégâts subis par le groupe de 12 %.",
+  "Exploitation : augmente de 15 % les dégâts d'Assaut pendant la surchauffe.",
+  "Attaques magiques : 9 dégâts par seconde de base.",
+  "Tir soutenu : 12 dégâts par seconde de base.",
+  "Soutien : augmente le soin de 150 à 180 PV."
 ];
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const copy = o => JSON.parse(JSON.stringify(o));
-const clamp = (n,a,b) => Math.min(b,Math.max(a,n));
-const rankOf = p => RANKS.reduce((n,r,i) => p >= r[1] ? i : n, 0);
-const emptySeason = (week,team=[]) => ({version:VERSION,week,points:0,best:0,wins:0,losses:0,draws:0,games:0,team});
-const stat = (u,n) => Math.round(n * u.power);
-const laneUnits = (m,side,lane) => m.units[side].filter(u => u.hp > 0 && u.lane === lane);
-const weakest = list => [...list].sort((a,b) => a.hp-b.hp || a.i-b.i)[0];
-function unit(id,i,power,name,img) {
-  const max = Math.round(([310,245,225,220,235][i])*power);
-  return {id,i,name,img,role:ROLES[i],lane:HOME[i],hp:max,max,power,cd:0,respawn:0};
+const DPS = [5,7,9,12,4];
+const C = {
+  maxTime:60, teamHP:1000, bossHP:2700, normalTime:3,
+  armorTime:2, warningTime:2.5, exposedTime:3,
+  normalHit:28, normalInterval:1.2, heavyHit:360,
+  shieldDuration:1.1, shieldCooldown:8, shieldReduction:0.8,
+  healAmount:180, healCooldown:18, assaultDamage:220, assaultCooldown:12,
+  armorMultiplier:0.25, exposedMultiplier:1.6, exposedAssaultMultiplier:2.4
+};
+const H = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = x => JSON.parse(JSON.stringify(x));
+const freshFight = () => ({
+  time:0,hp:C.teamHP,boss:C.bossHP,phase:"normal",phaseTime:0,
+  basicTimer:0,attackTimer:0,shield:0,cd:{shield:0,heal:0,assault:0},
+  stats:{blocked:0,missed:0,goodAssaults:0,badAssaults:0,healed:0,damage:0},
+  events:[],eventId:0,result:null
+});
+function event(f,text,kind="info") {
+  f.events.unshift({id:++f.eventId,text,kind});f.events=f.events.slice(0,8);
 }
-function baseMatch(a,b,level,training,user,week) {
-  return {user,week,training,level,round:1,units:[a,b],waves:[[100,100,100],[100,100,100]],
-    front:[0,0,0],towers:[[210,210,210],[210,210,210]],nexus:[360,360],
-    plans:[],intents:[],history:[],done:false,result:null,settled:false};
+function bossMultiplier(f) {
+  return f.phase==="armor"?C.armorMultiplier:f.phase==="exposed"?C.exposedMultiplier:1;
 }
-function options(m,side,i) {
-  const u = m.units[side][i];
-  if (u.hp <= 0) return [];
-  const foes = laneUnits(m,1-side,u.lane);
-  const allies = laneUnits(m,side,u.lane);
-  const out = [{a:"clear",t:0},{a:"guard",t:0}];
-  foes.forEach(t => out.push({a:"strike",t:t.i}));
-  LANES.forEach((_,l) => { if (l !== u.lane) out.push({a:"move",t:l}); });
-  if (u.cd === 0) {
-    if (i === 0 || i === 4) allies.forEach(t => out.push({a:"skill",t:t.i}));
-    else if (i === 1) m.units[1-side].filter(t=>t.hp>0).forEach(t=>out.push({a:"skill",t:t.i}));
-    else if (i === 2) out.push({a:"skill",t:0});
-    else foes.forEach(t => out.push({a:"skill",t:t.i}));
+function damageBoss(f,amount,text="",kind="hit") {
+  const actual=Math.min(f.boss,Math.round(amount));
+  f.boss-=actual;f.stats.damage+=actual;
+  if(text)event(f,`${text} : −${actual} PV au Gardien.`,kind);
+  if(f.boss<=0)f.result="win";
+  return actual;
+}
+function damageTeam(f,amount,heavy=false) {
+  const protectedNow=f.shield>0;
+  const actual=Math.round(amount*.88*(protectedNow?1-C.shieldReduction:1));
+  f.hp=Math.max(0,f.hp-actual);
+  if(heavy){
+    if(protectedNow){f.stats.blocked++;event(f,`Frappe bloquée ! Seulement ${actual} dégâts subis.`,"good");}
+    else{f.stats.missed++;event(f,`Frappe lourde : −${actual} PV. Protège-toi juste avant l'impact.`,"bad");}
   }
-  return out;
+  if(f.hp<=0)f.result="loss";
+  return actual;
 }
-function validOrder(m,side,i,p) {
-  return !!p && options(m,side,i).some(x=>x.a===p.a && x.t===Number(p.t));
-}
-function botPlans(m) {
-  return m.units[1].map((u,i) => {
-    if (u.hp<=0) return null;
-    const foes=laneUnits(m,0,u.lane), allies=laneUnits(m,1,u.lane);
-    const target=weakest(foes);
-    if (u.cd===0) {
-      if (i===4) {
-        const friend=weakest(allies);
-        if (friend && foes.length) return {a:"skill",t:friend.i};
-      }
-      if (i===0 && foes.length) return {a:"skill",t:weakest(allies).i};
-      if (i===1) {
-        const gank=weakest(m.units[0].filter(x=>x.hp>0));
-        if (gank) return {a:"skill",t:gank.i};
-      }
-      if (i===2 && (foes.length || m.waves[0][u.lane]>0)) return {a:"skill",t:0};
-      if (i===3 && target) return {a:"skill",t:target.i};
-    }
-    // Les premiers bots privilégient les champions ; les autres lisent les vagues.
-    if (m.level>=2 && m.waves[0][u.lane]>0 && (m.round+i)%3!==0) return {a:"clear",t:0};
-    if (target) return {a:"strike",t:target.i};
-    if (m.waves[0][u.lane]>0) return {a:"clear",t:0};
-    if (i===1) {
-      const threatened=m.front.indexOf(2);
-      if (threatened>=0 && threatened!==u.lane) return {a:"move",t:threatened};
-    }
-    return {a:"guard",t:0};
-  });
-}
-function orderText(m,side,i,p) {
-  if (!p) return "Choisir un ordre";
-  const u=m.units[side][i];
-  const enemy=m.units[1-side][Number(p.t)];
-  const friend=m.units[side][Number(p.t)];
-  if (p.a==="clear") return `Nettoyer les sbires · ${stat(u,65)} dégâts à la vague ${LANES[u.lane]}`;
-  if (p.a==="guard") return "Défendre · +20 PV, dégâts reçus divisés par 2";
-  if (p.a==="move") return `Rotation vers ${LANES[p.t]} · aucune attaque cette manche`;
-  if (p.a==="strike") return `Attaquer ${enemy?.name || "?"} · ${stat(u,44)} dégâts bruts`;
-  if (i===0) return `Rempart sur ${friend?.name || "?"} · redirection et protection`;
-  if (i===1) return `Gank sur ${enemy?.name || "?"} · ${stat(u,80)} dégâts bruts`;
-  if (i===2) return `Onde ${LANES[u.lane]} · ${stat(u,38)} par champion + ${stat(u,80)} aux sbires`;
-  if (i===3) return `Tir précis sur ${enemy?.name || "?"} · ${stat(u,85)} dégâts bruts`;
-  return `Bouclier sur ${friend?.name || "?"} · absorbe ${stat(u,75)} dégâts`;
-}
-function score(m,side) {
-  return m.nexus[side]+m.towers[side].reduce((a,b)=>a+b,0);
-}
-function resolveRound(original,plans) {
-  const m=copy(original), log=[], orders=[plans,m.intents];
-  const shields=[Array(5).fill(0),Array(5).fill(0)];
-  const guards=[Array(5).fill(false),Array(5).fill(false)];
-  const protect=[Array(5).fill(-1),Array(5).fill(-1)];
-  const damage=[Array(5).fill(0),Array(5).fill(0)];
-  const alive=m.units.map(team=>team.map(u=>u.hp>0));
-  const newCD=[Array(5).fill(false),Array(5).fill(false)];
-  const deaths=[Array(5).fill(false),Array(5).fill(false)];
-  const each=fn=>[0,1].forEach(s=>m.units[s].forEach((u,i)=>{
-    if(alive[s][i] && orders[s][i]) fn(s,u,i,orders[s][i]);
-  }));
-  each((s,u,i,p)=>{
-    if(p.a==="move") {u.lane=Number(p.t);log.push(`${u.name} rejoint ${LANES[u.lane]}.`);}
-    if(p.a==="skill" && i===1) {
-      const t=m.units[1-s][p.t];
-      if(t?.hp>0) {u.lane=t.lane;log.push(`${u.name} prépare son gank ${LANES[u.lane]}.`);}
-    }
-  });
-  // Les protections sont posées après les déplacements, avant les attaques.
-  each((s,u,i,p)=>{
-    if(p.a==="guard") {guards[s][i]=true;u.hp=Math.min(u.max,u.hp+20);}
-    if(p.a!=="skill" || u.cd>0) return;
-    newCD[s][i]=true;u.cd=3;
-    if(i===0 || i===4) {
-      const t=m.units[s][p.t];
-      if(!t || t.hp<=0 || t.lane!==u.lane) {log.push(`${u.name} : protection impossible, la cible a changé de voie.`);return;}
-      if(i===0) {protect[s][t.i]=i;guards[s][i]=true;}
-      else shields[s][t.i]+=stat(u,75);
-      log.push(`${u.name} utilise ${SKILLS[i][0]} sur ${t.name}.`);
-    }
-  });
-  function hit(s,target,amount,source) {
-    if(!target || !alive[s][target.i]) return;
-    let i=target.i;
-    if(protect[s][i]>=0 && protect[s][i]!==i) {
-      i=protect[s][i];
-      log.push(`${m.units[s][i].name} intercepte l'attaque sur ${target.name}.`);
-    }
-    let n=Math.round(amount*(guards[s][i]?0.5:1));
-    const absorbed=Math.min(n,shields[s][i]);
-    shields[s][i]-=absorbed;n-=absorbed;
-    damage[s][i]+=n;
-    log.push(`${source} → ${m.units[s][i].name} : ${n} dégâts${absorbed?` (${absorbed} absorbés)`:""}.`);
+function useAbility(f,ability) {
+  if(f.result || !(ability in f.cd) || f.cd[ability]>.001)return false;
+  if(ability==="shield"){
+    f.cd.shield=C.shieldCooldown;f.shield=C.shieldDuration;
+    event(f,"Protection active pendant 1,1 seconde.","shield");return true;
   }
-  each((s,u,i,p)=>{
-    const foe=1-s,l=u.lane;
-    if(p.a==="clear") {m.waves[foe][l]=Math.max(0,m.waves[foe][l]-stat(u,65));log.push(`${u.name} nettoie la vague ${LANES[l]}.`);}
-    if(p.a==="strike" || (p.a==="skill" && (i===1 || i===3))) {
-      const t=m.units[foe][p.t];
-      if(!t || !alive[foe][t.i] || t.lane!==u.lane) {log.push(`${u.name} : cible hors de sa voie, attaque perdue.`);return;}
-      hit(foe,t,stat(u,p.a==="strike"?44:i===1?80:85),u.name);
-    }
-    if(p.a==="skill" && i===2) {
-      m.units[foe].filter(t=>alive[foe][t.i] && t.lane===l).forEach(t=>hit(foe,t,stat(u,38),u.name));
-      m.waves[foe][l]=Math.max(0,m.waves[foe][l]-stat(u,80));
-      log.push(`${u.name} lance Onde ${LANES[l]}.`);
-    }
-  });
-  // Dégâts simultanés : les cinq champions vivants au début peuvent agir.
-  [0,1].forEach(s=>m.units[s].forEach((u,i)=>{
-    u.hp=Math.max(0,u.hp-damage[s][i]);
-    if(alive[s][i] && u.hp===0) {u.respawn=2;deaths[s][i]=true;log.push(`${u.name} est vaincu (retour dans 2 manches).`);}
-  }));
-  LANES.forEach((name,l)=>{
-    // Les deux vagues s'usent simultanément.
-    const a=m.waves[0][l],b=m.waves[1][l];
-    if(a>0 && b>0) {m.waves[0][l]=Math.max(0,a-25);m.waves[1][l]=Math.max(0,b-25);}
-    const p=m.waves[0][l]>0,e=m.waves[1][l]>0;
-    if(p!==e) m.front[l]=clamp(m.front[l]+(p?1:-1),-2,2);
-    [0,1].forEach(s=>{
-      const enemy=1-s;
-      const reaches=s===0?m.front[l]===2:m.front[l]===-2;
-      const attackers=laneUnits(m,s,l),defenders=laneUnits(m,enemy,l);
-      if(!reaches || m.waves[s][l]<=0 || !attackers.length) return;
-      if(defenders.length) {
-        m.waves[s][l]=Math.max(0,m.waves[s][l]-35);
-        log.push(`${name} : les défenseurs bloquent le siège et retirent 35 PV aux sbires.`);
-        return;
-      }
-      const siege=35+attackers.reduce((n,u)=>n+stat(u,u.i===3?30:18),0);
-      if(m.towers[enemy][l]>0) {
-        m.towers[enemy][l]=Math.max(0,m.towers[enemy][l]-siege);
-        log.push(`${name} : ${siege} dégâts à la tourelle ${enemy===1?"bot":"alliée"}.`);
-      } else {
-        m.nexus[enemy]=Math.max(0,m.nexus[enemy]-siege);
-        log.push(`${name} : ${siege} dégâts au Nexus ${enemy===1?"bot":"allié"} !`);
-      }
-      m.waves[s][l]=Math.max(0,m.waves[s][l]-20);
-    });
-  });
-  [0,1].forEach(s=>m.units[s].forEach((u,i)=>{
-    if(!newCD[s][i] && u.cd>0) u.cd--;
-    if(u.hp===0 && !deaths[s][i]) {
-      u.respawn--;
-      if(u.respawn<=0) {u.hp=u.max;u.lane=HOME[i];log.push(`${u.name} réapparaît ${LANES[u.lane]}.`);}
-    }
-  }));
-  if(m.nexus[0]===0 || m.nexus[1]===0) {
-    m.done=true;
-    m.result=m.nexus[0]===m.nexus[1]?"draw":m.nexus[1]===0?"win":"loss";
-  } else if(m.round>=LIMIT) {
-    m.done=true;
-    m.result=score(m,0)===score(m,1)?"draw":score(m,0)>score(m,1)?"win":"loss";
-    log.push(`Limite atteinte : bâtiments alliés ${score(m,0)} / bots ${score(m,1)}. Le plus haut total gagne.`);
+  if(ability==="heal"){
+    if(f.hp>=C.teamHP)return false;
+    const amount=Math.min(C.healAmount,C.teamHP-f.hp);
+    f.hp+=amount;f.stats.healed+=amount;f.cd.heal=C.healCooldown;
+    event(f,`Soin : +${amount} PV.`,"heal");return true;
   }
-  m.round++;
-  if(!m.done && (m.round-1)%3===0) {
-    m.waves=[[100,100,100],[100,100,100]];
-    log.push("Une nouvelle vague de 100 PV arrive sur chaque voie.");
-  }
-  m.history=[...m.history,{round:original.round,log}].slice(-LIMIT);
-  return {m,log};
+  f.cd.assault=C.assaultCooldown;
+  const exposed=f.phase==="exposed";
+  const mult=exposed?C.exposedAssaultMultiplier*1.15:bossMultiplier(f);
+  if(exposed)f.stats.goodAssaults++;
+  if(f.phase==="armor")f.stats.badAssaults++;
+  damageBoss(f,C.assaultDamage*mult,exposed?"Assaut sur point faible !":f.phase==="armor"?"Assaut freiné par la carapace":"Assaut",exposed?"good":"hit");
+  return true;
 }
+function tickFight(f,dt) {
+  if(f.result)return;
+  dt=Math.max(0,Math.min(dt,C.maxTime-f.time));
+  f.time+=dt;f.phaseTime+=dt;
+  f.shield=Math.max(0,f.shield-dt);
+  Object.keys(f.cd).forEach(k=>f.cd[k]=Math.max(0,f.cd[k]-dt));
+  f.attackTimer+=dt;
+  while(f.attackTimer>=.5 && !f.result){
+    f.attackTimer-=.5;
+    damageBoss(f,DPS.reduce((a,b)=>a+b,0)*.5*bossMultiplier(f));
+  }
+  if(f.result)return;
+  if(f.phase==="normal" || f.phase==="armor"){
+    f.basicTimer+=dt;
+    while(f.basicTimer>=C.normalInterval && !f.result){f.basicTimer-=C.normalInterval;damageTeam(f,C.normalHit);}
+  }
+  if(f.result)return;
+  const duration={normal:C.normalTime,armor:C.armorTime,warning:C.warningTime,exposed:C.exposedTime}[f.phase];
+  if(f.phaseTime+1e-8>=duration){
+    f.phaseTime=0;f.basicTimer=0;
+    if(f.phase==="normal"){
+      f.phase="armor";event(f,"Carapace renforcée : garde ton Assaut, dégâts reçus par le boss réduits de 75 %.","info");
+    }else if(f.phase==="armor"){
+      f.phase="warning";event(f,"Frappe lourde dans 2,5 secondes : attends le dernier instant pour Protéger.","warn");
+    }else if(f.phase==="warning"){
+      damageTeam(f,C.heavyHit,true);f.phase="exposed";
+      if(!f.result)event(f,"Surchauffe pendant 3 secondes : c'est le moment d'utiliser Assaut !","good");
+    }else{f.phase="normal";event(f,"Le Gardien reprend ses attaques normales.","info");}
+  }
+  if(f.time+1e-8>=C.maxTime && !f.result){f.result="timeout";event(f,"Temps écoulé : le Gardien est toujours debout.","bad");}
+}
+const PHASES = {
+  normal:["Attaques normales","Les champions attaquent seuls. Garde Protéger pour la frappe lourde."],
+  armor:["Carapace renforcée","Le Gardien absorbe 75 % des dégâts. Économise Assaut."],
+  warning:["Frappe lourde imminente","La protection dure seulement 1,1 seconde : attends la fin du compte à rebours."],
+  exposed:["Surchauffe : point faible ouvert !","Utilise Assaut : 607 dégâts environ avec le bonus du Jungler."]
+};
+
+const BOSS_SVG = `<svg viewBox="0 0 320 320" role="img" aria-label="Gardien hextech, golem mécanique">
+<defs><linearGradient id="hbSteel" x2="0" y2="1"><stop stop-color="#718da3"/><stop offset="1" stop-color="#1e344b"/></linearGradient><radialGradient id="hbCore"><stop stop-color="#fff"/><stop offset=".4" stop-color="#76ecff"/><stop offset="1" stop-color="#098cae"/></radialGradient></defs>
+<ellipse cx="160" cy="290" rx="105" ry="17" fill="#000" opacity=".35"/>
+<g class="hb-body" stroke="#0d1c2b" stroke-width="5" stroke-linejoin="round">
+<path d="M109 224L145 224L140 281L105 281Z M175 224L211 224L215 281L180 281Z" fill="url(#hbSteel)"/>
+<g class="hb-arm left"><path d="M94 110L57 118L38 186L68 203L103 155Z" fill="url(#hbSteel)"/><path d="M36 181L75 190L72 226L31 217Z" fill="#8499a6"/></g>
+<g class="hb-arm right"><path d="M226 110L263 118L282 186L252 203L217 155Z" fill="url(#hbSteel)"/><path d="M245 184L290 175L300 220L250 231Z" fill="#8499a6"/></g>
+<path d="M101 98L219 98L240 155L211 235L109 235L80 155Z" fill="url(#hbSteel)"/>
+<path d="M119 42L201 42L213 96L107 96Z" fill="#829dab"/>
+<path d="M127 60L150 66L145 76L125 73Z M193 60L170 66L175 76L195 73Z" fill="#8bf5ff" stroke="none"/>
+<circle cx="160" cy="159" r="43" fill="#122336" stroke="#a7becb"/>
+<circle class="hb-core" cx="160" cy="159" r="30" fill="url(#hbCore)" stroke="#59dbff"/>
+<path d="M160 137L173 158L159 182L147 158Z" fill="#d9ffff" stroke="none"/>
+<path class="hb-armor" d="M116 125L160 140L204 125L208 194L160 213L112 194Z" fill="#4399e5" fill-opacity=".7" stroke="#95d9ff"/>
+</g></svg>`;
 
 export function initRanked(api) {
   const root=document.getElementById("rankedRoot");
-  if(!root) throw new Error("Il manque rankedRoot dans index.html.");
-  let season=null,cards={},draft=[],battle=null,busy=false,notice="",epoch=0;
-  const champion=id=>api.champions().find(c=>Number(c.key)===Math.floor(Number(id)/1000));
-  const fullTeam=(team,owned=null)=>{
+  if(!root)throw new Error("Il manque rankedRoot dans index.html.");
+  let cards={},team=[0,0,0,0,0],savedTeam=[],fight=null,paused=false,busy=false;
+  let note="",frame=0,last=0,acc=0,paintClock=0,sequence=0,owner=null,ready=false;
+  let seenEvent=0,previousPhase="",hitUntil=0,healUntil=0,teamHitUntil=0,previousHP=0,previousBoss=0;
+  const $=id=>root.querySelector(`#${id}`);
+  const champ=id=>api.champions().find(c=>Number(c.key)===Math.floor(Number(id)/1000));
+  function validate(input,owned){
     const seen=new Set();
-    return ROLES.map((r,i)=>{
-      const id=Number(team?.[i])||0,c=champion(id);
-      if(!c || !POOL[r].includes(c.id) || (owned && !(owned[id]>0)) || seen.has(c.id)) return 0;
+    return ROLES.map((role,i)=>{
+      const id=Number(input?.[i])||0,c=champ(id);
+      if(!c || !POOL[role].includes(c.id) || !(owned[id]>0) || seen.has(c.id))return 0;
       seen.add(c.id);return id;
     });
-  };
-  function ensure(s,week) {
-    let r=s.ranked;
-    // Nouveau système : les anciens points du prototype ne sont pas réutilisés.
-    if(!r || r.version!==VERSION) {r=emptySeason(week,r?.team||[]);s.ranked=r;return r;}
-    if(r.week!==week) {
-      let reward=r.lastReward||null;
-      if(r.games>0) {
-        const rank=RANKS[rankOf(r.best)];
-        s.boosters=(s.boosters||0)+rank[2];
-        s.bonusBoosters=(s.bonusBoosters||0)+rank[3];
-        reward={week:r.week,name:rank[0],normal:rank[2],bonus:rank[3]};
-      }
-      r={...emptySeason(week,r.team),lastReward:reward};s.ranked=r;
-    }
-    return r;
   }
-  async function write(change=()=>{}) {
-    const user=api.user();
-    if(!user) throw new Error("Connecte-toi d'abord.");
-    const week=api.week();
+  function styles(){
+    if(document.getElementById("hex-boss-style-v1"))return;
+    const el=document.createElement("style");el.id="hex-boss-style-v1";
+    el.textContent=`
+#rankedRoot{color:#e6edf7}#rankedRoot *{box-sizing:border-box}
+.hb-head,.hb-actions,.hb-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.hb-head{margin:12px 0}.hb-head h2{margin:0 auto 0 0}.hb-tag{background:#243a45;border:1px solid #568b92;border-radius:99px;padding:7px 12px;font-size:13px}
+.hb-box{padding:16px;background:#141f2f;border:1px solid #364c64;border-radius:14px;margin:14px 0;line-height:1.65}.hb-box h3{margin:0 0 6px}.hb-picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.hb-pick{padding:12px;background:#172337;border:1px solid #344b68;border-radius:12px;min-width:0}.hb-pick select{display:block;width:100%;background:#0c1624;color:#fff;border:1px solid #4c6580;border-radius:8px;padding:9px;margin:8px 0;font-size:16px}.hb-pick small{display:block;color:#b7c9db;font-size:12px}
+.hb-stage{position:relative;overflow:hidden;border:1px solid #3f546d;border-radius:18px;background:radial-gradient(ellipse at 72% 40%,#214665 0%,#152431 40%,#090f1c 85%);min-height:350px;display:grid;grid-template-columns:1fr 1.15fr;align-items:center;padding:20px;gap:10px}.hb-squad{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;position:relative;z-index:1}.hb-hero{width:76px;text-align:center;font-size:12px;position:relative;animation:hbFloat 2.8s ease-in-out infinite}.hb-hero:nth-child(2n){animation-delay:-1s}.hb-hero img{display:block;width:64px;height:82px;object-fit:cover;object-position:top;margin:auto;border:2px solid #4dbdff;border-radius:10px;background:#1f3445}.hb-hero span{display:block}.hb-hero small{color:#93b4d4;font-size:10px}.hb-projectile{position:absolute;top:48%;left:85%;width:28px;height:5px;border-radius:50%;background:#84ecff;box-shadow:0 0 10px #58e6ff;animation:hbBolt 1.1s linear infinite;pointer-events:none}
+.hb-boss{position:relative;text-align:center}.hb-boss svg{width:min(100%,340px);overflow:visible}.hb-body{transform-origin:160px 200px;animation:hbBreathe 2.4s ease-in-out infinite}.hb-arm.right{transform-origin:230px 115px;transition:transform .2s}.hb-armor{opacity:0;transition:opacity .3s}.hb-stage[data-phase="armor"] .hb-armor{opacity:1}.hb-stage[data-phase="warning"] .hb-arm.right{transform:rotate(-105deg)}.hb-stage[data-phase="warning"] .hb-core{filter:drop-shadow(0 0 15px #ff5d5d)}.hb-stage[data-phase="exposed"] .hb-core{fill:#ffb43c;stroke:#ffe088;filter:drop-shadow(0 0 18px #ff8b25)}
+.hb-stage.shielded .hb-squad{border-radius:30px;box-shadow:0 0 0 3px #7ae0ff,0 0 30px #75dfff66}.hb-stage.boss-hit .hb-boss{filter:brightness(1.8)}.hb-stage.team-hit .hb-squad{filter:sepia(.8) saturate(4)}.hb-stage.healing .hb-squad{filter:drop-shadow(0 0 15px #54ff99)}
+.hb-bars{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:14px 0}.hb-bar{height:16px;background:#101622;border-radius:99px;overflow:hidden;margin-top:6px}.hb-bar>span{display:block;height:100%;background:#3fdba2;transition:width .08s linear}.hb-bar.boss>span{background:#f46c79}.hb-intent{padding:14px;border:1px solid #55728f;border-radius:14px;background:#19283b;min-height:94px}.hb-intent[data-phase="warning"]{border-color:#ff7b7b;background:#3d1f29}.hb-intent[data-phase="exposed"]{border-color:#ffc25e;background:#3c2d17}.hb-intent h3{margin:0 0 6px}.hb-intent p{margin:0}.hb-count{font-size:24px;font-weight:bold;font-variant-numeric:tabular-nums}
+.hb-skills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}.hb-skill{display:flex;flex-direction:column;justify-content:center;gap:7px;min-height:130px;padding:14px;border:2px solid #45627f;border-radius:14px;background:#182a3b;color:#f1f6ff;text-align:center;cursor:pointer;font:inherit;touch-action:manipulation}.hb-skill b{font-size:18px}.hb-skill small{font-size:12px;line-height:1.4}.hb-skill span{font-variant-numeric:tabular-nums;color:#ffe2a5}.hb-skill:disabled{opacity:.45;cursor:not-allowed}.hb-skill.recommended:not(:disabled){border-color:#ffd666;box-shadow:0 0 18px #ffd66644}.hb-actions button{min-height:42px}.hb-message{min-height:28px;color:#ffd582;margin:8px 0}.hb-log{max-height:190px;overflow:auto;padding:12px;background:#0e1826;border-radius:12px;line-height:1.7;font-size:13px}.hb-log .good{color:#7ce6b5}.hb-log .bad,.hb-log .warn{color:#ff9c9c}.hb-log .heal{color:#6deca3}.hb-log .shield{color:#8cddff}.hb-result{text-align:center;padding:24px;background:#1e3044;border:1px solid #bf9e52;border-radius:16px}.hb-result h3{font-size:28px;margin:0 0 12px}.hb-overlay{position:absolute;inset:0;background:#050d19d9;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:5;padding:20px;text-align:center}.hb-overlay[hidden]{display:none}.hb-paused *{animation-play-state:paused!important}.hb-feedback{position:absolute;top:18%;left:50%;transform:translateX(-50%);padding:8px 12px;background:#091421ce;color:#ffde8b;border-radius:10px;font-weight:700;pointer-events:none;z-index:2}
+@keyframes hbFloat{50%{transform:translateY(-4px)}}@keyframes hbBreathe{50%{transform:translateY(-5px)}}@keyframes hbBolt{0%{transform:translateX(0);opacity:0}20%{opacity:1}100%{transform:translateX(115px);opacity:0}}
+@media(max-width:600px){.hb-stage{padding:12px;min-height:300px;grid-template-columns:.9fr 1.1fr}.hb-squad{gap:8px}.hb-hero{width:51px;font-size:10px}.hb-hero img{width:45px;height:60px}.hb-skills{gap:6px}.hb-skill{padding:9px 5px;min-height:150px}.hb-skill b{font-size:14px}.hb-skill small{font-size:11px}.hb-bars{gap:10px;font-size:13px}.hb-projectile{width:18px}.hb-feedback{font-size:12px;max-width:95%;width:max-content}}
+@media(prefers-reduced-motion:reduce){.hb-hero,.hb-body,.hb-projectile{animation:none}.hb-bar>span{transition:none}}
+`;
+    document.head.appendChild(el);
+  }
+  styles();
+  function visible(){const sec=root.closest("section");return !document.hidden && (!sec || !sec.hidden) && root.getClientRects().length>0;}
+  function stop(){cancelAnimationFrame(frame);frame=0;last=0;acc=0;}
+  async function load(){
+    const user=api.user();if(!user)throw new Error("Connecte-toi d'abord.");
     const out=await runTransaction(api.db,async tx=>{
-      const ref=doc(api.db,"users",user.uid),snap=await tx.get(ref);
-      if(!snap.exists()) throw new Error("Compte introuvable.");
-      const s=snap.data(),r=ensure(s,week);
-      change(r,s);
-      tx.update(ref,{ranked:r,boosters:s.boosters||0,bonusBoosters:s.bonusBoosters||0});
-      return s;
+      const snap=await tx.get(doc(api.db,"users",user.uid));
+      if(!snap.exists())throw new Error("Compte introuvable.");
+      return snap.data();
     });
-    if(api.user()?.uid!==user.uid) throw new Error("Le compte a changé.");
-    season=out.ranked;cards=out.cards||{};
+    if(api.user()?.uid!==user.uid)throw new Error("Le compte a changé.");
     return out;
   }
-  function injectStyle() {
-    if(document.getElementById("ranked-pve-style")) return;
-    const style=document.createElement("style");style.id="ranked-pve-style";
-    style.textContent=`
-#rankedRoot{color:#ecf2fa;--pve-blue:#46baff;--pve-red:#fb7583}
-#rankedRoot *{box-sizing:border-box}#rankedRoot button,#rankedRoot select{font:inherit}
-#rankedRoot button{cursor:pointer}#rankedRoot button:disabled{opacity:.4;cursor:not-allowed}
-.pve-head,.pve-buttons{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}.pve-head h2{margin:0 auto 0 0}
-.pve-pill{border:1px solid #8b7849;background:#302a1d;padding:8px 12px;border-radius:99px}
-.pve-help,.pve-message{background:#182435;border:1px solid #364a64;padding:14px;border-radius:12px;line-height:1.6;margin:12px 0}
-.pve-picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
-.pve-picks label{display:flex;flex-direction:column;gap:8px;background:#172130;padding:12px;border-radius:12px}
-#rankedRoot select{width:100%;min-width:0;background:#0d1622;color:#fff;padding:10px;border:1px solid #46576c;border-radius:8px}
-.pve-map{display:grid;gap:10px}.pve-lane{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr) minmax(0,1fr);gap:8px;background:linear-gradient(110deg,#183348,#19372d,#3e2431);padding:12px;border:1px solid #40574d;border-radius:14px}
-.pve-side{display:flex;gap:8px;flex-wrap:wrap;align-content:start}.pve-enemy{justify-content:flex-end}
-.pve-avatar{width:75px;text-align:center;font-size:11px}.pve-avatar img{width:42px;height:42px;border:2px solid var(--pve-blue);border-radius:50%;object-fit:cover;object-position:top}
-.pve-enemy img{border-color:var(--pve-red)}.pve-avatar progress{width:100%;height:8px;accent-color:#45d899}.pve-avatar small{display:block}
-.pve-center{text-align:center;font-size:12px}.pve-center strong{font-size:16px}.pve-front{height:12px;background:#0c121c;border-radius:8px;margin:8px 0;position:relative}.pve-front span{position:absolute;width:14px;height:14px;top:-1px;background:#f6d273;border-radius:50%;transform:translateX(-50%)}
-.pve-nexus{display:flex;justify-content:space-between;gap:10px;margin:10px 0;padding:12px;background:#131c29;border-radius:12px}
-.pve-intents{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}.pve-intent{padding:10px;border-left:3px solid #fb7583;background:#261d2b;font-size:13px}
-.pve-orders{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:14px 0}.pve-order{padding:13px;background:#141f2e;border:1px solid #3a4c63;border-radius:12px}.pve-order h4{margin:0 0 8px}.pve-order p{font-size:12px;line-height:1.5;color:#b9cde0}.pve-order.dead{opacity:.65}.pve-order.changed{border-color:#64ceae}
-.pve-log{max-height:350px;overflow:auto;padding:12px;background:#0d1420;border:1px solid #33455f;border-radius:12px;font-size:13px;line-height:1.7}.pve-log div{padding:3px 0;border-bottom:1px solid #ffffff09}
-.pve-forecast{padding:12px;border:1px solid #648b6d;border-radius:12px;background:#13271f}.pve-result{font-size:20px;padding:16px;background:#322b1e;border:1px solid #b89b55;border-radius:12px}
-.pve-flash{animation:pveFlash .55s ease}@keyframes pveFlash{50%{filter:brightness(1.6)}}
-@media(max-width:600px){.pve-lane{grid-template-columns:minmax(0,1fr) 105px minmax(0,1fr);padding:8px;gap:4px}.pve-avatar{width:54px;font-size:10px}.pve-avatar img{width:32px;height:32px}.pve-center{font-size:10px}.pve-orders{grid-template-columns:1fr}}
-`;
-    document.head.appendChild(style);
-  }
-  injectStyle();
-  async function open() {
-    if(busy) return;
-    if(battle && !battle.done && battle.user===api.user()?.uid && battle.week===api.week()) {render();return;}
-    const n=++epoch;busy=true;root.innerHTML="<p>Chargement de l'arène PvE…</p>";
-    try {await write();if(n!==epoch)return;draft=fullTeam(season.team,cards);battle=null;notice="";}
-    catch(e){if(n===epoch)notice=e.message;}
-    finally{if(n===epoch){busy=false;render();}}
-  }
-  function renderLobby() {
-    if(!season){root.innerHTML=`<p>${esc(notice||"Connecte-toi pour jouer.")}</p><button class="btn" data-action="reload">Réessayer</button>`;return;}
-    const r=rankOf(season.points),last=season.lastReward;
-    root.innerHTML=`<div class="pve-head"><h2>Arène tactique · PvE</h2><span class="pve-pill">${RANKS[r][0]} · ${season.points} points</span></div>
-<p>${season.wins} victoire(s) · ${season.losses} défaite(s) · ${season.draws||0} nul(s). Bots : +${r*4}% PV et dégâts.</p>
-<div class="pve-help">Compose cinq rôles, lis les intentions des bots et prépare tes ordres. Les bâtiments sont attaqués automatiquement quand une vague alliée arrive devant eux avec un champion vivant et sans défenseur ennemi sur la voie. Aucun bouton « siège ».<br>24 manches maximum ; ensuite, le total PV des tourelles + du Nexus départage. Égalité : aucun point.<br>Classé : +30 / −15 points, minimum 0. Entraînement : aucun point. Reset lundi à minuit (Paris), à la prochaine ouverture ; récompense selon le meilleur rang, au moins un match joué.</div>
-${last?`<p class="pve-message">Dernière récompense : ${esc(last.name)} · ${last.normal} boosters + ${last.bonus} bonus.</p>`:""}
-<h3>Équipe · un champion différent par rôle</h3><div class="pve-picks">${ROLES.map((role,i)=>{
-const list=Object.keys(cards).filter(id=>cards[id]>0 && POOL[role].includes(champion(id)?.id)).map(Number).sort((a,b)=>api.card(a).name.localeCompare(api.card(b).name,"fr"));
-return `<label>${role}<select data-pick="${i}" ${busy?"disabled":""}><option value="0">Choisir une carte</option>${list.map(id=>{const c=api.card(id);return `<option value="${id}" ${draft[i]===id?"selected":""}>${esc(c.name)} — ${esc(c.skinName)}</option>`;}).join("")}</select><small>${list.length} carte(s) éligible(s)</small></label>`;
-}).join("")}</div><p class="hint">Positions définies par une liste dans ce fichier, pas exhaustives. Les skins sont visuels : aucune rareté ne donne de bonus de combat.</p>
-<div class="pve-buttons"><button class="btn" data-action="save" ${busy?"disabled":""}>Enregistrer l'équipe</button><button class="btn-play" data-action="train" ${busy?"disabled":""}>Entraînement</button><button class="btn" data-action="start" ${busy?"disabled":""}>Défi classé PvE</button></div>
-<p role="status">${esc(notice)}</p><details><summary>Récompenses hebdomadaires</summary>${RANKS.map(([name,p,n,b])=>`<p>${name} (${p} points) : ${n} boosters + ${b} bonus.</p>`).join("")}</details>`;
-  }
-  function avatar(u) {
-    return `<div class="pve-avatar" title="${esc(u.role)}"><img src="${esc(u.img)}" alt=""><small>${esc(u.name)}</small><progress max="${u.max}" value="${u.hp}"></progress><small>${u.hp}/${u.max}</small></div>`;
-  }
-  function mapHTML(m) {
-    return `<div class="pve-nexus"><span>Ton Nexus : ${m.nexus[0]} PV</span><span>Nexus des bots : ${m.nexus[1]} PV</span></div><div class="pve-map">${LANES.map((name,l)=>`<div class="pve-lane"><div class="pve-side">${laneUnits(m,0,l).map(avatar).join("")||"Voie vide"}</div><div class="pve-center"><strong>${name}</strong><br>Tourelles : ${m.towers[0][l]} / ${m.towers[1][l]} PV<br>Sbires : ${m.waves[0][l]} / ${m.waves[1][l]} PV<div class="pve-front" title="Le front avance vers les bots à droite"><span style="left:${10+(m.front[l]+2)*20}%"></span></div><small>Toi ← front → Bots</small></div><div class="pve-side pve-enemy">${laneUnits(m,1,l).map(avatar).join("")||"Voie vide"}</div></div>`).join("")}</div>`;
-  }
-  const allReady=()=>battle.units[0].every((u,i)=>u.hp<=0 || validOrder(battle,0,i,battle.plans[i]));
-  function forecastHTML() {
-    if(!allReady()) return "<p>Choisis un ordre pour chaque champion vivant pour obtenir l'aperçu exact.</p>";
-    const {m,log}=resolveRound(battle,battle.plans);
-    return `<div class="pve-forecast"><b>Prévision exacte de cette manche</b><p>PV des bâtiments : toi ${score(battle,0)} → ${score(m,0)} ; bots ${score(battle,1)} → ${score(m,1)}.</p><p>${m.units[0].map((u,i)=>`${esc(u.name)} : ${battle.units[0][i].hp} → ${u.hp} PV`).join(" · ")}</p><details><summary>Voir les événements prévus</summary>${log.map(x=>`<div>${esc(x)}</div>`).join("")}</details></div>`;
-  }
-  function renderBattle() {
-    const m=battle;
-    const labels={win:"Victoire !",loss:"Défaite",draw:"Match nul"};
-    root.innerHTML=`<div class="pve-head"><h2>${m.training?"Entraînement":"Défi PvE classé"}</h2><span>Manche ${Math.min(m.round,LIMIT)} / ${LIMIT}</span></div>
-${mapHTML(m)}
-${m.done?`<div class="pve-result">${labels[m.result]} ${m.training?"— aucun point":m.settled?`— ${m.result==="win"?"+30":m.result==="loss"?"−15 (minimum 0)":"0"} points`:"— résultat non enregistré"}</div><p>${esc(notice)}</p><div class="pve-buttons"><button class="btn-play" data-action="back" ${busy?"disabled":""}>Retour à mon équipe</button>${!m.training&&!m.settled?`<button class="btn" data-action="settle" ${busy?"disabled":""}>Réessayer l'enregistrement</button>`:""}</div>`:
-`<h3>Plan des bots — déjà décidé</h3><div class="pve-intents">${m.units[1].map((u,i)=>`<div class="pve-intent"><b>${esc(u.name)} · ${u.role}</b><br>${u.hp>0?esc(orderText(m,1,i,m.intents[i])):`Vaincu : retour dans ${u.respawn} manche(s)`}</div>`).join("")}</div>
-<div class="pve-help">1. Choisis un ordre pour chaque allié. 2. Consulte la prévision. 3. Résous la manche.<br>Déplacements → protections → dégâts simultanés → vagues → bâtiments.<br>Une attaque ciblée échoue si la cible change de voie. Le Gank suit sa cible. Les protections ne suivent pas un allié qui quitte la voie. Les morts réapparaissent après deux manches complètes, à leur position de départ.</div>
-<div class="pve-orders">${m.units[0].map((u,i)=>`<div class="pve-order ${u.hp<=0?"dead":""} ${m.plans[i]?"changed":""}"><h4>${u.role} · ${esc(u.name)} · ${LANES[u.lane]}</h4><p>${esc(SKILLS[i][0])} : ${esc(SKILLS[i][1])}<br>${u.cd?`Indisponible pour encore ${u.cd} manche(s).`:"Disponible maintenant."}</p>${u.hp>0?`<select data-order="${i}" ${busy?"disabled":""}><option value="">Choisir un ordre…</option>${options(m,0,i).map(p=>{const value=`${p.a}:${p.t}`,selected=m.plans[i]?.a===p.a&&m.plans[i]?.t===p.t;return `<option value="${value}" ${selected?"selected":""}>${esc(orderText(m,0,i,p))}</option>`;}).join("")}</select>`:`<p>Vaincu · retour dans ${u.respawn} manche(s).</p>`}</div>`).join("")}</div>
-${forecastHTML()}<div class="pve-buttons"><button class="btn-play" data-action="resolve" ${!allReady()||busy?"disabled":""}>${m.units[0].every(u=>u.hp<=0)?"Attendre la manche suivante":"Résoudre la manche"}</button><button class="btn" data-action="erase" ${busy?"disabled":""}>Effacer mes ordres</button><button class="btn" data-action="abandon" ${busy?"disabled":""}>Abandonner</button></div><p role="status">${esc(notice)}</p>`}
-<details ${m.done?"open":""}><summary>Historique des manches</summary><div class="pve-log">${[...m.history].reverse().map(h=>`<h4>Manche ${h.round}</h4>${h.log.map(x=>`<div>${esc(x)}</div>`).join("")}`).join("")||"Le combat n'a pas encore commencé."}</div></details>`;
-  }
-  function render(){if(battle)renderBattle();else renderLobby();}
-  async function saveTeam() {
-    const team=[...draft];
-    await write((r,s)=>{
-      const valid=fullTeam(team,s.cards||{});
-      if(!valid.every(Boolean)) throw new Error("Choisis cinq champions différents, possédés et compatibles avec les rôles.");
-      r.team=valid;
+  async function save(){
+    const user=api.user();if(!user)throw new Error("Connecte-toi d'abord.");
+    const choice=[...team];
+    const s=await runTransaction(api.db,async tx=>{
+      const ref=doc(api.db,"users",user.uid),snap=await tx.get(ref);
+      if(!snap.exists())throw new Error("Compte introuvable.");
+      const data=snap.data(),valid=validate(choice,data.cards||{});
+      if(!valid.every(Boolean))throw new Error("Choisis cinq champions différents, possédés et compatibles avec les rôles.");
+      // Ne touche jamais à ranked : les anciens points et récompenses sont conservés.
+      tx.update(ref,{bossTraining:{team:valid}});
+      return {...data,bossTraining:{team:valid}};
     });
+    if(api.user()?.uid!==user.uid)throw new Error("Le compte a changé.");
+    cards=s.cards||{};savedTeam=[...s.bossTraining.team];team=[...savedTeam];owner=user.uid;
   }
-  function createBattle(training) {
-    const level=rankOf(season.points),power=1+level*.04;
-    const botIds=ROLES.map((role,i)=>{
-      const list=api.champions().filter(c=>POOL[role].includes(c.id)).sort((a,b)=>Number(a.key)-Number(b.key));
-      if(!list.length) throw new Error(`Pas de champion disponible pour ${role}.`);
-      return Number(list[(level*3+season.games+i)%list.length].key)*1000;
-    });
-    const make=(id,i,p)=>{const c=api.card(id),ch=champion(id);return unit(id,i,p,ch.name,c.img);};
-    battle=baseMatch(season.team.map((id,i)=>make(id,i,1)),botIds.map((id,i)=>make(id,i,power)),level,training,api.user().uid,season.week);
-    battle.token=globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    battle.intents=botPlans(battle);notice="";
-  }
-  async function settle() {
-    if(!battle?.done || battle.training || battle.settled) return;
-    const current=battle;
-    await write(r=>{
-      if(api.user()?.uid!==current.user || r.week!==current.week) throw new Error("La semaine ou le compte a changé : aucun point attribué.");
-      // Une seule rencontre classée active par compte. Empêche le double versement
-      // du même résultat lors d'un nouvel essai après une coupure réseau.
-      const ticket=r.active;
-      if(ticket?.id!==current.token) throw new Error("Ce défi n'est plus actif sur ce compte.");
-      if(ticket.settled) return;
-      ticket.settled=true;ticket.result=current.result;
-      r.points=Math.max(0,r.points+(current.result==="win"?30:current.result==="loss"?-15:0));
-      r.best=Math.max(r.best,r.points);r.games++;
-      if(current.result==="win")r.wins++;
-      else if(current.result==="loss")r.losses++;
-      else r.draws=(r.draws||0)+1;
-    });
-    if(battle===current){current.settled=true;notice="Résultat enregistré.";}
-  }
-  root.addEventListener("change",e=>{
+  async function open(){
     if(busy)return;
-    const pick=e.target.closest("[data-pick]");
-    if(pick){draft[Number(pick.dataset.pick)]=Number(pick.value);return;}
-    const order=e.target.closest("[data-order]");
-    if(order && battle && !battle.done){
-      const i=Number(order.dataset.order),[a,t]=order.value.split(":");
-      battle.plans[i]=a?{a,t:Number(t)}:null;
-      render();
+    if(fight && owner===api.user()?.uid){if(!fight.result){paused=true;stop();}renderFight();return;}
+    const n=++sequence;busy=true;root.innerHTML="<p>Chargement de Chasse aux boss…</p>";
+    try{
+      const s=await load();if(n!==sequence)return;
+      cards=s.cards||{};team=validate(s.bossTraining?.team||s.ranked?.team||[],cards);
+      savedTeam=team.every(Boolean)?[...team]:[];
+      owner=api.user().uid;ready=true;note="";
+    }catch(e){if(n===sequence)note=e.message;}
+    finally{if(n===sequence){busy=false;renderLobby();}}
+  }
+  function renderLobby(){
+    if(!ready){root.innerHTML=`<p>${H(note||"Connecte-toi pour jouer.")}</p><button class="btn" data-action="reload">Réessayer</button>`;return;}
+    root.innerHTML=`<div class="hb-head"><h2>Chasse aux boss</h2><span class="hb-tag">PvE · entraînement · 60 secondes maximum</span></div>
+<div class="hb-box"><h3>Le Gardien hextech</h3>Ton équipe attaque automatiquement. Tu contrôles seulement trois actions :<br>🛡️ <b>Protéger</b> au dernier moment avant la frappe lourde.<br>💚 <b>Soigner</b> lorsque le groupe a perdu des PV.<br>⚡ <b>Assaut</b> quand le cœur du Gardien devient orange.<br>Pas de points ni de récompenses dans ce prototype. Les anciens rangs restent inchangés.</div>
+<h3>Choisis ton équipe</h3><div class="hb-picks">${ROLES.map((role,i)=>{
+      const list=Object.keys(cards).filter(id=>cards[id]>0 && POOL[role].includes(champ(id)?.id)).map(Number).sort((a,b)=>api.card(a).name.localeCompare(api.card(b).name,"fr"));
+      return `<label class="hb-pick"><b>${role}</b><select data-role="${i}" ${busy?"disabled":""}><option value="0">Choisir une carte</option>${list.map(id=>{const c=api.card(id);return `<option value="${id}" ${team[i]===id?"selected":""}>${H(c.name)} — ${H(c.skinName)}</option>`;}).join("")}</select><small>${H(ROLE_TEXT[i])}</small></label>`;
+    }).join("")}</div><p>Les champions et les skins servent à personnaliser ton équipe. À rôle égal, les statistiques sont identiques : aucune rareté ne donne d'avantage.</p>
+<div class="hb-actions"><button class="btn" data-action="save" ${busy?"disabled":""}>Enregistrer l'équipe</button><button class="btn-play" data-action="start" ${busy?"disabled":""}>Affronter le Gardien</button></div><p class="hb-message" role="status">${H(note)}</p>
+<details class="hb-box"><summary>Comprendre le combat</summary><p>Le groupe partage 1 000 PV. Les cinq champions participent jusqu'à la fin : pas de mort individuelle ni de réapparition. Le Gardien possède 2 700 PV.</p><p>Carapace bleue : garde Assaut. Arme levée et compte à rebours rouge : prépare Protéger. Cœur orange après l'impact : utilise Assaut. Chaque action affiche sa durée et sa recharge.</p><p>Clavier : 1 = Protéger, 2 = Soigner, 3 = Assaut, Espace = Pause. Les boutons fonctionnent aussi au toucher.</p><p>Le combat se met en pause si tu quittes la page ou l'onglet. Fermer ou recharger la page efface le combat, sans pénalité.</p></details>`;
+  }
+  function skillHTML(key,title,description){return `<button type="button" class="hb-skill" id="hb-${key}" data-ability="${key}"><b>${title}</b><small>${description}</small><span data-cooldown>Prêt</span></button>`;}
+  function renderFight(){
+    if(!fight)return;
+    if(fight.result){renderResult();return;}
+    root.innerHTML=`<div class="hb-head"><h2>Gardien hextech</h2><span class="hb-tag">Entraînement · aucun point</span><b id="hb-time"></b></div>
+<div class="hb-bars"><div>Ton équipe <b id="hb-hp-text"></b><div class="hb-bar"><span id="hb-hp"></span></div></div><div>Le Gardien <b id="hb-boss-text"></b><div class="hb-bar boss"><span id="hb-boss-hp"></span></div></div></div>
+<div class="hb-stage" id="hb-stage"><div class="hb-squad">${savedTeam.map((id,i)=>{const c=api.card(id);return `<div class="hb-hero"><img src="${H(c.img)}" alt="${H(c.name)}"><span>${H(c.name)}</span><small>${ROLES[i]}</small></div>`;}).join("")}<span class="hb-projectile"></span></div><div class="hb-boss">${BOSS_SVG}</div><div class="hb-feedback" id="hb-feedback" hidden></div><div class="hb-overlay" id="hb-pause" hidden><h3>Combat en pause</h3><p>Le temps et les recharges sont arrêtés.</p><button class="btn-play" data-action="resume">Reprendre</button><button class="btn" data-action="leave">Quitter sans pénalité</button></div></div>
+<div class="hb-intent" id="hb-intent"><h3 id="hb-phase"></h3><p id="hb-advice"></p><span class="hb-count" id="hb-count"></span></div>
+<div class="hb-skills">${skillHTML("shield","🛡️ Protéger · 1","−80 % de dégâts pendant 1,1 s. Recharge : 8 s.")}${skillHTML("heal","💚 Soigner · 2","Rend jusqu'à 180 PV au groupe. Recharge : 18 s.")}${skillHTML("assault","⚡ Assaut · 3","220 dégâts de base ; environ 607 en surchauffe. Recharge : 12 s.")}</div>
+<div class="hb-actions"><button class="btn" data-action="pause">Pause / aide</button><button class="btn" data-action="leave">Quitter sans pénalité</button></div><p id="hb-note" class="hb-message" role="status"></p><details><summary>Journal du combat</summary><div class="hb-log" id="hb-log"></div></details>`;
+    seenEvent=-1;previousPhase="";previousHP=fight.hp;previousBoss=fight.boss;paint();
+  }
+  function paint(){
+    if(!fight || fight.result || !$("hb-stage"))return;
+    const f=fight,now=performance.now(),stage=$("hb-stage");
+    $("hb-time").textContent=`${Math.max(0,C.maxTime-f.time).toFixed(1)} s`;
+    $("hb-hp-text").textContent=`${Math.ceil(f.hp)} / ${C.teamHP}`;
+    $("hb-boss-text").textContent=`${Math.ceil(f.boss)} / ${C.bossHP}`;
+    $("hb-hp").style.width=`${100*f.hp/C.teamHP}%`;
+    $("hb-boss-hp").style.width=`${100*f.boss/C.bossHP}%`;
+    if(f.hp<previousHP)teamHitUntil=now+180;
+    if(f.hp>previousHP)healUntil=now+350;
+    if(previousBoss-f.boss>40)hitUntil=now+250;
+    previousHP=f.hp;previousBoss=f.boss;
+    stage.dataset.phase=f.phase;stage.classList.toggle("shielded",f.shield>0);
+    stage.classList.toggle("boss-hit",now<hitUntil);stage.classList.toggle("team-hit",now<teamHitUntil);stage.classList.toggle("healing",now<healUntil);stage.classList.toggle("hb-paused",paused);
+    $("hb-pause").hidden=!paused;
+    if(previousPhase!==f.phase){
+      $("hb-phase").textContent=PHASES[f.phase][0];$("hb-advice").textContent=PHASES[f.phase][1];$("hb-intent").dataset.phase=f.phase;previousPhase=f.phase;
     }
-  });
+    const remain={normal:C.normalTime,armor:C.armorTime,warning:C.warningTime,exposed:C.exposedTime}[f.phase]-f.phaseTime;
+    $("hb-count").textContent=f.phase==="warning"?`Impact dans ${Math.max(0,remain).toFixed(1)} s`:f.phase==="exposed"?`Ouverture : ${Math.max(0,remain).toFixed(1)} s`:"";
+    Object.keys(f.cd).forEach(k=>{
+      const b=$(`hb-${k}`),cd=f.cd[k];
+      b.disabled=paused || cd>.001 || (k==="heal" && f.hp>=C.teamHP);
+      b.querySelector("[data-cooldown]").textContent=cd>.001?`Recharge : ${cd.toFixed(1)} s`:k==="heal"&&f.hp>=C.teamHP?"Équipe en pleine santé":"Prêt";
+      b.classList.toggle("recommended",!paused && cd<=.001 && ((k==="shield"&&f.phase==="warning"&&remain<=.8)||(k==="assault"&&f.phase==="exposed")||(k==="heal"&&C.teamHP-f.hp>=C.healAmount)));
+    });
+    if(seenEvent!==f.eventId){
+      $("hb-log").innerHTML=f.events.map(e=>`<div class="${e.kind}">${H(e.text)}</div>`).join("");
+      const e=f.events[0];if(e){$("hb-feedback").textContent=e.text;$("hb-feedback").hidden=false;}
+      seenEvent=f.eventId;
+    }
+    $("hb-note").textContent=note;
+  }
+  function renderResult(){
+    stop();const f=fight,s=f.stats;
+    root.innerHTML=`<div class="hb-result"><h3>${f.result==="win"?"🏆 Gardien vaincu !":f.result==="timeout"?"⏱️ Temps écoulé":"Ton équipe est vaincue"}</h3><p>${f.time.toFixed(1)} secondes · Boss : ${f.boss} PV restants · Équipe : ${f.hp} PV restants.</p><p>Entraînement uniquement : aucun point ni booster gagné ou perdu.</p></div>
+<div class="hb-box"><h3>Ce que tu as réussi</h3><p>🛡️ ${s.blocked} frappe(s) lourde(s) bloquée(s) / ${s.blocked+s.missed}.<br>⚡ ${s.goodAssaults} Assaut(s) pendant la surchauffe.<br>💚 ${s.healed} PV rendus.<br>🔵 ${s.badAssaults} Assaut(s) gaspillé(s) contre la carapace.</p><h3>Pour le prochain essai</h3><p>${s.missed?"Attends environ 0,5 seconde avant l'impact pour Protéger : trop tôt, le bouclier expire.":"Tu as bien géré les frappes lourdes."}<br>${s.goodAssaults<2?"Garde Assaut pour le cœur orange : le bonus de dégâts est important.":"Continue à réserver Assaut aux ouvertures."}<br>${s.badAssaults?"Évite Assaut quand la carapace bleue est affichée.":"Utilise le soin lorsque tu as perdu au moins 180 PV pour ne pas le gaspiller."}</p></div>
+<div class="hb-actions"><button class="btn-play" data-action="replay">Rejouer avec cette équipe</button><button class="btn" data-action="lobby">Modifier mon équipe</button></div>`;
+  }
+  function begin(){
+    fight=freshFight();paused=false;note="";last=0;acc=0;paintClock=0;event(fight,"Le Gardien arrive. Tes champions attaquent automatiquement.");
+    renderFight();startLoop();
+  }
+  function startLoop(){stop();if(fight&&!fight.result&&!paused)frame=requestAnimationFrame(loop);}
+  function loop(now){
+    frame=0;
+    if(!fight || fight.result || paused)return;
+    if(api.user()?.uid!==owner){controller.close();return;}
+    if(!visible()){pause();return;}
+    if(!last)last=now;
+    acc+=Math.min(.15,Math.max(0,(now-last)/1000));last=now;
+    while(acc>=.02 && !fight.result){tickFight(fight,.02);acc-=.02;}
+    if(fight.result){renderResult();return;}
+    if(now-paintClock>65){paint();paintClock=now;}
+    frame=requestAnimationFrame(loop);
+  }
+  function pause(){if(!fight || fight.result)return;paused=true;stop();paint();}
+  function resume(){if(!fight || fight.result || !visible())return;paused=false;note="";paint();startLoop();}
+  function ability(key){
+    if(!fight || fight.result || paused || !visible())return;
+    if(api.user()?.uid!==owner){controller.close();return;}
+    const ok=useAbility(fight,key);if(!ok)return;
+    note="";
+    if(fight.result)renderResult();else paint();
+  }
+  root.addEventListener("change",e=>{const s=e.target.closest("[data-role]");if(s&&!busy)team[Number(s.dataset.role)]=Number(s.value);});
   root.addEventListener("click",async e=>{
-    const b=e.target.closest("[data-action]");
-    if(!b || b.disabled || busy)return;
-    const action=b.dataset.action;
-    if(action==="reload"){await open();return;}
-    if(action==="erase" && battle){battle.plans=[];render();return;}
-    if(action==="back"){battle=null;draft=fullTeam(season.team,cards);notice="";render();return;}
-    if(action==="abandon" && !confirm("Abandonner ? Un défi classé compte comme une défaite."))return;
-    busy=true;notice="";render();
-    const generation=epoch;
-    try {
-      if(action==="save"){await saveTeam();notice="Équipe enregistrée.";}
-      if(action==="start" || action==="train"){
-        await saveTeam();if(generation!==epoch)return;
-        if(action==="start" && season.active && !season.active.settled){
-          throw new Error("Un défi a été interrompu. Clique sur « Clôturer le défi interrompu » ci-dessous avant de relancer.");
-        }
-        createBattle(action==="train");
-        if(action==="start"){
-          const token=battle.token;
-          try {await write(r=>{
-            if(r.active && !r.active.settled) throw new Error("Un défi est déjà actif sur un autre onglet.");
-            r.active={id:token,settled:false};
-          });}catch(err){battle=null;throw err;}
-        }
-      }
-      if(action==="resolve" && battle && !battle.done && allReady()){
-        if(api.week()!==battle.week)throw new Error("La semaine a changé. Retourne à l'équipe pour commencer la nouvelle saison.");
-        battle=resolveRound(battle,battle.plans).m;
-        battle.plans=[];
-        if(battle.done){if(!battle.training)await settle();}
-        else battle.intents=botPlans(battle);
-      }
-      if(action==="abandon" && battle && !battle.done){battle.done=true;battle.result="loss";if(!battle.training)await settle();}
-      if(action==="settle")await settle();
-      if(action==="clear-ticket"){
-        await write(r=>{
-          if(r.active && !r.active.settled){
-            r.active.settled=true;r.active.result="loss";
-            r.points=Math.max(0,r.points-15);r.losses++;r.games++;
-          }
-        });notice="Défi interrompu clôturé : −15 points (minimum 0).";
-      }
-    }catch(err){notice=err.message;console.error("Arène PvE",err);}
-    finally{
-      if(generation===epoch){
-        busy=false;render();
-        if(!battle && season?.active && !season.active.settled){root.insertAdjacentHTML("beforeend",`<button class="btn" data-action="clear-ticket">Clôturer le défi interrompu (défaite)</button>`);}
-        if(action==="resolve")root.querySelector(".pve-map")?.classList.add("pve-flash");
-      }
+    const skill=e.target.closest("[data-ability]");if(skill&&!skill.disabled){ability(skill.dataset.ability);return;}
+    const b=e.target.closest("[data-action]");if(!b || b.disabled || busy)return;
+    const a=b.dataset.action;
+    if(a==="reload"){await open();return;}
+    if(a==="pause"){pause();return;}
+    if(a==="resume"){resume();return;}
+    if(a==="leave"){
+      pause();if(!confirm("Quitter cet entraînement ? Aucun point ne sera perdu."))return;
+      stop();fight=null;paused=false;note="";renderLobby();return;
     }
+    if(a==="lobby"){stop();fight=null;note="";renderLobby();return;}
+    const n=sequence;busy=true;note="";
+    if(!fight)renderLobby();
+    try{
+      if(a==="save" || a==="start"){await save();if(n!==sequence)return;if(a==="start")begin();else note="Équipe enregistrée.";}
+      if(a==="replay"){await save();if(n!==sequence)return;begin();}
+    }catch(err){note=err.message;console.error("Chasse aux boss",err);if(fight?.result)fight=null;}
+    finally{if(n===sequence){busy=false;if(!fight)renderLobby();}}
   });
-  return {open,close(){epoch++;battle=null;season=null;cards={};busy=false;root.innerHTML="<p>Connecte-toi pour jouer.</p>";}};
+  document.addEventListener("visibilitychange",()=>{if(document.hidden)pause();});
+  document.addEventListener("keydown",e=>{
+    if(!fight || fight.result || !visible() || e.repeat || e.ctrlKey || e.altKey || e.metaKey)return;
+    if(e.target instanceof Element && e.target.closest("input,select,textarea,[contenteditable=true]"))return;
+    if(e.code==="Space"){e.preventDefault();if(paused)resume();else pause();return;}
+    const key=({Digit1:"shield",Numpad1:"shield",Digit2:"heal",Numpad2:"heal",Digit3:"assault",Numpad3:"assault"})[e.code];
+    if(key){e.preventDefault();ability(key);}
+  });
+  const controller={open,close(){sequence++;stop();fight=null;ready=false;owner=null;busy=false;paused=false;cards={};team=[0,0,0,0,0];savedTeam=[];root.innerHTML="<p>Connecte-toi pour jouer.</p>";}};
+  return controller;
 }
