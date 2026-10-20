@@ -2562,7 +2562,7 @@ async function openRankedMode() {
   try {
     if (!rankedModule) {
       if (!rankedLoading) {
-        rankedLoading = import("./ranked.js?v=1")
+        rankedLoading = import("./ranked.js?v=pve-4")
           .then(module => module.initRanked({
             db,
             user: () => user,
