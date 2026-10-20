@@ -460,21 +460,30 @@ async function applyRecycle(sel, newCards) {
 async function recycleCards() {
   const sel = { ...recSel };
   const total = Object.values(sel).reduce((a, b) => a + b, 0);
-  if (total !== DUPES_PER_CRAFT) { alert(`Choisis exactement ${DUPES_PER_CRAFT} doublons.`); return; }
-  const card = drawRecycleCard();
+  if (!total || total % DUPES_PER_CRAFT) return;
+  const newCards = Array.from({ length: total / DUPES_PER_CRAFT }, drawRecycleCard);
 
   $("recycleGo").disabled = true;
+  $("recycleAll").disabled = true;
   try {
-    await applyRecycle(sel, [card]);
+    await applyRecycle(sel, newCards);
     $("recycleModal").hidden = true;
     $("result").innerHTML = "";
-    startReveal([card]);
+    startReveal(newCards);
   } catch (e) {
     alert(e.message);
-    updateRecycleUI();
+    renderRecycleList();
   }
   render();
 }
+
+$("recycleGo").onclick = () => {
+  if ($("recycleGo").disabled) return;
+  const risky = Object.entries(recSel).some(([id, n]) =>
+    n > 0 && ["legendary", "mythic"].includes(skinCard(+id).rarity));
+  if (risky && !confirm("Tu vas recycler une carte légendaire ou mythique. Continuer ?")) return;
+  recycleCards();
+};
 
 // ----- Tout recycler -----
 function bulkPlan() {
