@@ -639,3 +639,242 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
 #revealRow.many .flip { zoom: .75; }
 #revealRow.huge .flip { zoom: .55; }
 .reveal-actions { position: sticky; bottom: 0; padding: 12px 0; z-index: 2; display: flex; gap: 10px; justify-content: center; }
+/* ---------- Arène classée ---------- */
+
+#rankedRoot {
+  --rk-blue: #45bcff;
+  --rk-red: #ff6478;
+}
+
+.rk-heading,
+.rk-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.rk-heading h2 {
+  margin: 0 auto 0 0;
+}
+
+.rk-rank,
+.rk-notice {
+  padding: 10px 14px;
+  border: 1px solid #c9a24b;
+  border-radius: 12px;
+  background: rgba(201, 162, 75, .12);
+}
+
+#rkSearch {
+  width: min(100%, 540px);
+  padding: 12px;
+  background: #141923;
+  color: #fff;
+  border: 1px solid #394257;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.rk-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.rk-pick,
+.rk-order {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid #343d4f;
+  border-radius: 12px;
+  background: #151b26;
+}
+
+.rk-pick select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  color: #fff;
+  background: #0d121b;
+  border: 1px solid #394257;
+  border-radius: 8px;
+}
+
+.rk-board {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: clamp(330px, 50vw, 560px);
+  overflow: hidden;
+  border: 2px solid #56664a;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 50% 35%, #3a6541, transparent 50%),
+    linear-gradient(135deg, #183a2a, #102c32);
+}
+
+.rk-lane {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 13%;
+  border-block: 2px solid rgba(220, 202, 157, .25);
+  background: rgba(155, 132, 85, .38);
+  z-index: -1;
+}
+
+.rk-lane.top { top: 14%; }
+.rk-lane.mid { top: 42%; }
+.rk-lane.bot { top: 71%; }
+
+.rk-token {
+  position: absolute;
+  width: 76px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  color: white;
+  text-align: center;
+  text-shadow: 0 1px 4px #000;
+}
+
+.rk-token img {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--rk-blue);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  background: #111;
+}
+
+.rk-token.enemy img {
+  border-color: var(--rk-red);
+}
+
+.rk-token.dead {
+  opacity: .28;
+  filter: grayscale(1);
+}
+
+.rk-token progress {
+  width: 60px;
+  height: 8px;
+  accent-color: #40dc8b;
+}
+
+.rk-nexus,
+.rk-tower {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-weight: 700;
+  text-shadow: 0 2px 5px #000;
+}
+
+.rk-nexus {
+  top: 50%;
+  width: 74px;
+  padding: 15px 4px;
+  border-radius: 14px;
+  background: #121e31;
+  border: 2px solid;
+  font-size: 12px;
+}
+
+.rk-nexus.blue {
+  left: 7%;
+  color: var(--rk-blue);
+}
+
+.rk-nexus.red {
+  left: 93%;
+  color: var(--rk-red);
+}
+
+.rk-tower {
+  font-size: 36px;
+  color: #f8d782;
+}
+
+.rk-tower span {
+  display: block;
+  font-size: 12px;
+}
+
+.rk-tower.broken {
+  opacity: .2;
+}
+
+.rk-orders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.rk-order > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rk-order small {
+  opacity: .75;
+}
+
+.rk-log {
+  min-height: 110px;
+  padding: 12px;
+  background: #0d121b;
+  border: 1px solid #30394a;
+  border-radius: 12px;
+  font-size: .9rem;
+  line-height: 1.6;
+}
+
+.rk-result {
+  padding: 16px;
+  border: 1px solid #c9a24b;
+  background: rgba(201, 162, 75, .15);
+  border-radius: 12px;
+  font-size: 1.15rem;
+}
+
+@media (max-width: 600px) {
+  .rk-token {
+    width: 58px;
+    font-size: 9px;
+  }
+
+  .rk-token img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .rk-token progress {
+    width: 42px;
+  }
+
+  .rk-nexus {
+    width: 46px;
+    font-size: 9px;
+    padding: 10px 2px;
+  }
+
+  .rk-tower {
+    font-size: 26px;
+  }
+
+  .rk-orders {
+    grid-template-columns: 1fr;
+  }
+}

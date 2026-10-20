@@ -1026,6 +1026,7 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   if (b.dataset.tab === "friends") refreshSocial();
   if (b.dataset.tab === "ranking") loadRanking();
   if (b.dataset.tab === "profile") showProfile();
+  if (b.dataset.tab === "ranked") openRankedMode();
 });
 // ---------- Mini-jeu : roulette ----------
 let spinning = false, wheelRot = 0;
@@ -2525,6 +2526,7 @@ onAuthStateChanged(auth, async u => {
     $("tradeModal").hidden = true;
     $("recycleModal").hidden = true;
     $("viewer").hidden = true;
+    rankedModule?.close();
     vw = null;
     rv = null;
     lbSig = "";
@@ -2544,3 +2546,42 @@ onAuthStateChanged(auth, async u => {
     else alert("Erreur de chargement : " + e.message);
   }
 });
+// ---------- Chargement indépendant de l'arène ----------
+let rankedModule = null;
+let rankedLoading = null;
+
+async function openRankedMode() {
+  const root = $("rankedRoot");
+  if (!root) return;
+
+  if (!user || !state || !champions.length) {
+    root.textContent = "Attends la fin du chargement de ton compte.";
+    return;
+  }
+
+  try {
+    if (!rankedModule) {
+      if (!rankedLoading) {
+        rankedLoading = import("./ranked.js?v=1")
+          .then(module => module.initRanked({
+            db,
+            user: () => user,
+            champions: () => champions,
+            card: id => skinCard(Number(id)),
+            week: () => weekKey()
+          }))
+          .catch(error => {
+            rankedLoading = null;
+            throw error;
+          });
+      }
+
+      rankedModule = await rankedLoading;
+    }
+
+    await rankedModule.open();
+  } catch (error) {
+    console.error("Arène classée :", error);
+    root.textContent = "Impossible de charger l'arène : " + error.message;
+  }
+}

@@ -46,6 +46,7 @@
       <button data-tab="quests">Quêtes <span id="questsBadge" class="nbadge" hidden>0</span></button>
       <button data-tab="games">Jeux</button>
       <button data-tab="adventure">Aventure</button>
+      <button data-tab="ranked">Arène classée</button>
       <button data-tab="ranking">Classement</button>
       <button data-tab="profile">Profil</button>
     </nav>
@@ -141,6 +142,11 @@
           <h3>Échanges envoyés</h3>
           <ul id="tradesOut" class="list"></ul>
         </div>
+      </div>
+    </section>
+    <section id="tab-ranked" hidden>
+      <div id="rankedRoot">
+        <p>Le mode classé se chargera après la connexion.</p>
       </div>
     </section>
 
@@ -310,7 +316,8 @@
   <div id="recycleModal" hidden>
     <div class="panel trade-box">
       <h2>Recycler des doublons</h2>
-      <p class="hint">Choisis des doublons par groupes de <b id="recNeed">3</b> : chaque groupe donne 1 carte. Tu gardes toujours un exemplaire de chaque carte.</p>
+      <p class="hint">Choisis des doublons par groupes de <b id="recNeed">3</b> : chaque groupe donne 1 carte. Tu gardes
+        toujours un exemplaire de chaque carte.</p>
       <div id="recFilter" class="chips">
         <button class="btn" data-r="">Toutes</button>
         <button class="btn" data-r="common">Commune</button>
@@ -383,14 +390,15 @@
       <div class="sc-actions"><button id="pickCancel" class="btn">Annuler</button></div>
     </div>
   </div>
-    <div id="battleModal" class="battle-full" hidden>
+  <div id="battleModal" class="battle-full" hidden>
     <div class="battle-top">
       <h3 id="battleTitle"></h3>
       <button id="bSkip" class="btn">Passer ⏭</button>
     </div>
     <div class="battle-arena">
       <div id="bTeamP" class="b-team"></div>
-      <div class="b-vs">VS<div id="bClock"></div></div>
+      <div class="b-vs">VS<div id="bClock"></div>
+      </div>
       <div id="bTeamE" class="b-team"></div>
     </div>
     <div id="bLog" class="b-log"></div>
