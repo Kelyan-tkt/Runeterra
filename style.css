@@ -878,3 +878,21 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
     grid-template-columns: 1fr;
   }
 }
+
+.rk-help {
+  padding: 12px 16px;
+  border: 1px solid rgba(69, 188, 255, .3);
+  border-radius: 12px;
+  background: rgba(69, 188, 255, .07);
+  line-height: 1.65;
+}
+
+.rk-order button[data-command="siege"] {
+  border-color: #e4ae52;
+  color: #ffd388;
+}
+
+.rk-order button[data-command="skill"]:not(:disabled) {
+  border-color: #ac81ff;
+  background: rgba(172, 129, 255, .12);
+}
