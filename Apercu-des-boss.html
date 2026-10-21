@@ -1,0 +1,138 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aperçu des boss de Runeterra</title><style>
+body{margin:0;padding:24px;background:#0d1420;color:#e7f0fc;font:16px system-ui,sans-serif}header{max-width:1000px;margin:0 auto 24px}button{background:#22374d;color:white;border:1px solid #65809b;border-radius:10px;padding:10px 14px;margin:4px;cursor:pointer}.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;max-width:1500px;margin:auto}.hb-stage{background:radial-gradient(ellipse at center,#263e53,#111e2c);border:1px solid #36516b;border-radius:16px;padding:16px}.hb-stage h2{font-size:17px;text-align:center}.boss-art-svg{height:265px!important;width:100%}p{line-height:1.6}
+</style></head><body><header><h1>Les dix boss — aperçu des apparences</h1><p>Illustrations vectorielles originales. Les boutons ci-dessous montrent uniquement les états visuels, pas un combat.</p><div id="controls"><button data-phase="normal">Normal</button><button data-phase="armor">Carapace</button><button data-phase="warning">Attaque imminente</button><button data-phase="exposed">Point faible ouvert</button></div></header><main class="gallery" id="gallery"></main><script>// Silhouettes SVG originales de Chasse aux boss. Aucune image distante.
+const ART = {
+ hextech: {name:'Gardien hextech',metal:['#a7c6d4','#24465d'],accent:'#59d9ff',body:`
+ <path d="M106 218L143 218L140 279H98Z M177 218H214L222 279H180Z" fill="@M@"/>
+ <path d="M95 108L62 113L38 181L70 199L104 151Z" fill="@M@"/>
+ <g class="ba-strike"><path d="M225 108L263 118L279 181L249 199L215 150Z" fill="@M@"/><path d="M243 176L292 169L301 219L248 229Z" fill="#adc5ce"/><path d="M254 188L284 184M256 204L288 200" stroke="#50748a"/></g>
+ <path d="M104 98H216L238 156L210 236H110L82 156Z" fill="@M@"/><path d="M119 43H201L211 97H109Z" fill="@M@"/>
+ <path d="M126 63L149 68L145 78L125 74Z M194 63L171 68L175 78L195 74Z" fill="@A@"/>
+ <circle cx="160" cy="157" r="43" fill="#142938" stroke="#adcedb"/><circle class="ba-weakpoint" cx="160" cy="157" r="28" fill="@A@"/><path d="M160 137L173 157L160 178L147 157Z" fill="#e4ffff" stroke="none"/>
+ <path d="M91 125L114 139M229 125L206 139" stroke="@A@"/>`},
+ stone:{name:'Sentinelle de pierre',metal:['#b8b49d','#4b514b'],accent:'#b9f49b',body:`
+ <path d="M94 218L144 211L135 277L83 283L77 261Z M176 211L226 219L244 266L234 283L182 277Z" fill="@M@"/>
+ <path d="M79 112L46 122L31 178L51 212L91 194L111 143Z" fill="@M@"/>
+ <g class="ba-strike"><path d="M235 112L276 127L294 178L272 217L233 196L211 145Z" fill="@M@"/><path d="M249 161L278 167L282 191L251 197Z" fill="#939983"/></g>
+ <path d="M108 78L76 121L91 214L128 242L196 240L233 207L244 120L211 80Z" fill="@M@"/>
+ <path d="M125 44L180 37L207 71L195 110L137 110L113 82Z" fill="#999d8c"/>
+ <path d="M126 75L148 78M171 78L192 73" stroke="@A@" stroke-width="6"/>
+ <path d="M84 134L122 145L105 190M222 133L194 152L207 201M150 105L142 132L161 148" fill="none" stroke="#343d36" stroke-width="7"/>
+ <path class="ba-weakpoint" d="M156 139L176 158L165 201L144 190L139 159Z" fill="@A@"/>
+ <path d="M157 151L152 166L164 172L157 188" fill="none" stroke="#4d7945"/>
+ <path d="M92 99L85 68L111 82M205 85L231 65L225 106" fill="#79816a"/>`},
+ ember:{name:'Golem de braise',metal:['#62515b','#241e31'],accent:'#ff853b',body:`
+ <path d="M99 220L143 224L135 279H81Z M179 224L222 220L239 279H184Z" fill="@M@"/>
+ <path d="M103 110L56 105L29 173L50 214L94 202L116 155Z" fill="@M@"/>
+ <g class="ba-strike"><path d="M216 111L264 105L293 172L271 214L228 200L207 156Z" fill="@M@"/><path d="M254 129L262 159L248 184" fill="none" stroke="@A@" stroke-width="8"/></g>
+ <path d="M113 92L208 93L236 159L211 238H109L83 158Z" fill="@M@"/>
+ <path d="M117 96L108 52L136 75L151 25L174 65L198 37L207 100Z" fill="#ff9e32" stroke="#ff5c27"/>
+ <path d="M127 75H192L202 113L177 126H140L117 108Z" fill="#362938"/><path d="M133 96H151M170 96H187" stroke="#ffe5a0" stroke-width="6"/>
+ <ellipse class="ba-weakpoint" cx="160" cy="175" rx="42" ry="46" fill="@A@"/>
+ <path d="M140 143V208M160 135V215M180 143V208" stroke="#312536" stroke-width="9"/>
+ <path d="M99 153L116 168L107 199M212 153L202 170L215 204" fill="none" stroke="@A@" stroke-width="6"/>
+ <path d="M80 235L69 218L61 237L71 249Z M242 236L252 214L263 234L253 250Z" fill="#ffbe52" stroke="none"/>`},
+ mist:{name:'Araignée des brumes',metal:['#6e698e','#24213f'],accent:'#67e9bf',body:`
+ <g fill="none" stroke="#7b76a2" stroke-width="12">
+ <path d="M123 144L65 96L18 126M115 169L42 146L11 189M116 191L49 214L21 265M128 208L92 253L80 293"/>
+ <g class="ba-strike"><path d="M197 144L255 96L302 126M205 169L278 146L309 189M204 191L271 214L299 265M192 208L228 253L240 293"/></g>
+ </g>
+ <ellipse cx="160" cy="114" rx="58" ry="73" fill="@M@"/><path d="M122 72L160 45L198 72L188 126L160 149L132 126Z" fill="#383650"/>
+ <path class="ba-weakpoint" d="M160 66L179 96L160 123L141 96Z" fill="@A@"/>
+ <ellipse cx="160" cy="185" rx="51" ry="45" fill="@M@"/>
+ <path d="M130 212L132 248L147 226M190 212L188 248L173 226" fill="#d7f1dd"/>
+ <g fill="@A@" stroke="none"><circle cx="141" cy="176" r="7"/><circle cx="160" cy="170" r="9"/><circle cx="179" cy="176" r="7"/><circle cx="128" cy="190" r="4"/><circle cx="192" cy="190" r="4"/></g>`},
+ ice:{name:'Colosse de glace',metal:['#d8fbff','#3f89b6'],accent:'#9cfaff',body:`
+ <path d="M100 216L139 217L136 278L76 284Z M179 217L219 216L245 284L184 278Z" fill="@M@"/>
+ <path d="M108 109L62 79L43 129L16 190L63 211L100 175Z" fill="@M@"/>
+ <g class="ba-strike"><path d="M212 109L258 77L275 129L305 189L259 213L220 174Z" fill="@M@"/><path d="M270 142L292 135L286 172L309 180L280 193Z" fill="#dcffff"/></g>
+ <path d="M116 72L147 93L166 52L196 91L226 119L215 220L166 246L104 220L90 126Z" fill="@M@"/>
+ <path d="M132 53L157 25L188 49L202 100L181 119L136 104Z" fill="@M@"/>
+ <path d="M133 71L153 80M170 81L190 72" stroke="#f4ffff" stroke-width="6"/>
+ <path d="M115 139L146 162L127 210M207 126L181 154L201 211M158 112L165 145" fill="none" stroke="#beeaff" stroke-width="3"/>
+ <path class="ba-weakpoint" d="M165 129L190 170L161 219L140 174Z" fill="@A@"/>
+ <path d="M62 81L59 44L81 91M239 94L260 43L260 86M106 126L89 91L93 136" fill="#b8eeff"/>`},
+ dragon:{name:'Dragon des ruines',metal:['#b88865','#633e43'],accent:'#ffbd68',body:`
+ <path d="M135 141Q85 56 20 54L34 99L17 143L73 134L95 185Z" fill="#7c3e48"/><path d="M187 138Q239 43 301 53L284 97L306 141L247 133L222 181Z" fill="#7c3e48"/>
+ <path d="M36 70L95 123L110 165M287 68L228 121L212 166" fill="none" stroke="#ce8b6f" stroke-width="5"/>
+ <path d="M203 222Q282 221 286 266Q279 298 244 282Q271 273 257 259Q232 247 196 252Z" fill="@M@"/>
+ <ellipse cx="162" cy="194" rx="62" ry="65" fill="@M@"/>
+ <path d="M119 229L91 273L135 282L155 235M180 233L188 281L228 272L206 227" fill="@M@"/>
+ <path d="M140 161Q112 120 129 83L169 65L195 90L180 145L190 171Z" fill="@M@"/>
+ <g class="ba-strike"><path d="M133 78L115 52L148 62L173 46L184 75L216 83L218 109L181 128L145 114Z" fill="@M@"/><path d="M160 91L178 86L171 100Z" fill="@A@"/><path d="M187 108L195 119L201 105L209 111L213 99" fill="#fff0ce" stroke-width="2"/></g>
+ <path class="ba-weakpoint" d="M156 161L183 184L165 232L141 196Z" fill="@A@"/>
+ <path d="M153 142L169 145M148 153L180 158" stroke="#e7b88e"/>`},
+ void:{name:'Gardien du Néant',metal:['#a28ee0','#38274d'],accent:'#d296ff',body:`
+ <g fill="none" stroke="@M@" stroke-width="17"><path d="M113 187Q30 179 44 250Q52 276 24 278M134 216Q89 272 127 289M187 218Q219 267 196 291"/><g class="ba-strike"><path d="M208 177Q292 176 279 238Q268 263 297 274"/></g></g>
+ <path d="M72 148L95 80L130 96L158 37L189 94L229 76L252 147L229 209L190 229L130 226L91 204Z" fill="@M@"/>
+ <path d="M83 149L114 119L160 111L207 119L239 150L207 184L160 193L112 182Z" fill="#171027"/>
+ <ellipse cx="160" cy="150" rx="46" ry="30" fill="#eee1ff"/>
+ <ellipse class="ba-weakpoint" cx="160" cy="150" rx="22" ry="29" fill="@A@"/><path d="M160 127L166 149L160 174L154 149Z" fill="#241331" stroke="none"/>
+ <path d="M114 208L126 240L143 217L162 247L177 217L194 239L206 204" fill="#bcabd8"/>
+ <path d="M100 85L81 42L124 91M197 88L238 41L225 86" fill="#705796"/>`},
+ sovereign:{name:'Souverain des profondeurs',metal:['#70b8ad','#174d5d'],accent:'#87ffdc',body:`
+ <g fill="none" stroke="@M@" stroke-width="20"><path d="M116 214Q55 227 73 271Q85 285 48 286M139 219Q112 273 142 291M177 220Q211 265 183 291M202 216Q258 220 243 269Q231 290 276 282"/></g>
+ <path d="M113 105L80 132L97 218L145 246L195 238L222 193L220 126L196 104Z" fill="@M@"/>
+ <path d="M114 66L127 39L144 57L160 23L176 57L193 39L207 67L192 110H130Z" fill="#d8be70"/>
+ <path d="M128 76H192L199 123L179 145H141L122 119Z" fill="@M@"/>
+ <path d="M135 98L153 102M168 102L186 98" stroke="@A@" stroke-width="5"/>
+ <path d="M94 137L62 164L80 199L109 179" fill="@M@"/>
+ <g class="ba-strike"><path d="M218 133L247 151L260 128" fill="none" stroke="#8bbfb5" stroke-width="17"/><path d="M271 83V268" stroke="#d9bf75" stroke-width="9"/><path d="M244 61L249 94L271 110L293 94L299 60M271 110V42" fill="none" stroke="#d9bf75" stroke-width="8"/></g>
+ <path class="ba-weakpoint" d="M160 153L185 177L161 211L137 178Z" fill="@A@"/>
+ <path d="M120 156L130 172M191 156L181 172" stroke="#d8be70"/>`},
+ sun:{name:'Titan solaire',metal:['#fff1b1','#bf7628'],accent:'#ffe978',body:`
+ <g fill="@M@" stroke="#956524" stroke-width="2"><circle cx="160" cy="107" r="72" fill="none" stroke="#e4b344" stroke-width="12"/>
+ ${Array.from({length:12},(_,i)=>`<path d="M153 20L160 2L167 20Z" transform="rotate(${i*30} 160 107)"/>`).join('')}
+ </g>
+ <path d="M120 208L145 221L137 282H99Z M178 221L203 208L221 282H182Z" fill="@M@"/>
+ <path d="M111 102L72 131L88 190L112 178L132 140M208 102L235 126L228 175L204 165L187 137" fill="@M@"/>
+ <path d="M121 96H200L221 165L197 235L159 251L119 229L98 164Z" fill="@M@"/>
+ <path d="M130 55L159 37L191 56L192 110L160 134L128 109Z" fill="#f5dc8a"/><path d="M142 74L155 77M168 77L181 74" stroke="#fff9df" stroke-width="5"/>
+ <path d="M121 131L159 154L201 131M123 213L160 228L199 211" fill="none" stroke="#805325"/>
+ <g class="ba-strike"><path d="M250 44V283" stroke="#e4b344" stroke-width="8"/><path d="M250 19L271 70L250 87L230 69Z" fill="#fff1ae"/><path d="M222 180L250 160" stroke="#e4b344" stroke-width="16"/></g>
+ <circle class="ba-weakpoint" cx="160" cy="182" r="25" fill="@A@"/>`},
+ abyss:{name:'Roi de l’abîme',metal:['#5a779b','#182744'],accent:'#a0baff',body:`
+ <path d="M197 213Q272 216 291 263L270 282L249 260L218 259L186 243Z" fill="@M@"/>
+ <path d="M115 216L67 240L83 266L127 246M208 208L238 231L223 258L187 242" fill="@M@"/>
+ <path d="M78 135L43 101L47 159L25 185L78 191M245 135L278 98L274 158L303 185L248 191" fill="#4b6c93"/>
+ <path d="M87 91L112 63L134 80L162 38L184 82L212 62L241 92L264 159L240 222L195 250H125L78 218L57 160Z" fill="@M@"/>
+ <path d="M103 119L127 114L137 134L115 140Z M217 119L193 114L183 134L205 140Z" fill="@A@"/>
+ <path class="ba-weakpoint" d="M161 87L175 107L161 128L147 107Z" fill="@A@"/>
+ <g class="ba-strike"><path d="M91 167Q160 132 230 167L218 216Q160 254 104 217Z" fill="#080f20" stroke="#849fba" stroke-width="4"/>
+ <path d="M103 164L114 191L125 156L141 184L158 150L175 184L192 157L204 193L220 166M112 216L124 197L140 232L157 206L176 232L193 197L207 215" fill="#d8e9ef" stroke-width="2"/></g>
+ <path d="M111 76L91 36L127 66M191 64L228 34L210 78" fill="#8b9fbb"/>`}
+};
+let serial=0;
+function css(){
+ if(typeof document==='undefined'||document.getElementById('boss-appearances-style'))return;
+ const style=document.createElement('style');style.id='boss-appearances-style';
+ style.textContent=`
+ .boss-art-svg{display:block;width:100%;max-width:340px;height:auto;margin:auto;overflow:visible}
+ .boss-art-svg .ba-body{transform-origin:160px 180px;animation:baBreathe 3s ease-in-out infinite}
+ .boss-art-svg .ba-weakpoint{stroke:#e6ffff;stroke-width:2px;transition:fill .2s,filter .2s}
+ .boss-art-svg .ba-armor{opacity:0;transition:opacity .2s}
+ .boss-art-svg .ba-warning-halo{opacity:0}
+ .boss-art-svg .ba-strike{transform-box:fill-box;transform-origin:50% 75%}
+ .hb-stage[data-phase="armor"] .boss-art-svg .ba-armor{opacity:1}
+ .hb-stage[data-phase="warning"] .boss-art-svg .ba-warning-halo{opacity:1;animation:baWarn .5s ease-in-out infinite}
+ .hb-stage[data-phase="warning"] .boss-art-svg .ba-strike{animation:baStrike .7s ease-in-out infinite}
+ .hb-stage[data-phase="exposed"] .boss-art-svg .ba-weakpoint{fill:#ffb234!important;stroke:#fff1ad;filter:drop-shadow(0 0 12px #ffad32)}
+ .hb-stage[data-phase="exposed"] .boss-art-svg .ba-body{animation:baBreathe 1s ease-in-out infinite}
+ .bs-boss .boss-art-svg{width:100%;height:150px;margin-bottom:8px}
+ .bs-boss .ba-body{animation:none}
+ @keyframes baBreathe{50%{transform:translateY(-4px)}}
+ @keyframes baWarn{50%{opacity:.25}}
+ @keyframes baStrike{50%{transform:rotate(-9deg) translateY(-4px)}}
+ @media(prefers-reduced-motion:reduce){.boss-art-svg .ba-body,.boss-art-svg .ba-strike,.boss-art-svg .ba-warning-halo{animation:none!important}.boss-art-svg .ba-weakpoint,.boss-art-svg .ba-armor{transition:none}}
+ `;document.head.appendChild(style);
+}
+function bossArtwork(id){
+ css();const key=Object.hasOwn(ART,id)?id:'hextech',a=ART[key],n=`ba-${++serial}`;
+ const body=a.body.replaceAll('@M@',`url(#${n}-metal)`).replaceAll('@A@',a.accent);
+ return `<svg class="boss-art-svg" data-boss-art="${key}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="${a.name}"><title>${a.name}</title><defs><linearGradient id="${n}-metal" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="${a.metal[0]}"/><stop offset="1" stop-color="${a.metal[1]}"/></linearGradient></defs><ellipse cx="160" cy="293" rx="109" ry="15" fill="#000" opacity=".3"/><g class="ba-warning-halo" fill="none" stroke="#ff7b76" stroke-width="4"><ellipse cx="160" cy="167" rx="140" ry="126"/></g><g class="ba-body" stroke="#111d2a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${body}</g><g class="ba-armor" fill="none" stroke="#75cfff"><path d="M160 25L276 76L261 213L160 286L59 213L44 76Z" stroke-width="7" opacity=".65"/><path d="M160 41L261 86L247 204L160 268L73 204L59 86Z" stroke-width="2" stroke-dasharray="10 8" opacity=".7"/></g></svg>`;
+}
+const bossAppearanceNames=Object.fromEntries(Object.entries(ART).map(([id,a])=>[id,a.name]));
+
+document.getElementById('gallery').innerHTML=Object.entries(bossAppearanceNames).map(([id,name])=>`<article class="hb-stage" data-phase="normal"><h2>${name}</h2>${bossArtwork(id)}</article>`).join('');
+document.getElementById('controls').addEventListener('click',e=>{const b=e.target.closest('[data-phase]');if(b)document.querySelectorAll('.hb-stage').forEach(el=>el.dataset.phase=b.dataset.phase);});
+</script></body></html>

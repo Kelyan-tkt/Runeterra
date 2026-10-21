@@ -10,6 +10,7 @@ import {
   publishBossRank,
   initBossLeaderboard
 } from "./boss-leaderboard.js?v=1";
+import { bossArtwork } from "./boss-appearances.js?v=1";
 // Chasse aux boss : saisons PvE, économie indépendante de l’Aventure.
 const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"];
 const POOL = {
@@ -295,13 +296,54 @@ ${reward ? `<p class="hb-box">Récompense versée pour la semaine du ${H(reward.
     root.innerHTML = header() + (view === 'equipment' ? equipmentHTML() : bossesHTML()) + `<p class="hb-message" role="status">${H(note)}</p>`;
   }
   function bossesHTML() {
-    return `<div class="hb-box">Les champions attaquent automatiquement. Protège la frappe lourde, soigne ton équipe, puis utilise Assaut pendant la surchauffe. Chaque combat dure au maximum 60 secondes.<br>Points et boosters améliorés : première victoire sur chaque boss de la semaine uniquement. Les répétitions donnent 20 % d’or, au plus trois fois par boss et par jour. Une défaite ou un abandon ne coûte rien.</div>
-${!savedTeam.length ? '<p class="hb-message">Commence par enregistrer cinq champions dans « Équipe & boutique ».</p>' : ''}
-<div class="bs-boss-grid">${BOSS.map((b, i) => {
-      const done = !!season.cleared[b.id], locked = i > 0 && !season.cleared[BOSS[i - 1].id], rep = season.daily.wins[b.id] || 0;
-      return `<article class="hb-box bs-boss"><h3>${i + 1}. ${H(b.name)} ${done ? '✓' : ''}</h3><p>${H(b.desc)}</p><p>${b.hp} PV · dégâts ${b.type === 'physical' ? 'physiques' : 'magiques'}</p><p>${done ? `Rejouer : ${rep < 3 ? Math.floor(b.gold * .2) : 0} or (${rep}/3 répétitions payées aujourd’hui).` : `Première victoire : ${b.points} points · ${b.gold} or · ${b.bonus} booster(s) amélioré(s).`}</p>
- <button class="btn-play" data-action="fight" data-boss="${i}" ${busy || locked || !savedTeam.length ? 'disabled' : ''}>${locked ? 'Vaincs le boss précédent' : done ? 'Rejouer' : 'Combattre'}</button></article>`;
-    }).join('')}</div><details class="hb-box"><summary>Rangs, récompenses et fonctionnement de la saison</summary>${RANKS.map(([name, p, n, b]) => `<p>${name} : ${p} points → ${n} boosters + ${b} amélioré(s).</p>`).join('')}<p>Au moins un boss vaincu pour une récompense. Chaque lundi : points, or, objets et boss vaincus sont remis à zéro ; 1 000 or de départ. Ton équipe et toutes tes cartes restent. L’Aventure est indépendante. Les semaines sans victoire ne donnent pas de récompense.</p><p>Les récompenses sont calculées sur le navigateur : ce mode entre amis n’est pas protégé contre la falsification des victoires.</p></details>`;
+    const week = weekKey();
+    const progress = getWeeklyProgress();
+
+    return `
+    <div class="hb-box">
+      <h3>Chasse aux boss</h3>
+
+      <p>
+        Chaque boss peut être vaincu une fois par semaine.
+        Les récompenses sont publiées dans Firestore.
+      </p>
+
+      <div class="bs-bosses">
+        ${BOSS_LIST.map((boss, i) => {
+      const entry = progress?.bosses?.[boss.id];
+      const done = entry?.defeated === true;
+
+      return `
+            <article class="hb-box bs-boss" data-boss-id="${H(boss.id)}">
+              ${bossArtwork(boss.id)}
+
+              <h3>
+                ${i + 1}. ${H(boss.name)}
+                ${done ? '<span class="bs-done">✓ Vaincu</span>' : ''}
+              </h3>
+
+              <p>${H(boss.description)}</p>
+
+              <div class="bs-rewards">
+                <p><b>Récompense :</b> ${H(boss.rewardText)}</p>
+              </div>
+
+              ${done
+          ? `<p class="bs-status">Boss déjà vaincu cette semaine.</p>`
+          : `<button
+                      class="btn-play"
+                      data-action="fight-boss"
+                      data-boss-id="${H(boss.id)}"
+                    >
+                      Affronter ${H(boss.name)}
+                    </button>`
+        }
+            </article>
+          `;
+    }).join('')}
+      </div>
+    </div>
+  `;
   }
   function equipmentHTML() {
     const list = itemList(), valid = savedTeam.filter(id => cards[id] > 0 && champ(id));
@@ -380,7 +422,7 @@ ${f.result === 'win' ? busy ? '<p>Enregistrement des récompenses…</p>' : r ? 
     const f = fight, g = f.group;
     root.innerHTML = `<div class="hb-head"><h2>${H(f.cfg.name)}</h2><span class="hb-tag">${RANKS[rankOf(season.points)][0]} · défi PvE</span><b id="hb-time"></b></div><p>${H(f.cfg.desc)}</p>
 <div class="hb-bars"><div>Ton équipe <b id="hb-hp-text"></b><div class="hb-bar"><span id="hb-hp"></span></div></div><div>Le boss <b id="hb-boss-text"></b><div class="hb-bar boss"><span id="hb-boss-hp"></span></div></div></div>
-<div class="hb-stage" id="hb-stage"><div class="hb-squad">${savedTeam.map((id, i) => { const c = api.card(id); return `<div class="hb-hero"><img src="${H(c.img)}" alt="${H(c.name)}"><span>${H(c.name)}</span><small>${ROLES[i]}</small></div>`; }).join('')}<span class="hb-projectile"></span></div><div class="hb-boss" style="filter:hue-rotate(${f.cfg.hue}deg)">${BOSS_SVG}</div><div class="hb-feedback" id="hb-feedback" hidden></div><div class="hb-overlay" id="hb-pause" hidden><h3>Combat en pause</h3><p>Le temps et les recharges sont arrêtés.</p><button class="btn-play" data-action="resume">Reprendre</button><button class="btn" data-action="leave">Quitter sans pénalité</button></div></div>
+<div class="hb-stage" id="hb-stage"><div class="hb-squad">${savedTeam.map((id, i) => { const c = api.card(id); return `<div class="hb-hero"><img src="${H(c.img)}" alt="${H(c.name)}"><span>${H(c.name)}</span><small>${ROLES[i]}</small></div>`; }).join('')}<span class="hb-projectile"></span></div><div class="hb-boss">${bossArtwork(f.cfg.id)}</div><div class="hb-feedback" id="hb-feedback" hidden></div><div class="hb-overlay" id="hb-pause" hidden><h3>Combat en pause</h3><p>Le temps et les recharges sont arrêtés.</p><button class="btn-play" data-action="resume">Reprendre</button><button class="btn" data-action="leave">Quitter sans pénalité</button></div></div>
 <div class="hb-intent" id="hb-intent"><h3 id="hb-phase"></h3><p id="hb-advice"></p><span class="hb-count" id="hb-count"></span></div>
 <div class="hb-skills">${skillHTML('shield', '🛡️ Protéger · 1', '−80 % de dégâts pendant 1,1 s. Recharge : 8 s.')}${skillHTML('heal', '💚 Soigner · 2', `Rend jusqu’à ${g.heal} PV. Recharge : 18 s.`)}${skillHTML('assault', '⚡ Assaut · 3', `${g.assault} dégâts de base ; ${Math.round(g.assault * 2.4 * 1.15)} en surchauffe. Recharge : 12 s.`)}</div>
 <div class="hb-actions"><button class="btn" data-action="pause">Pause</button><button class="btn" data-action="leave">Quitter sans pénalité</button></div><p class="hb-message" id="hb-note" role="status"></p><details><summary>Journal du combat</summary><div class="hb-log" id="hb-log"></div></details>`;
@@ -475,43 +517,43 @@ ${f.result === 'win' ? busy ? '<p>Enregistrement des récompenses…</p>' : r ? 
     const k = ({ Digit1: 'shield', Numpad1: 'shield', Digit2: 'heal', Numpad2: 'heal', Digit3: 'assault', Numpad3: 'assault' })[e.code]; if (k) { e.preventDefault(); ability(k); }
   });
   const rankingUI = initBossLeaderboard({
-  db: api.db,
-  user: api.user,
-  week: api.week,
-  root,
-  onOpen: pause
-});
+    db: api.db,
+    user: api.user,
+    week: api.week,
+    root,
+    onOpen: pause
+  });
 
-const controller = {
-  open,
+  const controller = {
+    open,
 
-  close() {
-    // Ferme et vide le classement à la déconnexion.
-    rankingUI.close();
+    close() {
+      // Ferme et vide le classement à la déconnexion.
+      rankingUI.close();
 
-    // Invalide les opérations d'affichage encore en cours.
-    sequence++;
+      // Invalide les opérations d'affichage encore en cours.
+      sequence++;
 
-    // Arrête l'animation et le combat.
-    stop();
-    fight = null;
+      // Arrête l'animation et le combat.
+      stop();
+      fight = null;
 
-    // Réinitialise l'interface et les données locales.
-    ready = false;
-    owner = null;
-    busy = false;
-    paused = false;
+      // Réinitialise l'interface et les données locales.
+      ready = false;
+      owner = null;
+      busy = false;
+      paused = false;
 
-    data = {};
-    season = null;
-    cards = {};
+      data = {};
+      season = null;
+      cards = {};
 
-    team = [];
-    savedTeam = [];
+      team = [];
+      savedTeam = [];
 
-    root.innerHTML = "<p>Connecte-toi pour jouer.</p>";
-  }
-};
-
-return controller;
+      root.innerHTML = "<p>Connecte-toi pour jouer.</p>";
     }
+  };
+
+  return controller;
+}
