@@ -1,9 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         updateProfile, signOut, onAuthStateChanged }
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  updateProfile, signOut, onAuthStateChanged
+}
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-import { getFirestore, initializeFirestore, doc, runTransaction, collection, query, where,
-         onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField }
+import {
+  getFirestore, initializeFirestore, doc, runTransaction, collection, query, where,
+  onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField
+}
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -34,11 +38,11 @@ const DDRAGON = "https://ddragon.leagueoflegends.com";
 const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
 const RARITIES = {
-  common:    { label: "Commune",    chance: 1,      color: "#8a8f98" },
-  rare:      { label: "Rare",       chance: 0.941,  color: "#0397ab" },
-  epic:      { label: "Épique",     chance: 0.176,  color: "#a335ee" },
-  legendary: { label: "Légendaire", chance: 0.02,   color: "#ff8000" },
-  mythic:    { label: "Mythique",   chance: 0.0033, color: "#e84057" }
+  common: { label: "Commune", chance: 1, color: "#8a8f98" },
+  rare: { label: "Rare", chance: 0.941, color: "#0397ab" },
+  epic: { label: "Épique", chance: 0.176, color: "#a335ee" },
+  legendary: { label: "Légendaire", chance: 0.02, color: "#ff8000" },
+  mythic: { label: "Mythique", chance: 0.0033, color: "#e84057" }
 };
 const RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"];
 const CRAFT_WEIGHTS = { common: 70, rare: 24, epic: 4.5, legendary: 1.3, mythic: 0.2 };
@@ -48,9 +52,9 @@ const SPIN_REFILL_MS = 20 * 60 * 1000;
 const WHEEL = [
   { type: "booster", icon: "📦", color: "#0397ab" },
   { type: "nothing", icon: "💨", color: "#2b303b" },
-  { type: "bonus",   icon: "🌟", color: "#ff8000" },
+  { type: "bonus", icon: "🌟", color: "#ff8000" },
   { type: "nothing", icon: "💨", color: "#383e4c" },
-  { type: "respin",  icon: "🔁", color: "#a335ee" },
+  { type: "respin", icon: "🔁", color: "#a335ee" },
   { type: "nothing", icon: "💨", color: "#2b303b" },
   { type: "booster", icon: "📦", color: "#0397ab" },
   { type: "nothing", icon: "💨", color: "#383e4c" },
@@ -61,14 +65,14 @@ const BONUS_TOP = { epic: 85, legendary: 12.5, mythic: 2.5 };
 
 const QUESTS = {
   daily: [
-    { id: "open",    label: "Ouvrir 30 boosters",   target: 30 },
-    { id: "trade",   label: "Faire 1 échange",       target: 1 },
-    { id: "recycle", label: "Recycler 3 doublons",   target: 3 }
+    { id: "open", label: "Ouvrir 30 boosters", target: 30 },
+    { id: "trade", label: "Faire 1 échange", target: 1 },
+    { id: "recycle", label: "Recycler 3 doublons", target: 3 }
   ],
   weekly: [
-    { id: "open",    label: "Ouvrir 100 boosters",   target: 100 },
-    { id: "trade",   label: "Faire 10 échanges",     target: 10 },
-    { id: "recycle", label: "Recycler 30 doublons",  target: 30 }
+    { id: "open", label: "Ouvrir 100 boosters", target: 100 },
+    { id: "trade", label: "Faire 10 échanges", target: 10 },
+    { id: "recycle", label: "Recycler 30 doublons", target: 30 }
   ]
 };
 
@@ -105,7 +109,7 @@ function rarityOf(s) {
 
 // ---------- Boosters (recharge) ----------
 function applyRefill(s, now = Date.now()) {
-      if (s.boosters >= MAX_BOOSTERS) { s.lastRefill = now; return s; }
+  if (s.boosters >= MAX_BOOSTERS) { s.lastRefill = now; return s; }
   const gained = Math.floor((now - s.lastRefill) / REFILL_MS);
   if (gained > 0) {
     s.boosters = Math.min(MAX_BOOSTERS, s.boosters + gained);
@@ -248,7 +252,7 @@ async function loadGameData() {
     (pools[rarityOf(s)] ||= []).push(s);
     (skinsByChamp[Math.floor(s.id / 1000)] ||= []).push(s);
   });
-    try {
+  try {
     const itd = await (await fetch(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`)).json();
     shopItems = buildShop(itd.data);
   } catch (e) {
@@ -366,7 +370,7 @@ function openRecycle() {
     alert(`Il faut ${DUPES_PER_CRAFT} doublons pour recycler.`);
     return;
   }
-    recSel = {};
+  recSel = {};
   const rows = recycleRows();
   recFilter = ["common", "rare", "epic", "legendary", "mythic"]
     .find(r => rows.some(x => x.c.rarity === r)) || "";
@@ -902,7 +906,7 @@ function renderViewer() {
 
   const when = !qty ? "Non obtenue"
     : (ts ? `Obtenue le ${new Date(ts).toLocaleDateString("fr-FR")}` : "Obtenue (date inconnue)")
-      + (qty > 1 ? ` · ${qty} exemplaires` : "");
+    + (qty > 1 ? ` · ${qty} exemplaires` : "");
   $("vTitle").innerHTML = `<b>${esc(c.skinName)}</b>
     <span style="color:${RARITIES[c.rarity].color}">· ${RARITIES[c.rarity].label}</span><br><small>${when}</small>`;
 
@@ -1060,8 +1064,8 @@ buildWheel();
 
 const SPIN_MSG = {
   booster: "📦 Tu gagnes 1 booster !",
-  bonus:   "🌟 Tu gagnes 1 booster amélioré !",
-  respin:  "🔁 Relance ! Tu récupères 1 lancer.",
+  bonus: "🌟 Tu gagnes 1 booster amélioré !",
+  respin: "🔁 Relance ! Tu récupères 1 lancer.",
   nothing: "💨 Perdu, retente ta chance."
 };
 
@@ -1169,7 +1173,7 @@ async function syncLeaderboard() {
     lbSig = "";
     console.warn("classement :", e.message);
   }
-  
+
 }
 $("tab-ranking").addEventListener("click", e => {
   const li = e.target.closest("li[data-uid]");
@@ -1296,6 +1300,7 @@ $("scSave").onclick = async () => {
 };
 
 async function loadRanking() {
+  void refreshBossRanking();
   $("rankCards").innerHTML = `<li class="empty">Chargement…</li>`;
   $("rankMythic").innerHTML = `<li class="empty">Chargement…</li>`;
   try {
@@ -1303,7 +1308,7 @@ async function loadRanking() {
     const snap = await getDocs(collection(db, "leaderboard"));
     const players = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
     const medals = ["🥇", "🥈", "🥉"];
-        const avatarHTML = p => {
+    const avatarHTML = p => {
       const id = p.profile?.avatar;
       if (id && skinsById[id]) {
         const c = skinCard(+id);
@@ -1336,12 +1341,12 @@ $("rankRefresh").onclick = loadRanking;
 
 // ---------- Personnalisation du profil ----------
 const TITLES = [
-  { id: "novice",     label: "Novice",                 ok: () => true },
-  { id: "collector",  label: "Collectionneur",         ok: s => s.unique >= 100 },
-  { id: "master",     label: "Maître collectionneur",  ok: s => s.unique >= 500 },
-  { id: "mythhunter", label: "Chasseur de mythiques",  ok: s => s.mythic >= 1 },
-  { id: "mythlord",   label: "Seigneur mythique",      ok: s => s.mythic >= 10 },
-  { id: "hoarder",    label: "Accumulateur",           ok: s => s.total >= 1000 }
+  { id: "novice", label: "Novice", ok: () => true },
+  { id: "collector", label: "Collectionneur", ok: s => s.unique >= 100 },
+  { id: "master", label: "Maître collectionneur", ok: s => s.unique >= 500 },
+  { id: "mythhunter", label: "Chasseur de mythiques", ok: s => s.mythic >= 1 },
+  { id: "mythlord", label: "Seigneur mythique", ok: s => s.mythic >= 10 },
+  { id: "hoarder", label: "Accumulateur", ok: s => s.total >= 1000 }
 ];
 const PF_COLORS = ["#ffd35a", "#0397ab", "#a335ee", "#e84057", "#3fbf6f", "#4a90e2", "#ff6fae"];
 let pfDraft = null, pickCb = null;
@@ -1446,65 +1451,89 @@ const shopF = { q: "", stat: "" };
 const LVL = 9, TEAM_SIZE = 3, BUILD_SLOTS = 3, SELL_RATE = 0.7;
 const RARITY_MULT = { common: 1, rare: 1.05, epic: 1.12, legendary: 1.2, mythic: 1.3 };
 const ITEM_STATS = {
-  FlatHPPoolMod:         { key: "hp",    label: "PV" },
-  FlatPhysicalDamageMod: { key: "ad",    label: "AD" },
-  FlatMagicDamageMod:    { key: "ap",    label: "AP" },
-  FlatArmorMod:          { key: "armor", label: "Armure" },
-  FlatSpellBlockMod:     { key: "mr",    label: "RM" }
+  FlatHPPoolMod: { key: "hp", label: "PV" },
+  FlatPhysicalDamageMod: { key: "ad", label: "AD" },
+  FlatMagicDamageMod: { key: "ap", label: "AP" },
+  FlatArmorMod: { key: "armor", label: "Armure" },
+  FlatSpellBlockMod: { key: "mr", label: "RM" }
 };
 const STAT_LABEL = { hp: "PV", ad: "AD", ap: "AP", armor: "Armure", mr: "RM" };
 const BATTLE_NAMES = ["Éclaireurs", "Garde locale", "Troupes d'élite", "Champion de la région"];
 const BATTLE_BOOSTERS = [0, 1, 1, 2];
 
 const REGIONS = [
-  { id: "freljord", lines: ["Freljord"], tier: 1, color: "#7fb8d6", label: [370, 85],
+  {
+    id: "freljord", lines: ["Freljord"], tier: 1, color: "#7fb8d6", label: [370, 85],
     path: "M110 30 L610 30 L640 110 L520 150 L300 140 L150 130 Z",
     desc: "Terres glacées, tribus et bêtes du nord.",
-    champs: ["Ashe", "Sejuani", "Tryndamere", "Anivia", "Braum", "Lissandra", "Volibear", "Olaf", "Gragas", "Udyr"] },
-  { id: "demacia", lines: ["Demacia"], tier: 1, color: "#b8a24a", label: [180, 255],
+    champs: ["Ashe", "Sejuani", "Tryndamere", "Anivia", "Braum", "Lissandra", "Volibear", "Olaf", "Gragas", "Udyr"]
+  },
+  {
+    id: "demacia", lines: ["Demacia"], tier: 1, color: "#b8a24a", label: [180, 255],
     path: "M70 165 L285 160 L295 335 L180 350 L70 315 Z",
     desc: "Royaume de la justice et de l'honneur.",
-    champs: ["Garen", "Lux", "JarvanIV", "Galio", "Fiora", "Quinn", "Sona", "Poppy", "XinZhao", "Vayne"] },
-  { id: "noxus", lines: ["Noxus"], tier: 1, color: "#a8323e", label: [400, 255],
+    champs: ["Garen", "Lux", "JarvanIV", "Galio", "Fiora", "Quinn", "Sona", "Poppy", "XinZhao", "Vayne"]
+  },
+  {
+    id: "noxus", lines: ["Noxus"], tier: 1, color: "#a8323e", label: [400, 255],
     path: "M305 165 L485 175 L495 270 L450 345 L315 335 Z",
     desc: "Empire conquérant, la force fait loi.",
-    champs: ["Darius", "Draven", "Katarina", "Swain", "Talon", "Vladimir", "Sion", "Riven", "Samira"] },
-  { id: "piltover", lines: ["Piltover", "& Zaun"], tier: 2, color: "#3fa58f", label: [585, 245],
+    champs: ["Darius", "Draven", "Katarina", "Swain", "Talon", "Vladimir", "Sion", "Riven", "Samira"]
+  },
+  {
+    id: "piltover", lines: ["Piltover", "& Zaun"], tier: 2, color: "#3fa58f", label: [585, 245],
     path: "M505 170 L650 180 L675 290 L590 345 L520 300 Z",
     desc: "La cité du progrès et ses bas-fonds.",
-    champs: ["Caitlyn", "Vi", "Jayce", "Ezreal", "Heimerdinger", "Camille", "Ekko", "Jinx", "Warwick", "Blitzcrank", "Viktor"] },
-  { id: "ionia", lines: ["Ionia"], tier: 1, color: "#d98ab0", label: [815, 245],
+    champs: ["Caitlyn", "Vi", "Jayce", "Ezreal", "Heimerdinger", "Camille", "Ekko", "Jinx", "Warwick", "Blitzcrank", "Viktor"]
+  },
+  {
+    id: "ionia", lines: ["Ionia"], tier: 1, color: "#d98ab0", label: [815, 245],
     path: "M700 150 L910 140 L940 300 L860 360 L730 340 L700 250 Z",
     desc: "Terre d'équilibre entre esprit et nature.",
-    champs: ["Ahri", "Yasuo", "Yone", "Irelia", "Karma", "LeeSin", "Jhin", "Shen", "Zed", "Akali", "MasterYi"] },
-  { id: "void", lines: ["Le Vide"], tier: 4, color: "#5b2a86", label: [885, 75],
+    champs: ["Ahri", "Yasuo", "Yone", "Irelia", "Karma", "LeeSin", "Jhin", "Shen", "Zed", "Akali", "MasterYi"]
+  },
+  {
+    id: "void", lines: ["Le Vide"], tier: 4, color: "#5b2a86", label: [885, 75],
     path: "M800 25 L955 25 L965 115 L860 125 Z",
     desc: "Une menace venue d'au-delà de Runeterra.",
-    champs: ["Khazix", "Chogath", "Velkoz", "KogMaw", "RekSai", "Kaisa", "Malzahar", "Belveth"] },
-  { id: "bandle", lines: ["Bandle", "City"], fs: 15, tier: 2, color: "#e6a0d4", label: [58, 120],
+    champs: ["Khazix", "Chogath", "Velkoz", "KogMaw", "RekSai", "Kaisa", "Malzahar", "Belveth"]
+  },
+  {
+    id: "bandle", lines: ["Bandle", "City"], fs: 15, tier: 2, color: "#e6a0d4", label: [58, 120],
     path: "M15 95 L75 90 L105 140 L60 165 L15 150 Z",
     desc: "Cité magique des yordles.",
-    champs: ["Teemo", "Tristana", "Veigar", "Lulu", "Rumble", "Corki", "Yuumi"] },
-  { id: "targon", lines: ["Targon"], tier: 3, color: "#8a6fd1", label: [375, 430],
+    champs: ["Teemo", "Tristana", "Veigar", "Lulu", "Rumble", "Corki", "Yuumi"]
+  },
+  {
+    id: "targon", lines: ["Targon"], tier: 3, color: "#8a6fd1", label: [375, 430],
     path: "M300 370 L430 360 L470 470 L360 500 L290 450 Z",
     desc: "La montagne sacrée qui touche les étoiles.",
-    champs: ["Leona", "Diana", "Pantheon", "AurelionSol", "Taric", "Soraka", "Zoe", "Aphelios"] },
-  { id: "shadowisles", lines: ["Îles", "obscures"], tier: 3, color: "#4fa089", label: [140, 480],
+    champs: ["Leona", "Diana", "Pantheon", "AurelionSol", "Taric", "Soraka", "Zoe", "Aphelios"]
+  },
+  {
+    id: "shadowisles", lines: ["Îles", "obscures"], tier: 3, color: "#4fa089", label: [140, 480],
     path: "M40 400 L230 390 L250 520 L140 590 L50 540 Z",
     desc: "Archipel hanté par la Brume Noire.",
-    champs: ["Thresh", "Kalista", "Hecarim", "Karthus", "Yorick", "Maokai", "Viego", "Gwen", "Fiddlesticks"] },
-  { id: "shurima", lines: ["Shurima"], tier: 2, color: "#d9a441", label: [430, 575],
+    champs: ["Thresh", "Kalista", "Hecarim", "Karthus", "Yorick", "Maokai", "Viego", "Gwen", "Fiddlesticks"]
+  },
+  {
+    id: "shurima", lines: ["Shurima"], tier: 2, color: "#d9a441", label: [430, 575],
     path: "M290 520 L560 500 L600 610 L380 625 L270 600 Z",
     desc: "Le désert des empereurs déchus.",
-    champs: ["Azir", "Sivir", "Nasus", "Renekton", "Amumu", "Rammus", "Taliyah", "Xerath", "Skarner"] },
-  { id: "bilgewater", lines: ["Bilgewater"], fs: 18, tier: 2, color: "#4a7fb0", label: [705, 445],
+    champs: ["Azir", "Sivir", "Nasus", "Renekton", "Amumu", "Rammus", "Taliyah", "Xerath", "Skarner"]
+  },
+  {
+    id: "bilgewater", lines: ["Bilgewater"], fs: 18, tier: 2, color: "#4a7fb0", label: [705, 445],
     path: "M620 380 L780 375 L800 480 L700 520 L610 470 Z",
     desc: "Port de pirates, de monstres et de marins.",
-    champs: ["MissFortune", "Gangplank", "Graves", "TwistedFate", "Pyke", "Nautilus", "Illaoi", "Fizz", "TahmKench"] },
-  { id: "ixtal", lines: ["Ixtal"], tier: 3, color: "#4aa05a", label: [890, 495],
+    champs: ["MissFortune", "Gangplank", "Graves", "TwistedFate", "Pyke", "Nautilus", "Illaoi", "Fizz", "TahmKench"]
+  },
+  {
+    id: "ixtal", lines: ["Ixtal"], tier: 3, color: "#4aa05a", label: [890, 495],
     path: "M830 395 L950 390 L960 560 L870 610 L820 540 Z",
     desc: "Jungle des mages élémentaires.",
-    champs: ["Qiyana", "Neeko", "Malphite", "Nidalee", "Zyra", "Rengar", "Milio"] }
+    champs: ["Qiyana", "Neeko", "Malphite", "Nidalee", "Zyra", "Rengar", "Milio"]
+  }
 ];
 
 const champById = id => champions.find(c => norm(c.id) === norm(id));
@@ -1688,7 +1717,7 @@ function closeRegion() {
   $("mapWrap").classList.remove("zoomed");
   $("mapBack").hidden = true;
   $("regionPanel").hidden = true;
-    zoomTo([0, 0, 1000, 640]);
+  zoomTo([0, 0, 1000, 640]);
 }
 
 function renderRegionPanel() {
@@ -2075,7 +2104,7 @@ async function sendFriendRequest() {
       const f = ex.data();
       msg.textContent = f.status === "accepted" ? "Vous êtes déjà amis."
         : f.requester === user.uid ? "Demande déjà envoyée."
-        : "Cette personne t'a déjà envoyé une demande : accepte-la ci-dessous.";
+          : "Cette personne t'a déjà envoyé une demande : accepte-la ci-dessous.";
       refreshSocial();
       return;
     }
@@ -2250,7 +2279,7 @@ $("tradeSend").onclick = async () => {
     $("tradeMsg").textContent = "Les deux cartes doivent avoir la même rareté.";
     return;
   }
-    if (availQty(offerId) < 1) {
+  if (availQty(offerId) < 1) {
     $("tradeMsg").textContent = "Cette carte est déjà proposée dans un autre échange en attente.";
     renderTrade();
     return;
@@ -2290,7 +2319,7 @@ async function acceptTrade(id) {
       const [tSnap, mine, theirs] = await Promise.all([tx.get(tradeRef), tx.get(myRef), tx.get(theirRef)]);
       const tr = tSnap.data();
       if (!tr || tr.status !== "pending") throw new Error("Cet échange n'est plus disponible.");
-            const o = String(tr.offerId), w = String(tr.wantId);
+      const o = String(tr.offerId), w = String(tr.wantId);
       const mc = mine.data().cards || {}, tc = theirs.data().cards || {};
       if ((tc[o] || 0) < 1) throw new Error("Ton ami n'a plus cette carte.");
       if ((mc[w] || 0) < 1) throw new Error("Tu n'as plus cette carte.");
@@ -2583,5 +2612,52 @@ async function openRankedMode() {
   } catch (error) {
     console.error("Arène classée :", error);
     root.textContent = "Impossible de charger l'arène : " + error.message;
+  }
+}
+// ---------- Classement des chasseurs dans l'onglet Classement ----------
+async function refreshBossRanking() {
+  const columns = document.querySelector("#tab-ranking .rank-cols");
+  const bossRoot = $("rankedRoot");
+
+  if (!columns || !bossRoot || !user) return;
+
+  let panel = null;
+
+  try {
+    // Même adresse que dans ranked.js pour partager la même instance.
+    const module = await import("./boss-leaderboard.js?v=1");
+
+    const ranking = module.initBossLeaderboard({
+      db,
+      user: () => user,
+      week: () => weekKey(),
+      root: bossRoot
+    });
+
+    panel = document.querySelector(".boss-ranking-panel");
+
+    if (!panel) {
+      throw new Error("Le panneau du classement des chasseurs est introuvable.");
+    }
+
+    // Déplace le panneau dans la grille des classements existants.
+    columns.appendChild(panel);
+
+    // Supprime l'ancien bouton situé au-dessus de Chasse aux boss.
+    document.querySelector(".boss-ranking-toolbar")?.remove();
+
+    // Le classement devient une colonne visible, pas une fenêtre à ouvrir.
+    panel.hidden = false;
+
+    await ranking.refresh();
+  } catch (error) {
+    console.error("Classement des chasseurs :", error);
+
+    if (panel) {
+      panel.hidden = false;
+      panel.textContent =
+        "Impossible de charger le classement des chasseurs : " +
+        error.message;
+    }
   }
 }

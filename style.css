@@ -896,3 +896,50 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   border-color: #ac81ff;
   background: rgba(172, 129, 255, .12);
 }
+/* Trois classements côte à côte si la largeur le permet. */
+#tab-ranking .rank-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+#tab-ranking .rank-cols > * {
+  min-width: 0;
+}
+
+/* Le classement des chasseurs est maintenant une colonne permanente. */
+#tab-ranking .boss-ranking-panel {
+  margin: 0;
+  min-width: 0;
+}
+
+/* Plus besoin de fermer un panneau intégré à la page. */
+#tab-ranking .boss-ranking-panel [data-boss-rank-close] {
+  display: none;
+}
+
+#tab-ranking .boss-ranking-panel h3 {
+  font-size: 1rem;
+}
+
+#tab-ranking .boss-ranking-table {
+  min-width: 350px;
+  font-size: 0.9rem;
+}
+
+#tab-ranking .boss-ranking-table th,
+#tab-ranking .boss-ranking-table td {
+  padding: 8px 6px;
+}
+
+#tab-ranking .boss-ranking-table-wrap {
+  overflow-x: auto;
+}
+
+/* Sur petit écran : les classements passent les uns sous les autres. */
+@media (max-width: 600px) {
+  #tab-ranking .rank-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
