@@ -296,53 +296,77 @@ ${reward ? `<p class="hb-box">Récompense versée pour la semaine du ${H(reward.
     root.innerHTML = header() + (view === 'equipment' ? equipmentHTML() : bossesHTML()) + `<p class="hb-message" role="status">${H(note)}</p>`;
   }
   function bossesHTML() {
-    const progress = null;
+    const teamReady = validate(savedTeam, cards).every(Boolean);
+    const cleared = season.cleared || {};
+    const dailyWins = season.daily?.day === dayParis()
+      ? (season.daily.wins || {})
+      : {};
 
     return `
-    <div class="hb-box">
-      <h3>Chasse aux boss</h3>
+      <div class="hb-box">
+        <h3>Chasse aux boss</h3>
+        <p>
+          Vaincs les boss dans l’ordre. Chaque première victoire de la semaine
+          rapporte des points, de l’or et les éventuels boosters bonus affichés.
+          Les victoires suivantes donnent 20 % de l’or du boss,
+          jusqu’à trois fois par boss et par jour, sans points ni boosters.
+        </p>
+        ${!teamReady ? `
+          <p class="hb-message">
+            Choisis et enregistre une équipe valide dans l’onglet équipement
+            avant de lancer un combat.
+          </p>
+        ` : ''}
+      </div>
 
-      <p>
-        Chaque boss peut être vaincu une fois par semaine.
-        Les récompenses sont publiées dans Firestore.
-      </p>
+      <div class="bs-boss-grid">
+        ${BOSS.map((boss, i) => {
+          const done = Boolean(cleared[boss.id]);
+          const locked = i > 0 && !cleared[BOSS[i - 1].id];
+          const repeats = Number(dailyWins[boss.id] || 0);
+          const repeatGold = repeats < 3 ? Math.floor(boss.gold * 0.2) : 0;
+          const disabled = busy || locked || !teamReady;
 
-      <div class="bs-bosses">
-        ${BOSS_LIST.map((boss, i) => {
-      const entry = progress?.bosses?.[boss.id];
-      const done = entry?.defeated === true;
-
-      return `
+          return `
             <article class="hb-box bs-boss" data-boss-id="${H(boss.id)}">
               ${bossArtwork(boss.id)}
-
-              <h3>
-                ${i + 1}. ${H(boss.name)}
-                ${done ? '<span class="bs-done">✓ Vaincu</span>' : ''}
-              </h3>
-
-              <p>${H(boss.description)}</p>
-
-              <div class="bs-rewards">
-                <p><b>Récompense :</b> ${H(boss.rewardText)}</p>
-              </div>
-
-              ${done
-          ? `<p class="bs-status">Boss déjà vaincu cette semaine.</p>`
-          : `<button
-                      class="btn-play"
-                      data-action="fight-boss"
-                      data-boss-id="${H(boss.id)}"
-                    >
-                      Affronter ${H(boss.name)}
-                    </button>`
-        }
+              <h3>${i + 1}. ${H(boss.name)} ${done ? '✓' : ''}</h3>
+              <p>${H(boss.desc)}</p>
+              <p>
+                ${boss.hp.toLocaleString('fr-FR')} PV ·
+                Dégâts ${boss.type === 'physical' ? 'physiques' : 'magiques'}
+              </p>
+              <p>
+                Première victoire de la semaine :<br>
+                ${boss.points} points · ${boss.gold.toLocaleString('fr-FR')} or
+                ${boss.bonus ? ` · ${boss.bonus} booster${boss.bonus > 1 ? 's' : ''} bonus` : ''}
+              </p>
+              ${done ? `
+                <p>
+                  ✓ Déjà vaincu cette semaine.<br>
+                  Prochaine victoire : ${repeatGold.toLocaleString('fr-FR')} or,
+                  sans points ni boosters.<br>
+                  Rejouages rémunérés restants aujourd’hui :
+                  ${Math.max(0, 3 - repeats)} / 3.
+                </p>
+              ` : ''}
+              ${locked ? `
+                <p>🔒 Vaincs ${H(BOSS[i - 1].name)} pour débloquer ce boss.</p>
+              ` : ''}
+              <button
+                type="button"
+                class="btn-play"
+                data-action="fight"
+                data-boss="${i}"
+                ${disabled ? 'disabled' : ''}
+              >
+                ${locked ? 'Verrouillé' : done ? 'Réaffronter' : 'Affronter'}
+              </button>
             </article>
           `;
-    }).join('')}
+        }).join('')}
       </div>
-    </div>
-  `;
+    `;
   }
   function equipmentHTML() {
     const list = itemList(), valid = savedTeam.filter(id => cards[id] > 0 && champ(id));
