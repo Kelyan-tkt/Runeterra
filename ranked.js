@@ -308,7 +308,7 @@ ${reward ? `<p class="hb-box">Récompense versée pour la semaine du ${H(reward.
       </p>
 
       <div class="bs-bosses">
-        ${BOSSES.map((boss, i) => {
+        ${BOSS_LIST.map((boss, i) => {
       const entry = progress?.bosses?.[boss.id];
       const done = entry?.defeated === true;
 
