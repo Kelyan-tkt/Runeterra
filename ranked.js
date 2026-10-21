@@ -296,8 +296,7 @@ ${reward ? `<p class="hb-box">Récompense versée pour la semaine du ${H(reward.
     root.innerHTML = header() + (view === 'equipment' ? equipmentHTML() : bossesHTML()) + `<p class="hb-message" role="status">${H(note)}</p>`;
   }
   function bossesHTML() {
-    const week = weekKey();
-    const progress = getWeeklyProgress();
+    const progress = null;
 
     return `
     <div class="hb-box">
@@ -309,7 +308,7 @@ ${reward ? `<p class="hb-box">Récompense versée pour la semaine du ${H(reward.
       </p>
 
       <div class="bs-bosses">
-        ${BOSS_LIST.map((boss, i) => {
+        ${BOSSES.map((boss, i) => {
       const entry = progress?.bosses?.[boss.id];
       const done = entry?.defeated === true;
 
