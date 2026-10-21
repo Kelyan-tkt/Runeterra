@@ -3,6 +3,13 @@ import {
   rolesForChampion,
   loadBossItems
 } from "./boss-support.js?v=1";
+
+import {
+  bossRankIcon,
+  upgradeBossGold,
+  publishBossRank,
+  initBossLeaderboard
+} from "./boss-leaderboard.js?v=1";
 // Chasse aux boss : saisons PvE, économie indépendante de l’Aventure.
 const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"];
 const POOL = {
@@ -24,7 +31,10 @@ const BOSS = [
   { id: 'sovereign', name: 'Souverain des profondeurs', hp: 7600, heavy: 610, hit: 70, warning: 1.7, exposed: 2.5, type: 'magic', echo: 1.5, dot: 18, points: 320, gold: 4000, bonus: 2, hue: 280, desc: 'Double frappe et poison : équipe-toi avant de l’affronter.' },
   { id: 'sun', name: 'Titan solaire', hp: 9000, heavy: 1150, hit: 78, warning: 1.5, exposed: 1.8, type: 'physical', alternate: true, points: 400, gold: 5000, bonus: 2, hue: 125, desc: 'Frappe physique dévastatrice et ouvertures courtes. Armure et dégâts élevés sont nécessaires.' },
   { id: 'abyss', name: 'Roi de l’abîme', hp: 10500, heavy: 740, hit: 85, warning: 1.5, exposed: 2, type: 'magic', echo: 1.5, dot: 24, armor: .15, points: 500, gold: 6000, bonus: 3, hue: 245, desc: 'Boss final : double frappe, poison et carapace renforcée. Prépare un équipement complet.' }
-];
+];// Multiplie uniquement l'or des boss, sans modifier les points ni les boosters.
+BOSS.forEach(boss => {
+  boss.gold *= 3;
+});
 const RANKS = [['Fer', 0, 1, 0], ['Bronze', 25, 2, 0], ['Argent', 65, 3, 0], ['Or', 125, 4, 1], ['Platine', 215, 5, 1], ['Émeraude', 345, 6, 2], ['Diamant', 525, 8, 2], ['Maître', 765, 10, 3], ['Grand Maître', 1085, 12, 4], ['Challenger', 1485, 15, 5]];
 const H = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clone = x => JSON.parse(JSON.stringify(x));
@@ -239,10 +249,21 @@ export function initRanked(api) {
     const out = await runTransaction(api.db, async tx => {
       const ref = doc(api.db, 'users', user.uid), snap = await tx.get(ref);
       if (!snap.exists()) throw new Error('Compte introuvable.');
-      const s = snap.data(), r = seasonState(s, week), result = change(r, s);
+      const s = snap.data();
+      const r = seasonState(s, week);
+
+      // Compensation unique pour les premières victoires déjà obtenues cette semaine.
+      upgradeBossGold(r, BOSS);
+
+      const result = change(r, s);
       const patch = seasonPatch(s);
       if (s.bossTraining) patch.bossTraining = s.bossTraining;
-      tx.update(ref, patch); return { s, result };
+      tx.update(ref, patch);
+
+      // Document public contenant uniquement les informations du classement.
+      publishBossRank(tx, api.db, user, s);
+
+      return { s, result };
     });
     if (api.user()?.uid !== user.uid) throw new Error('Le compte a changé.');
     data = out.s; season = data.bossSeason; cards = data.cards || {}; owner = user.uid;
@@ -262,7 +283,10 @@ export function initRanked(api) {
   }
   function header() {
     const rank = RANKS[rankOf(season.points)], reward = data.bossLastReward;
-    return `<div class="hb-head"><h2>Chasse aux boss</h2><span class="hb-tag">${rank[0]} · ${season.points} points</span><span class="hb-tag">🪙 ${season.gold} or</span></div><p>Semaine du ${H(season.week)} · remise à zéro lundi à 00 h, Paris, appliquée à ta prochaine connexion ou ouverture du mode.</p>
+    return `<div class="hb-head"><h2>Chasse aux boss</h2><span class="hb-tag">
+  ${bossRankIcon(season.points, 32)}
+  ${rank[0]} · ${season.points} points
+</span><span class="hb-tag">🪙 ${season.gold} or</span></div><p>Semaine du ${H(season.week)} · remise à zéro lundi à 00 h, Paris, appliquée à ta prochaine connexion ou ouverture du mode.</p>
 ${reward ? `<p class="hb-box">Récompense versée pour la semaine du ${H(reward.week)} : ${H(reward.rank)} (${reward.points} points) → ${reward.normal} boosters + ${reward.bonus} amélioré(s).</p>` : ''}
 <div class="hb-actions"><button class="btn" data-action="bosses" ${busy ? 'disabled' : ''}>Les boss</button><button class="btn" data-action="equipment" ${busy ? 'disabled' : ''}>Équipe & boutique</button><button class="btn" data-action="refresh" ${busy ? 'disabled' : ''}>Actualiser</button></div>`;
   }
@@ -450,6 +474,44 @@ ${f.result === 'win' ? busy ? '<p>Enregistrement des récompenses…</p>' : r ? 
     if (e.code === 'Space') { e.preventDefault(); if (paused) resume(); else pause(); return; }
     const k = ({ Digit1: 'shield', Numpad1: 'shield', Digit2: 'heal', Numpad2: 'heal', Digit3: 'assault', Numpad3: 'assault' })[e.code]; if (k) { e.preventDefault(); ability(k); }
   });
-  const controller = { open, close() { sequence++; stop(); fight = null; ready = false; owner = null; busy = false; paused = false; data = {}; season = null; cards = {}; team = []; savedTeam = []; root.innerHTML = '<p>Connecte-toi pour jouer.</p>'; } };
-  return controller;
-}
+  const rankingUI = initBossLeaderboard({
+  db: api.db,
+  user: api.user,
+  week: api.week,
+  root,
+  onOpen: pause
+});
+
+const controller = {
+  open,
+
+  close() {
+    // Ferme et vide le classement à la déconnexion.
+    rankingUI.close();
+
+    // Invalide les opérations d'affichage encore en cours.
+    sequence++;
+
+    // Arrête l'animation et le combat.
+    stop();
+    fight = null;
+
+    // Réinitialise l'interface et les données locales.
+    ready = false;
+    owner = null;
+    busy = false;
+    paused = false;
+
+    data = {};
+    season = null;
+    cards = {};
+
+    team = [];
+    savedTeam = [];
+
+    root.innerHTML = "<p>Connecte-toi pour jouer.</p>";
+  }
+};
+
+return controller;
+    }
