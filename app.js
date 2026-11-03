@@ -76,8 +76,6 @@ const QUESTS = {
   ]
 };
 
-let islesAdventure = null;
-let islesLoading = null;
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
@@ -1979,16 +1977,12 @@ $("bClose").onclick = () => { $("battleModal").hidden = true; clearInterval(batt
 function showAdv(v) {
   $("advMapView").hidden = v !== "map";
   $("advTeamView").hidden = v !== "team";
-  $("advExpeditionView").hidden = v !== "expedition";
   $("advMapBtn").classList.toggle("active", v === "map");
   $("advTeamBtn").classList.toggle("active", v === "team");
-  $("advExpeditionBtn").classList.toggle("active", v === "expedition");
   if (v === "team") renderAdvTeam();
-  if (v === "expedition") void openIslesAdventure();
 }
 $("advMapBtn").onclick = () => showAdv("map");
 $("advTeamBtn").onclick = () => showAdv("team");
-$("advExpeditionBtn").onclick = () => showAdv("expedition");
 
 function renderAdventure() {
   if (!state || !skinList.length) return;
@@ -1996,7 +1990,6 @@ function renderAdventure() {
   renderMap();
   if (mapRegion) renderRegionPanel();
   if (!$("advTeamView").hidden) renderAdvTeam();
-  islesAdventure?.sync();
 }
 
 // ---------- Quêtes : affichage et récompenses ----------
@@ -2563,7 +2556,6 @@ onAuthStateChanged(auth, async u => {
     $("recycleModal").hidden = true;
     $("viewer").hidden = true;
     rankedModule?.close();
-    islesAdventure?.close();
     vw = null;
     rv = null;
     lbSig = "";
@@ -2667,103 +2659,5 @@ async function refreshBossRanking() {
         "Impossible de charger le classement des chasseurs : " +
         error.message;
     }
-  }
-}
-
-// ---------- Suite de l'Aventure : chapitre des Îles obscures ----------
-
-function islesContext(s = state) {
-  const owned = Object.entries(s?.cards || {}).filter(([, qty]) => qty > 0).map(([id]) => Number(id));
-  const team = (s?.adv?.team || []).map(Number)
-    .filter(id => owned.includes(id) && skinsById[id] && champByKey[Math.floor(id / 1000)])
-    .slice(0, TEAM_SIZE)
-    .map(id => {
-      const card = skinCard(id), champion = champByKey[Math.floor(id / 1000)];
-      const unit = baseUnit(champion, LVL, RARITY_MULT[card.rarity] || 1);
-      for (const itemId of (s?.adv?.builds?.[id] || [])) {
-        const item = itemById(itemId);
-        if (item) for (const [key, value] of Object.entries(item.stats)) unit[key] += value;
-      }
-      return { ...unit, id, name: card.name, img: card.img, imgAlt: card.imgAlt };
-    });
-  return {
-    uid: user?.uid || null,
-    unlocked: [0, 1, 2, 3].every(i => Boolean(s?.adv?.cleared?.[`shadowisles_${i}`])),
-    owned,
-    team
-  };
-}
-
-async function reloadIslesProgress() {
-  const uid = user?.uid;
-  if (!uid) throw new Error('Connecte-toi pour jouer.');
-  const snap = await getDoc(doc(db, 'users', uid));
-  if (user?.uid !== uid) throw new Error('Le compte a changé.');
-  if (!snap.exists()) throw new Error('Compte introuvable.');
-  const progress = snap.data().advExpedition || null;
-  if (state && (state.advExpedition?.revision || 0) <= (progress?.revision || 0)) {
-    state = { ...state, advExpedition: progress };
-  }
-  return state?.advExpedition || progress;
-}
-
-async function commitIslesAction(module, command, expectedRevision) {
-  const uid = user?.uid;
-  if (!uid) throw new Error('Connecte-toi pour jouer.');
-  const ref = doc(db, 'users', uid);
-  const next = await runTransaction(db, async tx => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error('Compte introuvable.');
-    if (user?.uid !== uid) throw new Error('Le compte a changé.');
-    const data = snap.data(), previous = data.advExpedition || null;
-    if ((previous?.revision || 0) !== expectedRevision) {
-      const error = new Error('Cette expédition a changé dans un autre onglet. La sauvegarde vient d’être rechargée ; refais ton choix.');
-      error.code = 'expedition/conflict';
-      throw error;
-    }
-    const result = module.transition(previous, command, islesContext(data));
-    // Seul ce nouveau champ est modifié : ni adv, ni cards, ni bossSeason.
-    tx.update(ref, { advExpedition: result });
-    return result;
-  });
-  if (user?.uid !== uid) throw new Error('Le compte a changé.');
-  if (state && (state.advExpedition?.revision || 0) <= next.revision) {
-    state = { ...state, advExpedition: next };
-  }
-  return state?.advExpedition || next;
-}
-
-async function openIslesAdventure() {
-  const root = $('advExpeditionView'), uid = user?.uid;
-  if (!root) return;
-  if (!uid || !state || !champions.length) {
-    root.textContent = 'Attends le chargement de ton compte et des champions.';
-    return;
-  }
-  if (islesAdventure) { islesAdventure.open(); return; }
-  root.textContent = 'Chargement du chapitre des Îles obscures…';
-  try {
-    if (!islesLoading) islesLoading = import('./adventure-isles.js?v=isles-1').catch(error => {
-      islesLoading = null;
-      throw error;
-    });
-    const module = await islesLoading;
-    if (user?.uid !== uid) return;
-    if (!islesAdventure) islesAdventure = module.initIslesAdventure({
-      root,
-      user: () => user,
-      context: () => islesContext(),
-      progress: () => state?.advExpedition || null,
-      portrait: id => {
-        const champion = champById(id);
-        return champion ? skinCard(Number(champion.key) * 1000) : null;
-      },
-      commit: (command, revision) => commitIslesAction(module, command, revision),
-      reload: reloadIslesProgress,
-      teamPage: () => showAdv('team')
-    });
-    islesAdventure.open();
-  } catch (error) {
-    if (user?.uid === uid) root.textContent = 'Impossible de charger les Îles obscures : ' + error.message;
   }
 }
