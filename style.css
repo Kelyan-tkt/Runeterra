@@ -957,10 +957,111 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
 @media(prefers-reduced-motion:reduce){.asc-poster,.asc-aura,.asc-shine,.asc-particles i,.asc-reveal-overlay *{animation:none!important;transition:none!important}.asc-video,.asc-shine,.asc-particles{display:none!important}}
 @media(max-width:550px){.asc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.asc-badge{font-size:9px;padding:4px 6px}.asc-caption{padding:10px}.asc-caption strong{font-size:13px}.asc-dialog{padding:12px}.asc-header{padding:16px}.asc-splash{aspect-ratio:4/3}.asc-seal{width:90px;height:90px;font-size:65px}}
 
-/* Vitrine mixte : les variantes Ascendantes gardent leur composant animé. */
-#pShowcase > .asc-card { min-width:0; width:100%; align-self:start; }
-#pShowcase > .asc-card .asc-media { aspect-ratio:3/4; }
-#pShowcase > .asc-card .asc-caption { min-height:70px; }
-#scList .pick.ascended { border-color:#b897ed; background:linear-gradient(120deg,#211b38,#111a2d); }
-#scList .pick.ascended.sel { border-color:#eed7ff; box-shadow:0 0 0 2px #b28ee7,0 0 16px #ad83e547; }
-#scList .pick.ascended small { font-weight:700; }
+
+/* Vitrine mixte : dimensions identiques pour cartes classiques et Ascendantes. */
+#pShowcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 180px);
+  gap: 14px;
+  align-items: start;
+  justify-content: start;
+}
+#pShowcase > .card,
+#pShowcase > .asc-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 180px;
+  min-width: 0;
+  max-width: none;
+  height: 340px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border-width: 2px;
+  align-self: start;
+}
+#pShowcase > .card > img,
+#pShowcase > .asc-card > .asc-media {
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 286px;
+  width: 100%;
+  height: 286px;
+  min-height: 0;
+  aspect-ratio: auto;
+  overflow: hidden;
+  object-fit: cover;
+  object-position: center;
+}
+#pShowcase > .asc-card > .asc-media {
+  border-radius: 6px 6px 0 0;
+}
+#pShowcase > .asc-card .asc-poster,
+#pShowcase > .asc-card .asc-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+#pShowcase > .card > .info,
+#pShowcase > .asc-card > .asc-caption {
+  box-sizing: border-box;
+  flex: 0 0 50px;
+  height: 50px;
+  min-height: 50px;
+  padding: 7px;
+  text-align: center;
+  line-height: 18px;
+  font-size: .85rem;
+  overflow: hidden;
+}
+#pShowcase > .asc-card > .asc-caption strong {
+  color: var(--gold-light, #f0e6d2);
+  font-family: 'Cinzel', serif;
+  font-size: .85rem;
+  line-height: 18px;
+}
+#pShowcase > .asc-card > .asc-caption small {
+  margin-top: 0;
+  line-height: 18px;
+  font-size: .85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#pShowcase > .slot {
+  box-sizing: border-box;
+  width: 180px;
+  height: 340px;
+  min-width: 0;
+  min-height: 0;
+}
+/* Conserve aussi les styles du sélecteur de la mise à jour précédente. */
+#scList .pick.ascended {
+  border-color: #b897ed;
+  background: linear-gradient(120deg, #211b38, #111a2d);
+}
+#scList .pick.ascended.sel {
+  border-color: #eed7ff;
+  box-shadow: 0 0 0 2px #b28ee7, 0 0 16px #ad83e547;
+}
+#scList .pick.ascended small { font-weight: 700; }
+@media (max-width: 440px) {
+  #pShowcase {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  #pShowcase > .card,
+  #pShowcase > .asc-card,
+  #pShowcase > .slot {
+    width: 100%;
+    height: clamp(260px, 90vw, 340px);
+  }
+  #pShowcase > .card > img,
+  #pShowcase > .asc-card > .asc-media {
+    flex: 1 1 0;
+    height: 0;
+    min-height: 0;
+  }
+}
