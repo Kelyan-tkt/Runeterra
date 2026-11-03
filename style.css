@@ -956,3 +956,11 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
 .asc-motion-off .asc-poster,.asc-motion-off .asc-aura,.asc-motion-off .asc-shine,.asc-motion-off .asc-particles i,.asc-motion-off .asc-reveal-overlay *{animation:none!important;transition:none!important}.asc-motion-off .asc-video,.asc-motion-off .asc-shine,.asc-motion-off .asc-particles{display:none!important}
 @media(prefers-reduced-motion:reduce){.asc-poster,.asc-aura,.asc-shine,.asc-particles i,.asc-reveal-overlay *{animation:none!important;transition:none!important}.asc-video,.asc-shine,.asc-particles{display:none!important}}
 @media(max-width:550px){.asc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.asc-badge{font-size:9px;padding:4px 6px}.asc-caption{padding:10px}.asc-caption strong{font-size:13px}.asc-dialog{padding:12px}.asc-header{padding:16px}.asc-splash{aspect-ratio:4/3}.asc-seal{width:90px;height:90px;font-size:65px}}
+
+/* Vitrine mixte : les variantes Ascendantes gardent leur composant animé. */
+#pShowcase > .asc-card { min-width:0; width:100%; align-self:start; }
+#pShowcase > .asc-card .asc-media { aspect-ratio:3/4; }
+#pShowcase > .asc-card .asc-caption { min-height:70px; }
+#scList .pick.ascended { border-color:#b897ed; background:linear-gradient(120deg,#211b38,#111a2d); }
+#scList .pick.ascended.sel { border-color:#eed7ff; box-shadow:0 0 0 2px #b28ee7,0 0 16px #ad83e547; }
+#scList .pick.ascended small { font-weight:700; }

@@ -99,15 +99,15 @@ export function initAscended(api){
   for(const p of players.values()){if(!selected.has(p)){stop(p);continue;}if(!p.video)source(p,0);else p.video.play()?.catch(()=>{});}
  }
  function hydrate(){
-  const catalog=api.catalogue();for(const el of document.querySelectorAll('[data-asc-media]')){if(players.has(el))continue;const card=catalog.find(c=>Number(c.id)===Number(el.dataset.ascMedia));if(!card)continue;players.set(el,{el,card,video:null,visible:!observer,failed:false,index:0});observer?.observe(el);}
+  const catalog=api.catalogue();for(const el of document.querySelectorAll('[data-asc-media]')){if(players.has(el))continue;const card=catalog.find(c=>Number(c.id)===Number(el.dataset.ascMedia))||api.resolveCard?.(Number(el.dataset.ascMedia));if(!card)continue;players.set(el,{el,card,video:null,visible:!observer,failed:false,index:0});observer?.observe(el);}
   schedule();
  }
  refreshMedia=hydrate;
  const mutations=new MutationObserver(()=>hydrate());mutations.observe(document.body,{childList:true,subtree:true});
  function close(){for(const [el,p] of players)if(dialog.contains(el)){stop(p);p.video?.removeAttribute('src');p.video?.load();observer?.unobserve(el);players.delete(el);}if(dialog.open)dialog.close();dialog.innerHTML='';currentCard=null;lastFocus?.focus?.();lastFocus=null;schedule();}
- function open(c){
+ function open(c,showcaseOwner=''){
   close();currentCard=c;lastFocus=document.activeElement;const qty=api.state()?.ascendedCards?.[c.id]||0;
-  dialog.innerHTML=`<div class="asc-modal-head"><h2>${H(c.name)} · ${H(c.skinName)} · Ascendante</h2><button type="button" class="btn" data-asc-close autofocus>Fermer</button></div>${mediaHTML(c,true)}<p>${qty?`Variante possédée · ${qty} exemplaire(s).`:'Aperçu uniquement : cette variante n’est pas possédée.'}</p>${c.media?.page?`<p class="asc-muted">Animation : <a href="${H(c.media.page)}" target="_blank" rel="noopener noreferrer">source sur le LoL Wiki</a>. League of Legends © Riot Games.</p>`:'<p class="asc-muted">Illustration fixe avec effets CSS de remplacement.</p>'}`;
+  dialog.innerHTML=`<div class="asc-modal-head"><h2>${H(c.name)} · ${H(c.skinName)} · Ascendante</h2><button type="button" class="btn" data-asc-close autofocus>Fermer</button></div>${mediaHTML(c,true)}<p>${showcaseOwner?`Vitrine de ${H(showcaseOwner)}. `:''}${qty?`Dans ta collection : ${qty} exemplaire(s).`:'Tu ne possèdes pas cette variante.'}</p>${c.media?.page?`<p class="asc-muted">Animation : <a href="${H(c.media.page)}" target="_blank" rel="noopener noreferrer">source sur le LoL Wiki</a>. League of Legends © Riot Games.</p>`:'<p class="asc-muted">Illustration fixe avec effets CSS de remplacement.</p>'}`;
   if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');hydrate();
  }
  function syncMotion(){document.documentElement.classList.toggle('asc-motion-off',!canAnimate());schedule();}
@@ -120,7 +120,7 @@ export function initAscended(api){
   const sig=JSON.stringify([uid,f,s.ascendedCards,s.ascendedObtained,generation,motion,reduced?.matches]);if(sig===signature){hydrate();return;}signature=sig;
   root.innerHTML=`<header class="asc-header"><div><p class="asc-kicker">Nouvelle rareté · variantes séparées</p><h2>Ascendantes <small>${catalog.filter(c=>qty(c)>0).length} / ${catalog.length}</small></h2><p>0,1 % par booster : une sixième carte en supplément. Recyclage : 0,1 % de bonus par carte fabriquée.</p><p class="asc-muted">${catalog.filter(c=>c.media?.sources?.length).length} variantes associées à une vidéo du catalogue. Lecture selon disponibilité du fichier ; effets CSS de secours. Les introductions, doublons et fichiers non identifiés ne sont pas transformés au hasard en cartes.</p><p class="asc-muted">Inventaire distinct : aucune carte normale n’est convertie. Ascendantes non échangeables, non recyclables et non équipables dans cette version.</p></div><label class="asc-motion"><input type="checkbox" data-asc-motion ${motion?'checked':''}> Animations${reduced?.matches?' (réduites par le système)':''}</label></header><div class="asc-grid">${cards.map(c=>ascendedCardHTML(c,qty(c),!qty(c))).join('')||'<p>Aucune Ascendante ne correspond aux filtres.</p>'}</div>`;hydrate();
  }
- document.addEventListener('click',e=>{const b=e.target.closest?.('[data-ascended-id]');if(!b||b.closest('.flip:not(.flipped)'))return;const c=api.catalogue().find(x=>x.id===Number(b.dataset.ascendedId));if(c&&api.user())open(c);});
+ document.addEventListener('click',e=>{const b=e.target.closest?.('[data-ascended-id]');if(!b||b.closest('.flip:not(.flipped)'))return;const c=api.catalogue().find(x=>x.id===Number(b.dataset.ascendedId))||api.resolveCard?.(Number(b.dataset.ascendedId));if(c&&api.user())open(c,b.closest('[data-showcase-owner]')?.dataset.showcaseOwner||'');});
  document.addEventListener('error',e=>{const img=e.target;if(img.tagName==='IMG'&&img.dataset.ascFallback&&!img.dataset.ascFailed){img.dataset.ascFailed='1';img.src=img.dataset.ascFallback;}},true);
  root.addEventListener('change',e=>{if(e.target.matches('[data-asc-motion]')){motion=e.target.checked;try{localStorage.setItem('runeterra-ascended-motion',motion?'on':'off');}catch{}signature='';syncMotion();render();}});
  dialog.addEventListener('click',e=>{if(e.target===dialog||e.target.closest('[data-asc-close]'))close();});dialog.addEventListener('cancel',e=>{e.preventDefault();close();});dialog.addEventListener('close',()=>{if(!dialog.open){for(const p of players.values())if(dialog.contains(p.el))stop(p);}});

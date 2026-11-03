@@ -1,4 +1,4 @@
-import { ASCENDED_CONFIG, loadAscendedMedia, ascendedMediaVersion, buildAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, playAscendedReveal, initAscended } from "./ascended.js?v=ascended-2";
+import { ASCENDED_CONFIG, loadAscendedMedia, ascendedMediaVersion, buildAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, playAscendedReveal, initAscended } from "./ascended.js?v=ascended-showcase-1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -1167,6 +1167,46 @@ let lbSig = "";
 
 const SHOWCASE_MAX = 6;
 
+// Références de vitrine : les nombres historiques restent valides.
+// Seules les variantes Ascendantes utilisent une référence "asc:<skinId>".
+function parseShowcaseRef(value) {
+  const text = String(value ?? "");
+  const ascended = /^asc:[1-9]\d*$/.test(text);
+  if (!ascended && !/^[1-9]\d*$/.test(text)) return null;
+  const id = Number(ascended ? text.slice(4) : text);
+  if (!Number.isSafeInteger(id) || !skinsById[id]) return null;
+  return { id, ascended, ref: ascended ? `asc:${id}` : id };
+}
+function cleanShowcase(list, account = null) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set(), result = [];
+  for (const value of list) {
+    const item = parseShowcaseRef(value);
+    if (!item) continue;
+    const key = String(item.ref);
+    const inventory = item.ascended ? account?.ascendedCards : account?.cards;
+    if (seen.has(key) || (account && !(inventory?.[item.id] > 0))) continue;
+    seen.add(key); result.push(item.ref);
+    if (result.length >= SHOWCASE_MAX) break;
+  }
+  return result;
+}
+function resolveShowcaseAscended(id) {
+  id = Number(id);
+  if (!Number.isSafeInteger(id) || !skinsById[id]) return null;
+  return ascendedCatalogue().find(card => card.id === id)
+    || buildAscendedCatalogue(champions, skinsById, key => skinCard(Number(key)), { [id]: 1 }).find(card => card.id === id)
+    || null;
+}
+function showcaseCard(value) {
+  const item = parseShowcaseRef(value);
+  if (!item) return null;
+  const card = item.ascended ? resolveShowcaseAscended(item.id) : skinCard(item.id);
+  return card ? { ...card, showcaseRef: item.ref } : null;
+}
+
+
+
 function cleanProfile(p, cards) {
   p = p || {};
   const own = id => (id && cards[id] > 0 && skinsById[id] ? +id : 0);
@@ -1187,7 +1227,7 @@ function myStats() {
     unique: ids.length,
     total: ids.reduce((a, id) => a + cards[id], 0),
     mythic: ids.filter(id => skinsById[id] && rarityOf(skinsById[id]) === "mythic").length,
-    showcase: (state.showcase || []).filter(id => cards[id] > 0).slice(0, SHOWCASE_MAX)
+    showcase: cleanShowcase(state.showcase, state)
   };
   const pf = cleanProfile(state.profile, cards);
   const t = TITLES.find(x => x.id === pf.title);
@@ -1250,10 +1290,14 @@ function renderProfile(p, mine) {
     <div class="stat"><b>${p.total}</b><small>cartes au total</small></div>
     <div class="stat"><b>${p.mythic}</b><small>mythiques</small></div>`;
 
-  const ids = (p.showcase || []).filter(id => skinsById[id]);
-  let html = ids.map(id => cardHTML(skinCard(+id))).join("");
-  if (mine) for (let i = ids.length; i < SHOWCASE_MAX; i++) html += `<div class="slot">＋</div>`;
+  const showcase = cleanShowcase(p.showcase).map(showcaseCard).filter(Boolean);
+  let html = showcase.map(card => card.rarity === "ascended"
+    ? ascendedCardHTML(card)
+    : cardHTML(card)).join("");
+  if (mine) for (let i = showcase.length; i < SHOWCASE_MAX; i++) html += `<div class="slot">＋</div>`;
+  $("pShowcase").dataset.showcaseOwner = String(p.name || "");
   $("pShowcase").innerHTML = html || `<p class="hint">Aucune carte en vitrine.</p>`;
+  ascendedUI?.refresh();
   $("pEdit").hidden = !mine;
   $("pCustom").hidden = !mine;
   $("pBack").hidden = mine;
@@ -1279,16 +1323,24 @@ async function showProfile(uid) {
 
 function renderShowcasePicker() {
   const q = norm($("scSearch").value.trim());
-  const owned = Object.keys(state.cards || {}).filter(id => state.cards[id] > 0).map(id => skinCard(+id));
-  const list = owned
-    .filter(c => !q || norm(c.name).includes(q) || norm(c.skinName).includes(q))
-    .sort((a, b) => rIdx(a.rarity) - rIdx(b.rarity) || a.name.localeCompare(b.name, "fr"));
-  $("scList").innerHTML = list.slice(0, 150).map(c => `
-    <button class="pick ${c.rarity}${scSel.includes(c.id) ? " sel" : ""}" data-id="${c.id}">
-      <img loading="lazy" referrerpolicy="no-referrer" alt="" src="${c.img}"
-           onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
-      <span><b>${esc(c.name)}</b><br>${esc(c.skinName)}<br>
-      <small style="color:${RARITIES[c.rarity].color}">${RARITIES[c.rarity].label}</small></span>
+  const normal = Object.keys(state.cards || {})
+    .filter(id => state.cards[id] > 0 && skinsById[id])
+    .map(id => ({ ...skinCard(Number(id)), showcaseRef: Number(id) }));
+  const ascended = Object.keys(state.ascendedCards || {})
+    .filter(id => state.ascendedCards[id] > 0 && skinsById[id])
+    .map(id => showcaseCard(`asc:${id}`)).filter(Boolean);
+  const list = [...normal, ...ascended]
+    .filter(card => !q || norm(`${card.name} ${card.skinName} ${RARITIES[card.rarity]?.label || ""}`).includes(q))
+    .sort((a, b) => rIdx(a.rarity) - rIdx(b.rarity) || a.name.localeCompare(b.name, "fr") || a.id - b.id);
+  $("scList").innerHTML = list.slice(0, 150).map(card => `
+    <button type="button" class="pick ${card.rarity}${scSel.includes(card.showcaseRef) ? " sel" : ""}"
+      data-showcase-ref="${esc(String(card.showcaseRef))}"
+      aria-pressed="${scSel.includes(card.showcaseRef) ? 'true' : 'false'}">
+      <img loading="lazy" referrerpolicy="no-referrer" alt="" src="${esc(card.img)}"
+        onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${esc(card.imgAlt)}'}">
+      <span><b>${esc(card.name)}</b><br>${esc(card.skinName)}<br>
+        <small style="color:${RARITIES[card.rarity].color}">${RARITIES[card.rarity].label}</small>
+      </span>
     </button>`).join("")
     + (list.length > 150 ? `<p class="hint">Affine ta recherche pour voir les ${list.length - 150} autres.</p>` : "")
     || `<p class="hint">Aucun résultat.</p>`;
@@ -1297,7 +1349,7 @@ function renderShowcasePicker() {
 
 function openShowcaseEdit() {
   if (!state) return;
-  scSel = (state.showcase || []).filter(id => state.cards?.[id] > 0).slice(0, SHOWCASE_MAX);
+  scSel = cleanShowcase(state.showcase, state);
   $("scSearch").value = "";
   renderShowcasePicker();
   $("showcaseModal").hidden = false;
@@ -1311,26 +1363,45 @@ $("scCancel").onclick = () => { $("showcaseModal").hidden = true; };
 $("scClear").onclick = () => { scSel = []; renderShowcasePicker(); };
 
 $("scList").addEventListener("click", e => {
-  const b = e.target.closest(".pick");
-  if (!b) return;
-  const id = +b.dataset.id;
-  const i = scSel.indexOf(id);
-  if (i >= 0) scSel.splice(i, 1);
-  else if (scSel.length < SHOWCASE_MAX) scSel.push(id);
+  const button = e.target.closest(".pick[data-showcase-ref]");
+  if (!button) return;
+  const item = parseShowcaseRef(button.dataset.showcaseRef);
+  if (!item) return;
+  const index = scSel.indexOf(item.ref);
+  if (index >= 0) scSel.splice(index, 1);
+  else if (scSel.length < SHOWCASE_MAX) scSel.push(item.ref);
   else { alert(`Maximum ${SHOWCASE_MAX} cartes en vitrine.`); return; }
-  b.classList.toggle("sel", i < 0);
+  button.classList.toggle("sel", index < 0);
+  button.setAttribute("aria-pressed", index < 0 ? "true" : "false");
   $("scCount").textContent = `${scSel.length} / ${SHOWCASE_MAX}`;
 });
 
 $("scSave").onclick = async () => {
+  const uid = user?.uid;
+  if (!uid) return;
+  const selection = [...scSel];
+  $("scSave").disabled = true;
   try {
-    await updateDoc(userRef(), { showcase: scSel });
-    state.showcase = scSel.slice();
+    const saved = await runTransaction(db, async tx => {
+      const ref = doc(db, "users", uid), snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error("Compte introuvable.");
+      if (user?.uid !== uid) throw new Error("Le compte a changé.");
+      const account = snap.data(), valid = cleanShowcase(selection, account);
+      if (valid.length !== selection.length) {
+        throw new Error("Une carte sélectionnée n’est plus possédée. Ferme puis rouvre le sélecteur de vitrine.");
+      }
+      tx.update(ref, { showcase: valid });
+      return valid;
+    });
+    if (user?.uid !== uid || !state) return;
+    state.showcase = saved;
     $("showcaseModal").hidden = true;
-    showProfile();
-    syncLeaderboard();
-  } catch (e) {
-    alert(e.message);
+    await showProfile();
+    await syncLeaderboard();
+  } catch (error) {
+    if (user?.uid === uid) alert(error.message);
+  } finally {
+    $("scSave").disabled = false;
   }
 };
 
@@ -2717,6 +2788,7 @@ function renderAscendedCollection() {
     user: () => user,
     state: () => state,
     catalogue: ascendedCatalogue,
+    resolveCard: resolveShowcaseAscended,
     filters: () => ({ query: $("search").value, rarity: $("filterRarity").value,
       sort: $("sortBy").value, owned: $("onlyOwned").checked, dupes: $("onlyDupes").checked })
   });
