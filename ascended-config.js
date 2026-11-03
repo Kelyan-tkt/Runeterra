@@ -1,17 +1,11 @@
-// Aucun tirage automatique tant que le taux n'a pas été validé.
-// enabled=true active un bonus indépendant, sans remplacer les cinq cartes.
-export const ASCENDED_CONFIG = Object.freeze({ enabled:false, chance:0.001 });
-// video : fichier vidéo autorisé correspondant exactement à l'illustration.
-// Sans vidéo, le rendu utilise les effets CSS et l'illustration existante.
-export const ASCENDED_CATALOG = Object.freeze([
- {champion:'Ashe',theme:'ice',video:''},
- {champion:'Ahri',theme:'spirit',video:''},
- {champion:'Lux',theme:'light',video:''},
- {champion:'Thresh',theme:'mist',video:''},
- {champion:'AurelionSol',theme:'stars',video:''},
- {champion:'Jinx',theme:'spark',video:''},
- {champion:'Yasuo',theme:'wind',video:''},
- {champion:'Kaisa',theme:'void',video:''},
- {champion:'MissFortune',theme:'ember',video:''},
- {champion:'Leona',theme:'sun',video:''}
-]);
+export const ASCENDED_CONFIG = Object.freeze({
+  enabled: true,
+  boosterChance: 0.001,
+  recycleChance: 0.001,
+  maxPlayingThumbnails: 2,
+  manifest: './ascended-media.json?v=ascended-2'
+});
+export const LEGACY_ASCENDED_CHAMPIONS = ['Ashe','Ahri','Lux','Thresh','AurelionSol','Jinx','Yasuo','Kaisa','MissFortune','Leona'];
+// Dérogations explicites seulement : nom de fichier -> identifiants de skins.
+// Les introductions, anciennes versions et groupes non identifiés ne sont pas associés au hasard.
+export const ASCENDED_SKIN_OVERRIDES = Object.freeze({});

@@ -1,0 +1,938 @@
+{
+  "version": 2,
+  "category": "https://wiki.leagueoflegends.com/en-us/Category:Animated_champion_skins",
+  "wikiReportedFiles": 208,
+  "note": "Sélection de fichiers nommés sur la catégorie. L’importateur récupère la liste complète et les URL réelles ; aucune vidéo binaire n’est incluse ici.",
+  "records": [
+    {
+      "file": "Aatrox OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Aatrox_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Aatrox_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ahri ArcadeSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ahri_ArcadeSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ahri_ArcadeSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ahri CovenSkin Unused.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ahri_CovenSkin_Unused.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ahri_CovenSkin_Unused.webm",
+      "local": ""
+    },
+    {
+      "file": "Ahri ImmortalizedLegendSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ahri_ImmortalizedLegendSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ahri_ImmortalizedLegendSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Ahri RisenLegendSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ahri_RisenLegendSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ahri_RisenLegendSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Ahri SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ahri_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ahri_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Ahri SpiritBlossomSpringsSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ahri_SpiritBlossomSpringsSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ahri_SpiritBlossomSpringsSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Akali OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Akali_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Akali_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Akali StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Akali_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Akali_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ambessa OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ambessa_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ambessa_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Annie PandaSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Annie_PandaSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Annie_PandaSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ashe CovenSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ashe_CovenSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ashe_CovenSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ashe PROJECTSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ashe_PROJECTSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ashe_PROJECTSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Aurelion Sol OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Aurelion_Sol_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Aurelion_Sol_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Aurora OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Aurora_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Aurora_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Azir OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Azir_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Azir_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Bard OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Bard_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Bard_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Bel'Veth OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Bel%27Veth_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Bel%27Veth_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Braum OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Braum_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Braum_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Briar OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Briar_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Briar_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Caitlyn PulsefireSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Caitlyn_PulsefireSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Caitlyn_PulsefireSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Camille OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Camille_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Camille_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Cassiopeia CovenSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Cassiopeia_CovenSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Cassiopeia_CovenSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Cassiopeia SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Cassiopeia_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Cassiopeia_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Cho'Gath BattlecastPrimeSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Cho%27Gath_BattlecastPrimeSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Cho%27Gath_BattlecastPrimeSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Darius God-KingSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Darius_God-KingSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Darius_God-KingSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Diana BattleQueenSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Diana_BattleQueenSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Diana_BattleQueenSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Diana BloodMoonSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Diana_BloodMoonSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Diana_BloodMoonSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Diana OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Diana_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Diana_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Diana PrestigeBattleQueenSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Diana_PrestigeBattleQueenSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Diana_PrestigeBattleQueenSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Draven OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Draven_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Draven_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ekko BreakoutTrueDamageSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ekko_BreakoutTrueDamageSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ekko_BreakoutTrueDamageSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Ekko OriginalSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ekko_OriginalSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ekko_OriginalSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Ekko StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ekko_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ekko_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Evelynn OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Evelynn_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Evelynn_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Evelynn SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Evelynn_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Evelynn_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Ezreal BattleAcademiaSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ezreal_BattleAcademiaSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ezreal_BattleAcademiaSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ezreal PorcelainProtectorSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ezreal_PorcelainProtectorSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ezreal_PorcelainProtectorSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Ezreal PulsefireSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ezreal_PulsefireSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ezreal_PulsefireSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Fiddlesticks StarNemesisSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Fiddlesticks_StarNemesisSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Fiddlesticks_StarNemesisSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Galio OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Galio_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Galio_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Garen God-KingSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Garen_God-KingSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Garen_God-KingSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Gnar OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Gnar_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Gnar_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Hwei OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Hwei_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Hwei_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Illaoi OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Illaoi_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Illaoi_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Irelia OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Irelia_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Irelia_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ivern OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ivern_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ivern_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Janna BattleQueenSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Janna_BattleQueenSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Janna_BattleQueenSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Janna ForecastSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Janna_ForecastSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Janna_ForecastSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Janna PrestigeCyberHaloSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Janna_PrestigeCyberHaloSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Janna_PrestigeCyberHaloSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Jayce OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Jayce_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Jayce_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Jhin DarkCosmicSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Jhin_DarkCosmicSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Jhin_DarkCosmicSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Jhin OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Jhin_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Jhin_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Jhin SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Jhin_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Jhin_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Jinx ArcaneFracturedSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Jinx_ArcaneFracturedSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Jinx_ArcaneFracturedSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Jinx FirecrackerSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Jinx_FirecrackerSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Jinx_FirecrackerSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Jinx OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Jinx_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Jinx_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Kai'Sa ImmortalizedLegendSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kai%27Sa_ImmortalizedLegendSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kai%27Sa_ImmortalizedLegendSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Kai'Sa OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kai%27Sa_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kai%27Sa_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Kai'Sa StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kai%27Sa_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kai%27Sa_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Kalista OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kalista_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kalista_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Karma TranquilityDragonSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Karma_TranquilityDragonSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Karma_TranquilityDragonSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Katarina BattleQueenSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Katarina_BattleQueenSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Katarina_BattleQueenSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Kayle Morgana OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kayle_Morgana_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kayle_Morgana_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Kayn OriginalSkin Rhaast.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kayn_OriginalSkin_Rhaast.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kayn_OriginalSkin_Rhaast.webm",
+      "local": ""
+    },
+    {
+      "file": "Kayn OriginalSkin Shadow Assassin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kayn_OriginalSkin_Shadow_Assassin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kayn_OriginalSkin_Shadow_Assassin.webm",
+      "local": ""
+    },
+    {
+      "file": "Kha'Zix OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kha%27Zix_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kha%27Zix_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Kindred OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kindred_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kindred_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Kindred SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kindred_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kindred_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Kled OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Kled_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Kled_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Leona SolarEclipseSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Leona_SolarEclipseSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Leona_SolarEclipseSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Lillia SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Lillia_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Lillia_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Lissandra OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Lissandra_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Lissandra_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Locke OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Locke_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Locke_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Lucian HighNoonSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Lucian_HighNoonSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Lucian_HighNoonSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Lucian OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Lucian_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Lucian_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Lux ElementalistSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Lux_ElementalistSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Lux_ElementalistSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Lux PrestigePorcelainSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Lux_PrestigePorcelainSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Lux_PrestigePorcelainSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Lux SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Lux_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Lux_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Malphite OldGodSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Malphite_OldGodSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Malphite_OldGodSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Master Yi PROJECTYiSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Master_Yi_PROJECTYiSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Master_Yi_PROJECTYiSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Mel OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Mel_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Mel_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Milio OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Milio_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Milio_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Miss Fortune GunGoddessSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Miss_Fortune_GunGoddessSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Miss_Fortune_GunGoddessSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Mordekaiser Sahn-UzalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Mordekaiser_Sahn-UzalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Mordekaiser_Sahn-UzalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Morgana SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Morgana_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Morgana_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Morgana StarNemesisSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Morgana_StarNemesisSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Morgana_StarNemesisSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Naafiri SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Naafiri_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Naafiri_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Nami OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Nami_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Nami_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Nasus InfernalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Nasus_InfernalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Nasus_InfernalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Neeko OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Neeko_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Neeko_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Nilah OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Nilah_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Nilah_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Nilah StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Nilah_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Nilah_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Nocturne EternumSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Nocturne_EternumSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Nocturne_EternumSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Nunu OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Nunu_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Nunu_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Orianna WinterWonderSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Orianna_WinterWonderSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Orianna_WinterWonderSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ornn OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ornn_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ornn_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Poppy OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Poppy_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Poppy_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Pyke OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Pyke_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Pyke_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Pyke SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Pyke_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Pyke_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Qiyana BattleQueenSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Qiyana_BattleQueenSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Qiyana_BattleQueenSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Quinn OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Quinn_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Quinn_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Quinn StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Quinn_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Quinn_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Rakan Xayah OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Rakan_Xayah_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Rakan_Xayah_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Rek'Sai OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Rek%27Sai_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Rek%27Sai_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Rell BattleQueenSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Rell_BattleQueenSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Rell_BattleQueenSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Rell OriginalSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Rell_OriginalSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Rell_OriginalSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Rell StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Rell_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Rell_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Riven SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Riven_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Riven_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Rumble SuperGalaxySkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Rumble_SuperGalaxySkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Rumble_SuperGalaxySkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Ryze OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Ryze_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Ryze_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Samira SoulFighterSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Samira_SoulFighterSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Samira_SoulFighterSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Seraphine KDAALLOUTIndieSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Seraphine_KDAALLOUTIndieSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Seraphine_KDAALLOUTIndieSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Seraphine KDAALLOUTRisingStarSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Seraphine_KDAALLOUTRisingStarSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Seraphine_KDAALLOUTRisingStarSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Seraphine KDAALLOUTSuperstarSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Seraphine_KDAALLOUTSuperstarSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Seraphine_KDAALLOUTSuperstarSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Sett RadiantSerpentSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Sett_RadiantSerpentSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Sett_RadiantSerpentSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Sett SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Sett_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Sett_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Shaco PrestigeSoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Shaco_PrestigeSoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Shaco_PrestigeSoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Shaco SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Shaco_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Shaco_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Shyvana OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Shyvana_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Shyvana_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Sion OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Sion_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Sion_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Smolder OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Smolder_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Smolder_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Sona DJSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Sona_DJSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Sona_DJSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Sona StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Sona_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Sona_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Swain OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Swain_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Swain_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Tahm Kench OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Tahm_Kench_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Tahm_Kench_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Taliyah OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Taliyah_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Taliyah_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Taliyah StarGuardianSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Taliyah_StarGuardianSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Taliyah_StarGuardianSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Taric OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Taric_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Taric_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Teemo OmegaSquadSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Teemo_OmegaSquadSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Teemo_OmegaSquadSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Thresh DarkStarSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Thresh_DarkStarSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Thresh_DarkStarSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Thresh OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Thresh_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Thresh_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Thresh SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Thresh_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Thresh_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Tristana DragonTrainerSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Tristana_DragonTrainerSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Tristana_DragonTrainerSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Tristana ImmortalizedLegendSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Tristana_ImmortalizedLegendSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Tristana_ImmortalizedLegendSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Tristana RisenLegendSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Tristana_RisenLegendSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Tristana_RisenLegendSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Udyr SpiritGuardSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Udyr_SpiritGuardSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Udyr_SpiritGuardSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Urgot OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Urgot_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Urgot_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Vayne FirecrackerSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Vayne_FirecrackerSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Vayne_FirecrackerSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Vayne SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Vayne_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Vayne_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Vel'Koz OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Vel%27Koz_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Vel%27Koz_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Vex OriginalSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Vex_OriginalSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Vex_OriginalSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Vi OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Vi_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Vi_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Viego RevenantReignSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Viego_RevenantReignSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Viego_RevenantReignSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Viego SoulFighterSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Viego_SoulFighterSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Viego_SoulFighterSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Warwick OldGodSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Warwick_OldGodSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Warwick_OldGodSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Warwick OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Warwick_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Warwick_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Xin Zhao DragonslayerSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Xin_Zhao_DragonslayerSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Xin_Zhao_DragonslayerSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Yasuo OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Yasuo_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Yasuo_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Yasuo SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Yasuo_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Yasuo_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Yone PrestigeHEARTSTEELSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Yone_PrestigeHEARTSTEELSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Yone_PrestigeHEARTSTEELSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Yone SpiritBlossomSkin.mp4",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Yone_SpiritBlossomSkin.mp4",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Yone_SpiritBlossomSkin.mp4",
+      "local": ""
+    },
+    {
+      "file": "Yorick OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Yorick_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Yorick_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Yunara OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Yunara_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Yunara_OriginalSkin.webm",
+      "local": ""
+    },
+    {
+      "file": "Zaahen OriginalSkin.webm",
+      "page": "https://wiki.leagueoflegends.com/en-us/File:Zaahen_OriginalSkin.webm",
+      "url": "https://wiki.leagueoflegends.com/en-us/Special:FilePath/Zaahen_OriginalSkin.webm",
+      "local": ""
+    }
+  ]
+}

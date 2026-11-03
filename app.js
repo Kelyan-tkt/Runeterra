@@ -1,4 +1,4 @@
-import { ASCENDED_CONFIG, makeAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, initAscended } from "./ascended.js?v=ascended-1";
+import { ASCENDED_CONFIG, loadAscendedMedia, ascendedMediaVersion, buildAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, playAscendedReveal, initAscended } from "./ascended.js?v=ascended-2";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -39,7 +39,7 @@ const DDRAGON = "https://ddragon.leagueoflegends.com";
 const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
 const RARITIES = {
-  ascended: { label: "Ascendante", chance: 0, color: "#b99cff" },
+  ascended: { label: "Ascendante", chance: 0.001, color: "#c7a0ff" },
   common: { label: "Commune", chance: 1, color: "#8a8f98" },
   rare: { label: "Rare", chance: 0.941, color: "#0397ab" },
   epic: { label: "Épique", chance: 0.176, color: "#a335ee" },
@@ -79,6 +79,7 @@ const QUESTS = {
 };
 
 let ascendedUI = null;
+let ascendedCache = [], ascendedCacheKey = "";
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
@@ -448,6 +449,7 @@ $("recycleGo").onclick = () => {
 // applique un recyclage : retire les doublons choisis, ajoute les nouvelles cartes
 async function applyRecycle(sel, newCards) {
   const need = Object.values(sel).reduce((a, b) => a + b, 0);
+  let ascendedBonuses = [];
   state = await runTransaction(db, async tx => {
     const snap = await tx.get(userRef());
     const s = snap.data();
@@ -457,11 +459,17 @@ async function applyRecycle(sel, newCards) {
     }
     for (const [id, n] of Object.entries(sel)) if (n > 0) s.cards[id] -= n;
     newCards.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
+    ascendedBonuses = [];
+    for (const card of newCards) {
+      const bonus = awardAscendedBonus(s, ascendedCatalogue(), { channel: "recycle" });
+      if (bonus) ascendedBonuses.push(bonus);
+    }
     ensureObtained(s);
     addProgress(s, "recycle", need);
     tx.set(userRef(), s);
     return s;
   });
+  return ascendedBonuses;
 }
 
 async function recycleCards() {
@@ -473,10 +481,10 @@ async function recycleCards() {
   $("recycleGo").disabled = true;
   $("recycleAll").disabled = true;
   try {
-    await applyRecycle(sel, newCards);
+    const ascendedBonuses = await applyRecycle(sel, newCards);
     $("recycleModal").hidden = true;
     $("result").innerHTML = "";
-    startReveal(newCards);
+    startReveal([...newCards, ...ascendedBonuses]);
   } catch (e) {
     alert(e.message);
     renderRecycleList();
@@ -620,13 +628,26 @@ function updateReveal() {
     : "Terminé ! Clique sur une carte pour voir son splash art.";
 }
 
-function flipNext() {
-  if (!rv || rv.next >= rv.cards.length) return;
+async function flipNext() {
+  if (!rv || rv.ascAnimating || rv.next >= rv.cards.length) return;
+  const token = rv, wasBusy = rv.busy;
   const i = rv.next++;
   const el = document.querySelector(`.flip[data-i="${i}"]`);
   const c = rv.cards[i];
-  el.classList.add("flipped", `fx-${c.rarity}`);
-  setTimeout(() => rarityEffect(el, c.rarity), 350);
+  if (!el) return;
+  if (c.rarity === "ascended") {
+    rv.ascAnimating = true;
+    rv.busy = true;
+    $("revealAll").hidden = true;
+    await playAscendedReveal(el, c);
+    if (rv !== token || !el.isConnected) return;
+    rv.ascAnimating = false;
+    rv.busy = wasBusy;
+    if (!rv.busy && rv.next < rv.cards.length) $("revealAll").hidden = false;
+  } else {
+    el.classList.add("flipped", `fx-${c.rarity}`);
+    setTimeout(() => { if (rv === token && el.isConnected) rarityEffect(el, c.rarity); }, 350);
+  }
   updateReveal();
   if (rv.next >= rv.cards.length) finishReveal();
 }
@@ -635,12 +656,13 @@ function flipAll() {
   if (!rv || rv.busy) return;
   rv.busy = true;
   $("revealAll").hidden = true;
-  const step = () => {
-    if (!rv || rv.next >= rv.cards.length) return;
-    flipNext();
-    setTimeout(step, 450);
+  const token = rv;
+  const step = async () => {
+    if (rv !== token || rv.next >= rv.cards.length) return;
+    await flipNext();
+    if (rv === token) setTimeout(step, 450);
   };
-  step();
+  void step();
 }
 
 function finishReveal() {
@@ -695,6 +717,7 @@ function mythicEmbers(el) {
 }
 
 function rarityEffect(el, rarity) {
+  if (rarity === "ascended") { ascendedUI?.refresh(); return; }
   const color = RARITIES[rarity].color;
 
   if (rarity === "epic") {
@@ -1000,7 +1023,7 @@ function renderOdds() {
       : (ch * 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " %";
     return `<li><span><span style="color:${RARITIES[r].color}">●</span> ${RARITIES[r].label}</span><b>${val}</b></li>`;
   }).join("");
-  $("oddsList").insertAdjacentHTML("beforeend", `<li><span style="color:#b99cff">Ascendante · bonus supplémentaire</span><b>${ASCENDED_CONFIG.enabled ? (ASCENDED_CONFIG.chance * 100).toLocaleString("fr-FR") + " %" : "Non activée"}</b></li>`);
+  $("oddsList").insertAdjacentHTML("beforeend", '<li><span style="color:#c7a0ff">Ascendante · 6e carte bonus</span><b>0,1 %</b></li>');
 
   const n = state.mythicPity || 0;
   $("pityTxt").textContent = `${Math.min(n, PITY_MAX)} / ${PITY_MAX}`;
@@ -2569,6 +2592,7 @@ onAuthStateChanged(auth, async u => {
     $("viewer").hidden = true;
     rankedModule?.close();
     ascendedUI?.close();
+    ascendedCacheKey = "";
     vw = null;
     rv = null;
     lbSig = "";
@@ -2577,6 +2601,7 @@ onAuthStateChanged(auth, async u => {
   $("userName").textContent = u.displayName || "";
   try {
     if (!champions.length) await loadGameData();
+    await loadAscendedMedia().catch(error => console.warn("Catalogue Ascendant :", error.message));
     await loadState();
     await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
     startListeners();                       // les amis démarrent avant l'affichage
@@ -2674,10 +2699,15 @@ async function refreshBossRanking() {
     }
   }
 }
-// ---------- Ascendantes : inventaire distinct, aucune conversion des cartes ----------
+// ---------- Ascendantes : aucun remplacement des cartes historiques ----------
 function ascendedCatalogue() {
-  return makeAscendedCatalogue(champions, id => skinCard(Number(id)))
-    .filter(card => Boolean(skinsById[card.id]));
+  const owned = state?.ascendedCards || {};
+  const key = `${ascendedMediaVersion()}:${skinList.length}:${Object.keys(owned).sort().join(",")}`;
+  if (key !== ascendedCacheKey) {
+    ascendedCache = buildAscendedCatalogue(champions, skinsById, id => skinCard(Number(id)), owned);
+    ascendedCacheKey = key;
+  }
+  return ascendedCache;
 }
 function renderAscendedCollection() {
   const root = $("ascendedCollection");
@@ -2687,13 +2717,8 @@ function renderAscendedCollection() {
     user: () => user,
     state: () => state,
     catalogue: ascendedCatalogue,
-    filters: () => ({
-      query: $("search").value,
-      rarity: $("filterRarity").value,
-      sort: $("sortBy").value,
-      owned: $("onlyOwned").checked,
-      dupes: $("onlyDupes").checked
-    })
+    filters: () => ({ query: $("search").value, rarity: $("filterRarity").value,
+      sort: $("sortBy").value, owned: $("onlyOwned").checked, dupes: $("onlyDupes").checked })
   });
   ascendedUI.render();
 }
