@@ -1,3 +1,4 @@
+import { ASCENDED_CONFIG, makeAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, initAscended } from "./ascended.js?v=ascended-1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -38,6 +39,7 @@ const DDRAGON = "https://ddragon.leagueoflegends.com";
 const CD = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default";
 
 const RARITIES = {
+  ascended: { label: "Ascendante", chance: 0, color: "#b99cff" },
   common: { label: "Commune", chance: 1, color: "#8a8f98" },
   rare: { label: "Rare", chance: 0.941, color: "#0397ab" },
   epic: { label: "Épique", chance: 0.176, color: "#a335ee" },
@@ -76,6 +78,7 @@ const QUESTS = {
   ]
 };
 
+let ascendedUI = null;
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
@@ -541,6 +544,8 @@ async function openBooster() {
       drawn = drawBooster(CARDS_PER_BOOSTER, (s.mythicPity || 0) >= PITY_MAX);
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
       s.mythicPity = drawn.some(c => c.rarity === "mythic") ? 0 : (s.mythicPity || 0) + 1;
+      const ascendedBonus = awardAscendedBonus(s, ascendedCatalogue());
+      if (ascendedBonus) drawn.push(ascendedBonus);
       ensureObtained(s);
       addProgress(s, "open");
       tx.set(userRef(), s);
@@ -569,6 +574,8 @@ async function openBonusBooster() {
       drawn = drawBonusBooster(CARDS_PER_BOOSTER, (s.mythicPity || 0) >= PITY_MAX);
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
       s.mythicPity = drawn.some(c => c.rarity === "mythic") ? 0 : (s.mythicPity || 0) + 1;
+      const ascendedBonus = awardAscendedBonus(s, ascendedCatalogue());
+      if (ascendedBonus) drawn.push(ascendedBonus);
       ensureObtained(s);
       tx.set(userRef(), s);
       return s;
@@ -773,7 +780,7 @@ document.addEventListener("click", e => {
 });
 
 // ---------- Affichage des cartes ----------
-const cardHTML = (c, qty = 0, delay = 0, locked = false) => `
+const cardHTML = (c, qty = 0, delay = 0, locked = false) => c.rarity === "ascended" ? ascendedCardHTML(c, qty) : `
   <div class="card ${c.rarity}${locked ? " locked" : ""}" data-id="${c.id}" style="animation-delay:${delay}s">
     <span class="badge">${RARITIES[c.rarity].label}</span>
     ${qty > 1 ? `<span class="qty">×${qty}</span>` : ""}
@@ -786,6 +793,10 @@ const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase
 
 // ---------- Galerie des champions ----------
 function renderCollection() {
+  renderAscendedCollection();
+  const ascendedOnly = $("filterRarity").value === "ascended";
+  $("collection").hidden = ascendedOnly;
+  if (ascendedOnly) return;
   const owned = state.cards || {};
   const obt = state.obtained || {};
   const q = norm($("search").value.trim());
@@ -989,6 +1000,7 @@ function renderOdds() {
       : (ch * 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " %";
     return `<li><span><span style="color:${RARITIES[r].color}">●</span> ${RARITIES[r].label}</span><b>${val}</b></li>`;
   }).join("");
+  $("oddsList").insertAdjacentHTML("beforeend", `<li><span style="color:#b99cff">Ascendante · bonus supplémentaire</span><b>${ASCENDED_CONFIG.enabled ? (ASCENDED_CONFIG.chance * 100).toLocaleString("fr-FR") + " %" : "Non activée"}</b></li>`);
 
   const n = state.mythicPity || 0;
   $("pityTxt").textContent = `${Math.min(n, PITY_MAX)} / ${PITY_MAX}`;
@@ -2556,6 +2568,7 @@ onAuthStateChanged(auth, async u => {
     $("recycleModal").hidden = true;
     $("viewer").hidden = true;
     rankedModule?.close();
+    ascendedUI?.close();
     vw = null;
     rv = null;
     lbSig = "";
@@ -2660,4 +2673,27 @@ async function refreshBossRanking() {
         error.message;
     }
   }
+}
+// ---------- Ascendantes : inventaire distinct, aucune conversion des cartes ----------
+function ascendedCatalogue() {
+  return makeAscendedCatalogue(champions, id => skinCard(Number(id)))
+    .filter(card => Boolean(skinsById[card.id]));
+}
+function renderAscendedCollection() {
+  const root = $("ascendedCollection");
+  if (!root || !state || !champions.length) return;
+  if (!ascendedUI) ascendedUI = initAscended({
+    root,
+    user: () => user,
+    state: () => state,
+    catalogue: ascendedCatalogue,
+    filters: () => ({
+      query: $("search").value,
+      rarity: $("filterRarity").value,
+      sort: $("sortBy").value,
+      owned: $("onlyOwned").checked,
+      dupes: $("onlyDupes").checked
+    })
+  });
+  ascendedUI.render();
 }
