@@ -1112,3 +1112,30 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   #revealRow {padding:20px 18px 14px;gap:10px;}
   #reveal > .reveal-actions {padding:4px 0;}
 }
+
+
+/* Titres de podium : seul un titre équipé ET validé par le classement applique l'effet. */
+.podium-identity {display:inline-flex;flex-direction:column;align-items:flex-start;min-width:0;gap:2px;vertical-align:middle;}
+.podium-identity .r-name {display:block;max-width:100%;}
+.podium-rank-title {display:block;font-size:10px;line-height:1.45;letter-spacing:.025em;font-weight:600;white-space:normal;}
+.podium-fx {--podium-color:#ffe09b;color:var(--podium-color);text-shadow:0 0 5px color-mix(in srgb,var(--podium-color) 55%,transparent);animation:podium-breathe 2.8s ease-in-out infinite;}
+.podium-family-general.podium-place-1 {--podium-color:#ffe28c;}
+.podium-family-general.podium-place-2 {--podium-color:#d8ecff;}
+.podium-family-general.podium-place-3 {--podium-color:#e8b38e;}
+.podium-family-mythic.podium-place-1 {--podium-color:#ff8bc6;}
+.podium-family-mythic.podium-place-2 {--podium-color:#cfafff;}
+.podium-family-mythic.podium-place-3 {--podium-color:#ebaac6;}
+.podium-family-ranked.podium-place-1 {--podium-color:#8bf4ff;}
+.podium-family-ranked.podium-place-2 {--podium-color:#accdff;}
+.podium-family-ranked.podium-place-3 {--podium-color:#8de1d0;}
+#pName.podium-fx,#pTitle.podium-fx,#userName.podium-fx,.r-name.podium-fx,.podium-rank-title.podium-fx {color:var(--podium-color);}
+#pTitle.podium-fx {letter-spacing:.045em;}
+.podium-family-mythic.podium-fx {animation-duration:3.2s;}
+.podium-family-ranked.podium-fx {animation-duration:2.4s;}
+@keyframes podium-breathe {
+  0%,100% {text-shadow:0 0 3px var(--podium-color),0 0 10px transparent;filter:brightness(1);}
+  50% {text-shadow:0 0 6px var(--podium-color),0 0 15px var(--podium-color);filter:brightness(1.15);}
+}
+@media(prefers-reduced-motion:reduce){
+  .podium-fx {animation:none!important;filter:none;text-shadow:0 0 4px var(--podium-color);}
+}

@@ -1,3 +1,4 @@
+import { podiumIdentityHTML, podiumRankedPlayers, subscribePodiumChanges } from "./podium-titles.js?v=1";
 import {doc,collection,query,where,getDocs} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 // Badges vectoriels originaux, pas les logos officiels de Riot.
@@ -46,6 +47,22 @@ export function initBossLeaderboard({db,user,week,root,onOpen=()=>{}}){
   document.head.appendChild(style);
  }
  let generation=0;
+ function renderRows(rows,current){
+  const me=user()?.uid;
+  if(!me||current!==week())return;
+  panel.dataset.rankWeek=current;
+   const players=rows.filter(p=>p.week===current&&p.mode==='boss-season-v1').map(p=>({...p,points:score(p.points),bosses:score(p.bosses)})).sort((a,b)=>b.points-a.points||String(a.name).localeCompare(String(b.name),'fr')||a.uid.localeCompare(b.uid));
+   let previous=null,position=0;
+   players.forEach((p,i)=>{if(previous!==p.points)position=i+1;p.position=position;previous=p.points;});
+   const own=players.find(p=>p.uid===me),list=players.slice(0,100);
+   panel.innerHTML=`<div class="boss-ranking-actions"><h3 style="margin:0 auto 0 0">Classement PvE · semaine du ${safe(current)}</h3><button class="btn" data-boss-rank-refresh>Actualiser</button><button class="btn" data-boss-rank-close>Fermer</button></div><p>${players.length} joueur(s)${own?` · Ta place : ${own.position}${own.position===1?'er':'e'} · ${own.points} points`:" · Ouvre Chasse aux boss pour publier ton score."}</p><div class="boss-ranking-table-wrap"><table class="boss-ranking-table"><thead><tr><th>Place</th><th>Joueur</th><th>Rang</th><th>Points</th><th>Boss</th></tr></thead><tbody>${list.map(p=>`<tr class="${p.uid===me?'mine':''}"><td>${p.position}</td><td class="boss-ranking-name">${podiumIdentityHTML(p)}</td><td><span class="boss-ranking-cell">${bossRankIcon(p.points,34)}${RANKS[indexOf(p.points)][0]}</span></td><td>${p.points}</td><td>${p.bosses}</td></tr>`).join('')||'<tr><td colspan="5">Aucun score publié pour cette semaine.</td></tr>'}</tbody></table></div><p class="boss-ranking-hint">100 premières lignes affichées. Les égalités de points partagent la même place. Les scores sont publiés à l’ouverture et lors des actions dans Chasse aux boss. Les anciennes semaines ne sont pas mélangées à celle-ci.</p>`;
+ }
+ subscribePodiumChanges(()=>{
+  if(panel.hidden||!user()?.uid)return;
+  const rows=podiumRankedPlayers();
+  if(rows)renderRows(rows,week());
+  else if(panel.dataset.rankWeek&&panel.dataset.rankWeek!==week())panel.innerHTML='<p>Nouvelle semaine : actualisation du classement…</p><button class="btn" data-boss-rank-refresh>Actualiser</button>';
+ });
  async function load(){
   const n=++generation,me=user()?.uid,current=week();
   if(!me){panel.innerHTML='<p>Connecte-toi pour consulter le classement.</p>';return;}
@@ -53,11 +70,7 @@ export function initBossLeaderboard({db,user,week,root,onOpen=()=>{}}){
   try{
    const snap=await getDocs(query(collection(db,'rankedPlayers'),where('week','==',current)));
    if(n!==generation||user()?.uid!==me)return;
-   const players=snap.docs.map(d=>({...d.data(),uid:d.id})).filter(p=>p.mode==='boss-season-v1').map(p=>({...p,points:score(p.points),bosses:score(p.bosses)})).sort((a,b)=>b.points-a.points||String(a.name).localeCompare(String(b.name),'fr')||a.uid.localeCompare(b.uid));
-   let previous=null,position=0;
-   players.forEach((p,i)=>{if(previous!==p.points)position=i+1;p.position=position;previous=p.points;});
-   const own=players.find(p=>p.uid===me),list=players.slice(0,100);
-   panel.innerHTML=`<div class="boss-ranking-actions"><h3 style="margin:0 auto 0 0">Classement PvE · semaine du ${safe(current)}</h3><button class="btn" data-boss-rank-refresh>Actualiser</button><button class="btn" data-boss-rank-close>Fermer</button></div><p>${players.length} joueur(s)${own?` · Ta place : ${own.position}${own.position===1?'er':'e'} · ${own.points} points`:" · Ouvre Chasse aux boss pour publier ton score."}</p><div class="boss-ranking-table-wrap"><table class="boss-ranking-table"><thead><tr><th>Place</th><th>Joueur</th><th>Rang</th><th>Points</th><th>Boss</th></tr></thead><tbody>${list.map(p=>`<tr class="${p.uid===me?'mine':''}"><td>${p.position}</td><td class="boss-ranking-name">${safe(p.name)}</td><td><span class="boss-ranking-cell">${bossRankIcon(p.points,34)}${RANKS[indexOf(p.points)][0]}</span></td><td>${p.points}</td><td>${p.bosses}</td></tr>`).join('')||'<tr><td colspan="5">Aucun score publié pour cette semaine.</td></tr>'}</tbody></table></div><p class="boss-ranking-hint">100 premières lignes affichées. Les égalités de points partagent la même place. Les scores sont publiés à l’ouverture et lors des actions dans Chasse aux boss. Les anciennes semaines ne sont pas mélangées à celle-ci.</p>`;
+   renderRows(snap.docs.map(d=>({...d.data(),uid:d.id})),current);
   }catch(e){if(n!==generation)return;panel.innerHTML=`<p>Classement indisponible : ${safe(e.message)}</p><button class="btn" data-boss-rank-refresh>Réessayer</button><button class="btn" data-boss-rank-close>Fermer</button>`;}
  }
  function close(){generation++;panel.hidden=true;panel.innerHTML='';}

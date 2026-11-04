@@ -1,3 +1,6 @@
+import { PODIUM_TITLES, collectionRanking, podiumPlayer, podiumPlayers, podiumTitleAvailable,
+  activePodiumTitle, applyPodiumEffect, podiumIdentityHTML, refreshPodiumIdentities,
+  startPodiumTracking, stopPodiumTracking } from "./podium-titles.js?v=1";
 import { ASCENDED_CONFIG, loadAscendedMedia, ascendedMediaVersion, buildAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, playAscendedReveal, initAscended } from "./ascended.js?v=ascended-showcase-1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
@@ -82,6 +85,7 @@ let ascendedUI = null;
 let ascendedCache = [], ascendedCacheKey = "";
 let esportsUI = null;
 let openingLock = null;
+let activeProfileView = null;
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
@@ -1080,6 +1084,7 @@ function render() {
   renderAdventure();
   if (!$("tab-profile").hidden && $("pBack").hidden) renderProfile(myStats(), true);
   if (vw && !$("viewer").hidden) renderViewer();
+  applyPodiumEffect($("userName"), user?.uid, state.profile?.title || "");
 }
 
 function tickTimer() {
@@ -1306,7 +1311,7 @@ function myStats() {
   };
   const pf = cleanProfile(state.profile, cards);
   const t = TITLES.find(x => x.id === pf.title);
-  if (!t || !t.ok(st)) pf.title = "";
+  if (!t || (!t.podium && !t.ok(st))) pf.title = "";
   st.profile = pf;
   return st;
 }
@@ -1339,7 +1344,13 @@ function goTab(tab) {
 }
 
 function renderProfile(p, mine) {
-  const pr = p.profile || {};
+  activeProfileView = { p, mine };
+  const uid = mine ? user?.uid : p.uid;
+  const pr = { ...(p.profile || {}) };
+  if (!mine) {
+    const published = podiumPlayer(uid);
+    if (published) pr.title = published.profile?.title || "";
+  }
   const total = skinList.length;
   const pct = total ? Math.round((p.unique / total) * 100) : 0;
   const sec = $("tab-profile");
@@ -1356,8 +1367,7 @@ function renderProfile(p, mine) {
     : esc((p.name || "?")[0].toUpperCase());
 
   $("pName").textContent = p.name;
-  const t = TITLES.find(x => x.id === pr.title);
-  $("pTitle").textContent = t ? t.label : "";
+  updateProfilePodiumTitle(p, mine);
   $("pBio").textContent = pr.bio || "";
 
   $("pStats").innerHTML = `
@@ -1389,7 +1399,7 @@ async function showProfile(uid) {
     try {
       const snap = await getDoc(doc(db, "leaderboard", target));
       if (!snap.exists()) { alert("Ce joueur n'a pas encore de profil."); return; }
-      p = snap.data();
+      p = { ...snap.data(), uid: target };
     } catch (e) { alert(e.message); return; }
   }
   renderProfile(p, mine);
@@ -1480,40 +1490,42 @@ $("scSave").onclick = async () => {
   }
 };
 
+function renderCollectionRankings(players) {
+  const medals = ["🥇", "🥈", "🥉"];
+  const avatarHTML = player => {
+    const id = player.profile?.avatar;
+    if (id && skinsById[id]) {
+      const card = skinCard(Number(id));
+      return `<img class="r-av" loading="lazy" referrerpolicy="no-referrer" alt="" src="${card.img}"
+        onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${card.imgAlt}'}">`;
+    }
+    return `<span class="r-av r-ph">${esc((player.name || "?")[0].toUpperCase())}</span>`;
+  };
+  const fill = (element, key) => {
+    const list = collectionRanking(players, key).slice(0, 50);
+    element.innerHTML = list.map(player => `<li data-uid="${esc(player.uid)}" class="${player.uid === user?.uid ? "me" : ""}">
+      <span class="r-left"><span class="r-pos">${player.position <= 3 ? medals[player.position - 1] : player.position + "."}</span>${avatarHTML(player)}${podiumIdentityHTML(player)}</span>
+      <b>${player[key]}</b></li>`).join("") || `<li class="empty">Personne pour l'instant.</li>`;
+  };
+  fill($("rankCards"), "unique");
+  fill($("rankMythic"), "mythic");
+}
+
 async function loadRanking() {
+  const actor = user?.uid;
+  if (!actor) return;
   void refreshBossRanking();
   $("rankCards").innerHTML = `<li class="empty">Chargement…</li>`;
   $("rankMythic").innerHTML = `<li class="empty">Chargement…</li>`;
   try {
     await syncLeaderboard();
     const snap = await getDocs(collection(db, "leaderboard"));
-    const players = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-    const medals = ["🥇", "🥈", "🥉"];
-    const avatarHTML = p => {
-      const id = p.profile?.avatar;
-      if (id && skinsById[id]) {
-        const c = skinCard(+id);
-        return `<img class="r-av" loading="lazy" referrerpolicy="no-referrer" alt="" src="${c.img}"
-          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">`;
-      }
-      return `<span class="r-av r-ph">${esc((p.name || "?")[0].toUpperCase())}</span>`;
-    };
-    const fill = (el, key) => {
-      const list = players
-        .filter(p => (p[key] || 0) > 0)
-        .sort((a, b) => (b[key] - a[key]) || ((b.total || 0) - (a.total || 0))
-          || String(a.name).localeCompare(String(b.name), "fr"))
-        .slice(0, 50);
-      el.innerHTML = list.map((p, i) => `<li data-uid="${p.uid}" class="${p.uid === user.uid ? "me" : ""}">
-        <span class="r-left"><span class="r-pos">${i < 3 ? medals[i] : (i + 1) + "."}</span>${avatarHTML(p)}<span class="r-name">${esc(p.name)}</span></span>
-        <b>${p[key]}</b></li>`).join("")
-        || `<li class="empty">Personne pour l'instant.</li>`;
-    };
-    fill($("rankCards"), "unique");
-    fill($("rankMythic"), "mythic");
-  } catch (e) {
-    console.error(e);
-    $("rankCards").innerHTML = `<li class="empty">Erreur : ${esc(e.message)}</li>`;
+    if (user?.uid !== actor) return;
+    renderCollectionRankings(snap.docs.map(doc => ({ ...doc.data(), uid: doc.id })));
+  } catch (error) {
+    if (user?.uid !== actor) return;
+    console.error(error);
+    $("rankCards").innerHTML = `<li class="empty">Erreur : ${esc(error.message)}</li>`;
     $("rankMythic").innerHTML = "";
   }
 }
@@ -1527,7 +1539,8 @@ const TITLES = [
   { id: "master", label: "Maître collectionneur", ok: s => s.unique >= 500 },
   { id: "mythhunter", label: "Chasseur de mythiques", ok: s => s.mythic >= 1 },
   { id: "mythlord", label: "Seigneur mythique", ok: s => s.mythic >= 10 },
-  { id: "hoarder", label: "Accumulateur", ok: s => s.total >= 1000 }
+  { id: "hoarder", label: "Accumulateur", ok: s => s.total >= 1000 },
+  ...PODIUM_TITLES.map(title => ({ ...title, ok: () => podiumTitleAvailable(title.id, user?.uid) }))
 ];
 const PF_COLORS = ["#ffd35a", "#0397ab", "#a335ee", "#e84057", "#3fbf6f", "#4a90e2", "#ff6fae"];
 let pfDraft = null, pickCb = null;
@@ -1579,13 +1592,50 @@ function updatePfNames() {
   previewProfile();
 }
 
+function updateProfilePodiumTitle(player, mine) {
+  const uid = mine ? user?.uid : player.uid;
+  const published = mine ? null : podiumPlayer(uid);
+  const choice = published ? (published.profile?.title || "") : (player.profile?.title || "");
+  const selected = TITLES.find(title => title.id === choice);
+  const title = selected && (selected.podium ? podiumTitleAvailable(selected.id, uid) : selected.ok(player)) ? selected : null;
+  $("pTitle").textContent = title ? title.label : "";
+  applyPodiumEffect($("pName"), uid, title?.id || "");
+  applyPodiumEffect($("pTitle"), uid, title?.id || "");
+}
+function refreshPodiumTitleOptions() {
+  if (!pfDraft || !state) return;
+  const stats = myStats();
+  $("pfTitle").innerHTML = `<option value="">Aucun</option>` + TITLES.filter(title => title.ok(stats))
+    .map(title => `<option value="${title.id}"${title.id === pfDraft.title ? " selected" : ""}>${esc(title.label)}</option>`).join("");
+}
+function refreshPodiumAppearance() {
+  if (!user || !state) {
+    applyPodiumEffect($("userName"), "", "");
+    applyPodiumEffect($("pName"), "", "");
+    applyPodiumEffect($("pTitle"), "", "");
+    return;
+  }
+  applyPodiumEffect($("userName"), user.uid, state.profile?.title || "");
+  if (!$("tab-ranking").hidden) {
+    const rows = podiumPlayers();
+    if (rows) renderCollectionRankings(rows);
+  }
+  if (pfDraft && !$("pfModal").hidden) {
+    refreshPodiumTitleOptions();
+    updateProfilePodiumTitle({ ...myStats(), profile: pfDraft }, true);
+  } else if (activeProfileView && !$("tab-profile").hidden) {
+    const view = activeProfileView;
+    updateProfilePodiumTitle(view.mine ? myStats() : view.p, view.mine);
+  }
+  refreshPodiumIdentities();
+}
+
 function openCustomize() {
   if (!state) return;
   const st = myStats();
   pfDraft = { ...st.profile };
   $("pfBio").value = pfDraft.bio;
-  $("pfTitle").innerHTML = `<option value="">Aucun</option>` + TITLES.filter(t => t.ok(st))
-    .map(t => `<option value="${t.id}"${t.id === pfDraft.title ? " selected" : ""}>${esc(t.label)}</option>`).join("");
+  refreshPodiumTitleOptions();
   const cur = pfDraft.color || PF_COLORS[0];
   $("pfColors").innerHTML = PF_COLORS.map(c =>
     `<button type="button" class="swatch${c === cur ? " sel" : ""}" data-c="${c}" style="background:${c}"></button>`).join("");
@@ -1613,6 +1663,10 @@ $("pfSave").onclick = async () => {
   pfDraft.bio = $("pfBio").value.trim().slice(0, 100);
   pfDraft.title = $("pfTitle").value;
   try {
+    const selected = TITLES.find(title => title.id === pfDraft.title);
+    if (pfDraft.title && (!selected || !selected.ok(myStats()))) {
+      throw new Error("Ce titre n’est plus disponible à ta place actuelle. Choisis un autre titre.");
+    }
     await updateDoc(userRef(), { profile: pfDraft });
     state.profile = { ...pfDraft };
     $("pfModal").hidden = true;
@@ -2554,7 +2608,7 @@ function renderSocial() {
     <button class="btn" data-act="removeFriend" data-id="${f.id}">Annuler</button></li>`).join("")
     || emptyLi("Aucune demande envoyée.");
 
-  $("friendList").innerHTML = accepted.map(f => `<li><span>${esc(otherName(f))}</span><span>
+  $("friendList").innerHTML = accepted.map(f => `<li>${podiumIdentityHTML({ uid: otherOf(f), name: otherName(f) })}<span>
     <button class="btn" data-act="profile" data-uid="${otherOf(f)}">Profil</button>
     <button class="btn" data-act="trade" data-uid="${otherOf(f)}" data-name="${esc(otherName(f))}">Échanger</button>
     <button class="btn" data-act="removeFriend" data-id="${f.id}">Retirer</button></span></li>`).join("")
@@ -2726,11 +2780,19 @@ $("openBtn").onclick = openBooster;
 
 onAuthStateChanged(auth, async u => {
   user = u;
+  applyPodiumEffect($("userName"), "", "");
+  applyPodiumEffect($("pName"), "", "");
+  applyPodiumEffect($("pTitle"), "", "");
   esportsUI?.accountChanged();
   $("loginView").hidden = !!u;
   $("gameView").hidden = !u;
   $("userBox").hidden = !u;
   if (!u) {
+    stopPodiumTracking();
+    activeProfileView = null;
+    pfDraft = null;
+    $("pfModal").hidden = true;
+    refreshPodiumAppearance();
     stopListeners();
     state = null;
     openingLock = null;
@@ -2753,6 +2815,7 @@ onAuthStateChanged(auth, async u => {
     await loadState();
     await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
     startListeners();                       // les amis démarrent avant l'affichage
+    startPodiumTracking({ db, user: () => user, week: weekKey, onChange: refreshPodiumAppearance });
     try { render(); tickTimer(); }
     catch (e) { console.error("Erreur d'affichage :", e); }
   } catch (e) {
