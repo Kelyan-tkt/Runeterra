@@ -1066,47 +1066,90 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   }
 }
 
-/* "Nouveau" : déborde du coin supérieur droit sans ouvrir le cadre de la carte. */
+
+/* Badge Nouveau extérieur, conservé depuis la dernière mise à jour. */
 .opening-new-badge {
-  position: absolute;
-  z-index: 8;
-  top: -10px;
-  right: -10px;
-  left: auto;
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 10px;
-  border: 1px solid #b1f5cb;
-  border-radius: 20px;
-  background: #123b2e;
-  color: #d4ffe6;
-  box-shadow: 0 3px 10px #0008;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: .025em;
-  white-space: nowrap;
-  pointer-events: none;
+  position:absolute;z-index:8;top:-10px;right:-10px;left:auto;
+  display:inline-flex;align-items:center;padding:5px 10px;
+  border:1px solid #b1f5cb;border-radius:20px;background:#123b2e;color:#d4ffe6;
+  box-shadow:0 3px 10px #0008;font-family:inherit;font-size:11px;font-weight:700;
+  line-height:1.2;letter-spacing:.025em;white-space:nowrap;pointer-events:none;
 }
-#revealRow { padding: 22px 22px 14px; }
-#reveal .flip-front { overflow: visible; }
-#reveal .flip:not(.flipped) .opening-new-badge { visibility: hidden; }
+#reveal .flip-front {overflow:visible;}
+#reveal .flip:not(.flipped) .opening-new-badge {visibility:hidden;}
 .opening-result-card {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-self: flex-start;
-  width: 180px;
-  max-width: 100%;
-  margin: 0;
-  overflow: visible;
-  vertical-align: top;
+  position:relative;display:inline-flex;flex:0 0 auto;align-self:flex-start;
+  width:180px;max-width:100%;margin:0;overflow:visible;vertical-align:top;
 }
-.opening-result-card > .card,
-.opening-result-card > .asc-card { width: 100%; margin: 0; }
-.opening-result-ascended { width: 230px; max-width: calc(100% - 20px); margin: 10px; }
-@media (max-width: 550px) {
-  .opening-new-badge { top: -9px; right: -7px; left: auto; padding: 4px 8px; font-size: 10px; }
-  #revealRow { padding: 20px 18px 12px; }
+.opening-result-card > .card,.opening-result-card > .asc-card {width:100%;margin:0;}
+.opening-result-ascended {width:230px;max-width:calc(100% - 20px);margin:10px;}
+@media(max-width:550px){.opening-new-badge{top:-9px;right:-7px;left:auto;padding:4px 8px;font-size:10px;}}
+
+
+/* Révélation de grandes ouvertures : zone de cartes défilante, en-tête et actions fixes dans la grille. */
+#reveal {
+  box-sizing:border-box;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto;
+  width:100%;
+  height:100vh;
+  height:100dvh;
+  min-height:0;
+  padding:16px;
+  gap:10px;
+  align-items:stretch;
+  align-content:stretch;
+  justify-content:stretch;
+  overflow:hidden;
+}
+#revealMsg {
+  grid-row:1;
+  margin:0;
+  min-width:0;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+#revealRow {
+  grid-row:2;
+  box-sizing:border-box;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:flex-start;
+  align-content:flex-start;
+  flex:initial;
+  width:100%;
+  max-width:1200px;
+  height:100%;
+  min-height:0;
+  max-height:none;
+  margin:0 auto;
+  padding:24px 24px 16px;
+  gap:12px;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable both-edges;
+  -webkit-overflow-scrolling:touch;
+}
+#revealRow > .flip {flex-shrink:0;}
+#reveal > .reveal-actions {
+  grid-row:3;
+  position:static;
+  bottom:auto;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+  margin:0;
+  padding:6px 0;
+  gap:10px;
+  min-width:0;
+  z-index:2;
+}
+@media(max-width:550px){
+  #reveal {padding:10px;gap:7px;}
+  #revealMsg {font-size:.9rem;letter-spacing:.04em;}
+  #revealRow {padding:20px 18px 14px;gap:10px;}
+  #reveal > .reveal-actions {padding:4px 0;}
 }
