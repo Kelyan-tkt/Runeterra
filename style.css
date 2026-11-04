@@ -1066,20 +1066,21 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   }
 }
 
-/* Badge temporaire : uniquement sur les cartes de la dernière ouverture. */
+/* "Nouveau" : déborde du coin supérieur droit sans ouvrir le cadre de la carte. */
 .opening-new-badge {
   position: absolute;
-  z-index: 5;
-  top: 43px;
-  left: 9px;
+  z-index: 8;
+  top: -10px;
+  right: -10px;
+  left: auto;
   display: inline-flex;
   align-items: center;
-  padding: 4px 9px;
+  padding: 5px 10px;
   border: 1px solid #b1f5cb;
   border-radius: 20px;
-  background: #123b2ef2;
+  background: #123b2e;
   color: #d4ffe6;
-  box-shadow: 0 2px 8px #0006;
+  box-shadow: 0 3px 10px #0008;
   font-family: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -1088,10 +1089,24 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   white-space: nowrap;
   pointer-events: none;
 }
-/* Ne révèle pas une nouvelle carte avant son retournement. */
-#reveal .flip:not(.flipped) .opening-new-badge {
-  visibility: hidden;
+#revealRow { padding: 22px 22px 14px; }
+#reveal .flip-front { overflow: visible; }
+#reveal .flip:not(.flipped) .opening-new-badge { visibility: hidden; }
+.opening-result-card {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: 180px;
+  max-width: 100%;
+  margin: 0;
+  overflow: visible;
+  vertical-align: top;
 }
+.opening-result-card > .card,
+.opening-result-card > .asc-card { width: 100%; margin: 0; }
+.opening-result-ascended { width: 230px; max-width: calc(100% - 20px); margin: 10px; }
 @media (max-width: 550px) {
-  .opening-new-badge { top: 37px; left: 7px; padding: 3px 7px; font-size: 10px; }
+  .opening-new-badge { top: -9px; right: -7px; left: auto; padding: 4px 8px; font-size: 10px; }
+  #revealRow { padding: 20px 18px 12px; }
 }

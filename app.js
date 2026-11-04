@@ -538,7 +538,7 @@ function recycleAll() {
 $("recycleAll").onclick = recycleAll;
 
 // ---------- Ouverture ----------
-// Métadonnée d'affichage de l'ouverture : jamais enregistrée dans le compte.
+// Indication temporaire de l'ouverture, sans ajout de champ en base.
 function markNewCardsForOpening(cards, ownedBefore, ascendedBefore) {
   const seen = new Set();
   return cards.map(card => {
@@ -552,11 +552,14 @@ function markNewCardsForOpening(cards, ownedBefore, ascendedBefore) {
   });
 }
 
-function openingCardHTML(card) {
+function openingCardHTML(card, standalone = false) {
   const html = cardHTML(card);
   if (!card.isNewAtOpen) return html;
-  return html.replace(/^(\s*<(?:div|button)\b[^>]*>)/,
-    '$1<span class="opening-new-badge" aria-label="Nouvelle carte dans ta collection">Nouveau</span>');
+  const badge = '<span class="opening-new-badge" aria-label="Nouvelle carte dans ta collection">Nouveau</span>';
+  // Pendant le retournement, la face avant contient le badge à côté de la carte.
+  // Dans le résultat, un conteneur dédié évite le découpage par son cadre.
+  if (!standalone) return html + badge;
+  return `<div class="opening-result-card${card.rarity === "ascended" ? " opening-result-ascended" : ""}">${html}${badge}</div>`;
 }
 
 async function openBooster() {
@@ -695,7 +698,7 @@ function flipAll() {
 function finishReveal() {
   $("revealAll").hidden = true;
   $("revealClose").hidden = false;
-  $("result").innerHTML = rv.cards.map(c => openingCardHTML(c)).join("");
+  $("result").innerHTML = rv.cards.map(c => openingCardHTML(c, true)).join("");
 }
 
 function closeReveal() {
