@@ -2,6 +2,10 @@ const TTL=7*24*60*60*1000;
 const plain=s=>String(s||'').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
 const norm=s=>plain(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function permittedPortrait(p){
+ // Source fournisseur : ne pas présenter ces portraits comme des images CC.
+ if(p?.provider==='pandascore'){
+  try{const url=new URL(p.url);return url.protocol==='https:'&&!url.username&&!url.password&&p.source==='https://www.pandascore.co/';}catch{return false;}
+ }
  if(!p||!/^https:\/\/(?:upload\.wikimedia\.org\/|commons\.wikimedia\.org\/wiki\/Special:FilePath\/)/i.test(p.url||'')||!/^https:\/\/commons\.wikimedia\.org\//i.test(p.source||''))return false;
  if(p.local&&!/^\.\/assets\/esports\/[a-z0-9-]+\.(jpg|png|webp)$/.test(p.local))return false;
  return /^(CC BY(?:-SA)? [\d.]+|CC0(?: [\d.]+)?|Public domain)$/i.test(p.license||'')&&/^https:\/\/(creativecommons\.org|commons\.wikimedia\.org)\//i.test(p.licenseUrl||'')&&Boolean(p.author);

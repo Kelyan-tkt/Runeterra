@@ -1,0 +1,1867 @@
+{
+  "schema": 1,
+  "edition": "decouverte-v1",
+  "title": "Découverte · carrières",
+  "description": "Catalogue élargi non exhaustif : joueurs référencés dans l’annuaire compétitif Leaguepedia, complétés par une sélection documentée de joueurs professionnels actuels et anciens. Les statuts actuels et les rôles absents ne sont pas inventés. Aucune équipe actuelle n’est attribuée.",
+  "sources": [
+    "https://en.wikipedia.org/wiki/Category:League_of_Legends_players",
+    "https://lol.fandom.com/wiki/Category:Players",
+    "https://en.wikipedia.org/wiki/Category:League_of_Legends_support_players",
+    "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+    "https://gamerant.com/league-of-legends-best-adc-players-attack-damage-carry/",
+    "https://buyboosting.com/blog/top-league-of-legends-junglers-in-esports-2025/"
+  ],
+  "players": [
+    {
+      "id": "lp-007x-24e04e15d5",
+      "handle": "007x",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/007x",
+      "sourceId": "lp:007x"
+    },
+    {
+      "id": "lp-0131-f3bb717760",
+      "handle": "0131",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/0131",
+      "sourceId": "lp:0131"
+    },
+    {
+      "id": "lp-057-e3236bb19b",
+      "handle": "057",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/057",
+      "sourceId": "lp:057"
+    },
+    {
+      "id": "lp-0909-1a62406bed",
+      "handle": "0909",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/0909",
+      "sourceId": "lp:0909"
+    },
+    {
+      "id": "lp-0din-46e63d2525",
+      "handle": "0din",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/0din",
+      "sourceId": "lp:0din"
+    },
+    {
+      "id": "lp-0kay-67433c1b2e",
+      "handle": "0kay",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/0kay",
+      "sourceId": "lp:0kay"
+    },
+    {
+      "id": "lp-0noken-4a6d8340fc",
+      "handle": "0noken",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/0noken",
+      "sourceId": "lp:0noken"
+    },
+    {
+      "id": "lp-0riadammatej-39b01400e0",
+      "handle": "0ri (Adam Matěj)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/0ri_%28Adam_Mat%C4%9Bj%29",
+      "sourceId": "lp:0ri (Adam Matěj)"
+    },
+    {
+      "id": "lp-1000rounds-b965a5afbd",
+      "handle": "1000 Rounds",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1000_Rounds",
+      "sourceId": "lp:1000 Rounds"
+    },
+    {
+      "id": "lp-1024-17c3cda43e",
+      "handle": "1024",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1024",
+      "sourceId": "lp:1024"
+    },
+    {
+      "id": "lp-1026-6cedf72bb1",
+      "handle": "1026",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1026",
+      "sourceId": "lp:1026"
+    },
+    {
+      "id": "lp-10iq-5a5ea932b6",
+      "handle": "10IQ",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/10IQ",
+      "sourceId": "lp:10IQ"
+    },
+    {
+      "id": "lp-10ng-41cb54d0b9",
+      "handle": "10ng",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/10ng",
+      "sourceId": "lp:10ng"
+    },
+    {
+      "id": "lp-1116-22d64173fe",
+      "handle": "1116",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1116",
+      "sourceId": "lp:1116"
+    },
+    {
+      "id": "lp-113-bcd9828d98",
+      "handle": "113",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/113",
+      "sourceId": "lp:113"
+    },
+    {
+      "id": "lp-1220-e929b073dc",
+      "handle": "1220",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1220",
+      "sourceId": "lp:1220"
+    },
+    {
+      "id": "lp-12345-8d44686152",
+      "handle": "12345",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/12345",
+      "sourceId": "lp:12345"
+    },
+    {
+      "id": "lp-12521-6dea23571c",
+      "handle": "12521",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/12521",
+      "sourceId": "lp:12521"
+    },
+    {
+      "id": "lp-13-04e18cdfc1",
+      "handle": "13",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/13",
+      "sourceId": "lp:13"
+    },
+    {
+      "id": "lp-1334mat-4690b5be2f",
+      "handle": "1334mat",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1334mat",
+      "sourceId": "lp:1334mat"
+    },
+    {
+      "id": "lp-13arry-bf233fc91a",
+      "handle": "13arry",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/13arry",
+      "sourceId": "lp:13arry"
+    },
+    {
+      "id": "lp-13day-43d802c1d8",
+      "handle": "13day",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/13day",
+      "sourceId": "lp:13day"
+    },
+    {
+      "id": "lp-13ghost-de01d57d8e",
+      "handle": "13Ghost",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/13Ghost",
+      "sourceId": "lp:13Ghost"
+    },
+    {
+      "id": "lp-14mat-7f43535ab2",
+      "handle": "14Mat",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/14Mat",
+      "sourceId": "lp:14Mat"
+    },
+    {
+      "id": "lp-150-9772ac538e",
+      "handle": "150",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/150",
+      "sourceId": "lp:150"
+    },
+    {
+      "id": "lp-1874-6198d6cc36",
+      "handle": "1874",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1874",
+      "sourceId": "lp:1874"
+    },
+    {
+      "id": "lp-1984-6d2dcb08b1",
+      "handle": "1984",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1984",
+      "sourceId": "lp:1984"
+    },
+    {
+      "id": "lp-1998-bc9697ce43",
+      "handle": "1998",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1998",
+      "sourceId": "lp:1998"
+    },
+    {
+      "id": "lp-1an-05c18767ed",
+      "handle": "1an",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1an",
+      "sourceId": "lp:1an"
+    },
+    {
+      "id": "lp-1bicho-8394e175ce",
+      "handle": "1Bicho",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Bicho",
+      "sourceId": "lp:1Bicho"
+    },
+    {
+      "id": "lp-1blue-79c472125f",
+      "handle": "1Blue",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Blue",
+      "sourceId": "lp:1Blue"
+    },
+    {
+      "id": "lp-1buki-5323a85e5a",
+      "handle": "1buki",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1buki",
+      "sourceId": "lp:1buki"
+    },
+    {
+      "id": "lp-1byaya-c85b774570",
+      "handle": "1bYAYA",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1bYAYA",
+      "sourceId": "lp:1bYAYA"
+    },
+    {
+      "id": "lp-1chope-c831fecdb2",
+      "handle": "1chope",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1chope",
+      "sourceId": "lp:1chope"
+    },
+    {
+      "id": "lp-1curioso-7ce6b0ecbf",
+      "handle": "1Curioso",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Curioso",
+      "sourceId": "lp:1Curioso"
+    },
+    {
+      "id": "lp-1darkness-0b92fb96b6",
+      "handle": "1DarKNess",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1DarKNess",
+      "sourceId": "lp:1DarKNess"
+    },
+    {
+      "id": "lp-1day5egg-c363e97be4",
+      "handle": "1day5egg",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1day5egg",
+      "sourceId": "lp:1day5egg"
+    },
+    {
+      "id": "lp-1deag-e5fd3b06ba",
+      "handle": "1deag",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1deag",
+      "sourceId": "lp:1deag"
+    },
+    {
+      "id": "lp-1defu-5831d30052",
+      "handle": "1Defu",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Defu",
+      "sourceId": "lp:1Defu"
+    },
+    {
+      "id": "lp-1dt-4ab0ecde4b",
+      "handle": "1dt",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1dt",
+      "sourceId": "lp:1dt"
+    },
+    {
+      "id": "lp-1ee-6380426be4",
+      "handle": "1ee",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1ee",
+      "sourceId": "lp:1ee"
+    },
+    {
+      "id": "lp-1go-2346d08d52",
+      "handle": "1Go",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Go",
+      "sourceId": "lp:1Go"
+    },
+    {
+      "id": "lp-1ground-bbafe8d1c3",
+      "handle": "1Ground",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Ground",
+      "sourceId": "lp:1Ground"
+    },
+    {
+      "id": "lp-1haru-886557b54a",
+      "handle": "1Haru",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Haru",
+      "sourceId": "lp:1Haru"
+    },
+    {
+      "id": "lp-1in-702efcbbbe",
+      "handle": "1in",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1in",
+      "sourceId": "lp:1in"
+    },
+    {
+      "id": "lp-1jiang-cabe2e6727",
+      "handle": "1Jiang",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Jiang",
+      "sourceId": "lp:1Jiang"
+    },
+    {
+      "id": "lp-1jw-6471689c93",
+      "handle": "1jw",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1jw",
+      "sourceId": "lp:1jw"
+    },
+    {
+      "id": "lp-1lee-b784670538",
+      "handle": "1Lee",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Lee",
+      "sourceId": "lp:1Lee"
+    },
+    {
+      "id": "lp-1mmeta1s-3d5d05513d",
+      "handle": "1mmeta1s",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1mmeta1s",
+      "sourceId": "lp:1mmeta1s"
+    },
+    {
+      "id": "lp-1mpos-9f29b3fe38",
+      "handle": "1mpos",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1mpos",
+      "sourceId": "lp:1mpos"
+    },
+    {
+      "id": "lp-1nspir3-2cd911c10b",
+      "handle": "1nspir3",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1nspir3",
+      "sourceId": "lp:1nspir3"
+    },
+    {
+      "id": "lp-1ntruder-471e9170de",
+      "handle": "1ntruder",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1ntruder",
+      "sourceId": "lp:1ntruder"
+    },
+    {
+      "id": "lp-1onz-417fe90adb",
+      "handle": "1onz",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1onz",
+      "sourceId": "lp:1onz"
+    },
+    {
+      "id": "lp-1ronn-bb0424d72d",
+      "handle": "1roNN",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1roNN",
+      "sourceId": "lp:1roNN"
+    },
+    {
+      "id": "lp-1sicken-b9f2c86d60",
+      "handle": "1Sicken",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Sicken",
+      "sourceId": "lp:1Sicken"
+    },
+    {
+      "id": "lp-1ssue-5d5f11ef3a",
+      "handle": "1ssue",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1ssue",
+      "sourceId": "lp:1ssue"
+    },
+    {
+      "id": "lp-1tyler-d80c120ff0",
+      "handle": "1tyler",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1tyler",
+      "sourceId": "lp:1tyler"
+    },
+    {
+      "id": "lp-1xn-d67ca4c135",
+      "handle": "1xn",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1xn",
+      "sourceId": "lp:1xn"
+    },
+    {
+      "id": "lp-1zeus-c7f98401a1",
+      "handle": "1Zeus",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/1Zeus",
+      "sourceId": "lp:1Zeus"
+    },
+    {
+      "id": "lp-2meters-c26c743daf",
+      "handle": "2 Meters",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2_Meters",
+      "sourceId": "lp:2 Meters"
+    },
+    {
+      "id": "lp-2pac-7ff99267d0",
+      "handle": "2 PAC",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2_PAC",
+      "sourceId": "lp:2 PAC"
+    },
+    {
+      "id": "lp-20-0f66549ff7",
+      "handle": "20",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/20",
+      "sourceId": "lp:20"
+    },
+    {
+      "id": "lp-2004lexusgx470-36e1cd6dee",
+      "handle": "2004 Lexus GX470",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2004_Lexus_GX470",
+      "sourceId": "lp:2004 Lexus GX470"
+    },
+    {
+      "id": "lp-2020cristianyeneris-dad6cbca15",
+      "handle": "2020 (Cristian Yeneris)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2020_%28Cristian_Yeneris%29",
+      "sourceId": "lp:2020 (Cristian Yeneris)"
+    },
+    {
+      "id": "lp-2020kevinsantos-862cb3fa03",
+      "handle": "2020 (Kevin Santos)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2020_%28Kevin_Santos%29",
+      "sourceId": "lp:2020 (Kevin Santos)"
+    },
+    {
+      "id": "lp-211-9563a9eec1",
+      "handle": "211",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/211",
+      "sourceId": "lp:211"
+    },
+    {
+      "id": "lp-2188-d90b97efa5",
+      "handle": "2188",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2188",
+      "sourceId": "lp:2188"
+    },
+    {
+      "id": "lp-21xxx-89fd886123",
+      "handle": "21XXX",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/21XXX",
+      "sourceId": "lp:21XXX"
+    },
+    {
+      "id": "lp-225-447beed898",
+      "handle": "225",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/225",
+      "sourceId": "lp:225"
+    },
+    {
+      "id": "lp-2274-73c47158d8",
+      "handle": "2274",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2274",
+      "sourceId": "lp:2274"
+    },
+    {
+      "id": "lp-228-cbef60b62c",
+      "handle": "228",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/228",
+      "sourceId": "lp:228"
+    },
+    {
+      "id": "lp-233-d7cd00c5e5",
+      "handle": "233",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/233",
+      "sourceId": "lp:233"
+    },
+    {
+      "id": "lp-24seyfionataytemiz-8e009cd531",
+      "handle": "24 (Seyfi Onat Aytemiz)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/24_%28Seyfi_Onat_Aytemiz%29",
+      "sourceId": "lp:24 (Seyfi Onat Aytemiz)"
+    },
+    {
+      "id": "lp-27-8c58394cad",
+      "handle": "27",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/27",
+      "sourceId": "lp:27"
+    },
+    {
+      "id": "lp-2axes-f64dbe883d",
+      "handle": "2Axes",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2Axes",
+      "sourceId": "lp:2Axes"
+    },
+    {
+      "id": "lp-2cups-f0026bd211",
+      "handle": "2Cups",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2Cups",
+      "sourceId": "lp:2Cups"
+    },
+    {
+      "id": "lp-2guns-eaf461b201",
+      "handle": "2Guns",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2Guns",
+      "sourceId": "lp:2Guns"
+    },
+    {
+      "id": "lp-2j2-9c2154f481",
+      "handle": "2J2",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2J2",
+      "sourceId": "lp:2J2"
+    },
+    {
+      "id": "lp-2k-7b90ed5339",
+      "handle": "2K",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2K",
+      "sourceId": "lp:2K"
+    },
+    {
+      "id": "lp-2m2mc-9666c84e56",
+      "handle": "2m2mc",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2m2mc",
+      "sourceId": "lp:2m2mc"
+    },
+    {
+      "id": "lp-2night-6c980439ab",
+      "handle": "2Night",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2Night",
+      "sourceId": "lp:2Night"
+    },
+    {
+      "id": "lp-2rius-0335513249",
+      "handle": "2rius",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2rius",
+      "sourceId": "lp:2rius"
+    },
+    {
+      "id": "lp-2spky-628191312d",
+      "handle": "2SPKY",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2SPKY",
+      "sourceId": "lp:2SPKY"
+    },
+    {
+      "id": "lp-2t-54a873d172",
+      "handle": "2T",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2T",
+      "sourceId": "lp:2T"
+    },
+    {
+      "id": "lp-2trick-4b4f2762bb",
+      "handle": "2Trick",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2Trick",
+      "sourceId": "lp:2Trick"
+    },
+    {
+      "id": "lp-2vest-4fe12aae78",
+      "handle": "2Vest",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2Vest",
+      "sourceId": "lp:2Vest"
+    },
+    {
+      "id": "lp-2y1-b42703a4e2",
+      "handle": "2y1",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/2y1",
+      "sourceId": "lp:2y1"
+    },
+    {
+      "id": "lp-300-6f075a1449",
+      "handle": "300",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/300",
+      "sourceId": "lp:300"
+    },
+    {
+      "id": "lp-3279-9f13d47423",
+      "handle": "3279",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3279",
+      "sourceId": "lp:3279"
+    },
+    {
+      "id": "lp-3345678-5084cbce92",
+      "handle": "3345678",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3345678",
+      "sourceId": "lp:3345678"
+    },
+    {
+      "id": "lp-34-4f92fc8da8",
+      "handle": "34",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/34",
+      "sourceId": "lp:34"
+    },
+    {
+      "id": "lp-361efe-31019e263a",
+      "handle": "361efe",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/361efe",
+      "sourceId": "lp:361efe"
+    },
+    {
+      "id": "lp-369-78c5181b67",
+      "handle": "369",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/369",
+      "sourceId": "lp:369"
+    },
+    {
+      "id": "lp-3bygang-0037458603",
+      "handle": "3bygang",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3bygang",
+      "sourceId": "lp:3bygang"
+    },
+    {
+      "id": "lp-3in1warrior-389074aa7c",
+      "handle": "3in1warrior",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3in1warrior",
+      "sourceId": "lp:3in1warrior"
+    },
+    {
+      "id": "lp-3n-7d9addc26c",
+      "handle": "3n",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3n",
+      "sourceId": "lp:3n"
+    },
+    {
+      "id": "lp-3xa-7dce4af34d",
+      "handle": "3XA",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3XA",
+      "sourceId": "lp:3XA"
+    },
+    {
+      "id": "lp-3z-2e8b2e313d",
+      "handle": "3z",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3z",
+      "sourceId": "lp:3z"
+    },
+    {
+      "id": "lp-3z3-a9921fcb53",
+      "handle": "3z3",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/3z3",
+      "sourceId": "lp:3z3"
+    },
+    {
+      "id": "lp-404sichengfan-d3e6e915e7",
+      "handle": "404 (Sicheng Fan)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/404_%28Sicheng_Fan%29",
+      "sourceId": "lp:404 (Sicheng Fan)"
+    },
+    {
+      "id": "lp-404zhichoongsheng-1ba1ec3758",
+      "handle": "404 (Zhi Choong Sheng)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/404_%28Zhi_Choong_Sheng%29",
+      "sourceId": "lp:404 (Zhi Choong Sheng)"
+    },
+    {
+      "id": "lp-42-290e0e01c6",
+      "handle": "42",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/42",
+      "sourceId": "lp:42"
+    },
+    {
+      "id": "lp-420-8ab73fb626",
+      "handle": "420",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/420",
+      "sourceId": "lp:420"
+    },
+    {
+      "id": "lp-44-4e8ef486d5",
+      "handle": "44",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/44",
+      "sourceId": "lp:44"
+    },
+    {
+      "id": "lp-452apm-1810a9d1bc",
+      "handle": "452apm",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/452apm",
+      "sourceId": "lp:452apm"
+    },
+    {
+      "id": "lp-47mata-548d3bb084",
+      "handle": "47Mata",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/47Mata",
+      "sourceId": "lp:47Mata"
+    },
+    {
+      "id": "lp-4bo-ec06e630d5",
+      "handle": "4bo",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/4bo",
+      "sourceId": "lp:4bo"
+    },
+    {
+      "id": "lp-4evermore-15f55fe992",
+      "handle": "4EverMore",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/4EverMore",
+      "sourceId": "lp:4EverMore"
+    },
+    {
+      "id": "lp-4lan-48194ae394",
+      "handle": "4LaN",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/4LaN",
+      "sourceId": "lp:4LaN"
+    },
+    {
+      "id": "lp-4rch-9a52483e60",
+      "handle": "4rch",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/4rch",
+      "sourceId": "lp:4rch"
+    },
+    {
+      "id": "lp-4shore-57b89122be",
+      "handle": "4Shore",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/4Shore",
+      "sourceId": "lp:4Shore"
+    },
+    {
+      "id": "lp-4zeer0-afd8b18ece",
+      "handle": "4zeer0",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/4zeer0",
+      "sourceId": "lp:4zeer0"
+    },
+    {
+      "id": "lp-5150-57644cc068",
+      "handle": "5150",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5150",
+      "sourceId": "lp:5150"
+    },
+    {
+      "id": "lp-527-3462d95e09",
+      "handle": "527",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/527",
+      "sourceId": "lp:527"
+    },
+    {
+      "id": "lp-555dog-a119fcad19",
+      "handle": "555dog",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/555dog",
+      "sourceId": "lp:555dog"
+    },
+    {
+      "id": "lp-563-ef4426fdb0",
+      "handle": "563",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/563",
+      "sourceId": "lp:563"
+    },
+    {
+      "id": "lp-57-91037e520a",
+      "handle": "57",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/57",
+      "sourceId": "lp:57"
+    },
+    {
+      "id": "lp-570-a72e197cbd",
+      "handle": "570",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/570",
+      "sourceId": "lp:570"
+    },
+    {
+      "id": "lp-5fire-f7c8dc1e40",
+      "handle": "5fire",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5fire",
+      "sourceId": "lp:5fire"
+    },
+    {
+      "id": "lp-5gamdo-57ba67025c",
+      "handle": "5gamdo",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5gamdo",
+      "sourceId": "lp:5gamdo"
+    },
+    {
+      "id": "lp-5k-5d36c69ea8",
+      "handle": "5K",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5K",
+      "sourceId": "lp:5K"
+    },
+    {
+      "id": "lp-5kid-de75d78d1a",
+      "handle": "5kid",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5kid",
+      "sourceId": "lp:5kid"
+    },
+    {
+      "id": "lp-5l-c22208a103",
+      "handle": "5L",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5L",
+      "sourceId": "lp:5L"
+    },
+    {
+      "id": "lp-5mi-90c6cc953a",
+      "handle": "5mi",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5mi",
+      "sourceId": "lp:5mi"
+    },
+    {
+      "id": "lp-5t5-578b7da91f",
+      "handle": "5t5",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5t5",
+      "sourceId": "lp:5t5"
+    },
+    {
+      "id": "lp-5ynco-71c0c24e0f",
+      "handle": "5ynco",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/5ynco",
+      "sourceId": "lp:5ynco"
+    },
+    {
+      "id": "lp-614-54e30cdf83",
+      "handle": "614",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/614",
+      "sourceId": "lp:614"
+    },
+    {
+      "id": "lp-616-1b2c15dbf2",
+      "handle": "616",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/616",
+      "sourceId": "lp:616"
+    },
+    {
+      "id": "lp-666kieuminhhuy-be41f64703",
+      "handle": "666 (Kiều Minh Huy)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/666_%28Ki%E1%BB%81u_Minh_Huy%29",
+      "sourceId": "lp:666 (Kiều Minh Huy)"
+    },
+    {
+      "id": "lp-694-39abdc71fe",
+      "handle": "694",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/694",
+      "sourceId": "lp:694"
+    },
+    {
+      "id": "lp-6abysweet-141a9a6832",
+      "handle": "6abysweet",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/6abysweet",
+      "sourceId": "lp:6abysweet"
+    },
+    {
+      "id": "lp-6ax-27817582fe",
+      "handle": "6ax",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/6ax",
+      "sourceId": "lp:6ax"
+    },
+    {
+      "id": "lp-6onza-1ef771f085",
+      "handle": "6onza",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/6onza",
+      "sourceId": "lp:6onza"
+    },
+    {
+      "id": "lp-6zc-0b18166e1a",
+      "handle": "6zc",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/6zc",
+      "sourceId": "lp:6zc"
+    },
+    {
+      "id": "lp-700oxin-9c59e97b79",
+      "handle": "700oxin",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/700oxin",
+      "sourceId": "lp:700oxin"
+    },
+    {
+      "id": "lp-705-206f6b7fa1",
+      "handle": "705",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/705",
+      "sourceId": "lp:705"
+    },
+    {
+      "id": "lp-725-4fee6778db",
+      "handle": "725",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/725",
+      "sourceId": "lp:725"
+    },
+    {
+      "id": "lp-7420mzg-11d51bd2fd",
+      "handle": "7420 Mzg",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/7420_Mzg",
+      "sourceId": "lp:7420 Mzg"
+    },
+    {
+      "id": "lp-788irtegb54hi-03916dfe39",
+      "handle": "788irtegb54hi",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/788irtegb54hi",
+      "sourceId": "lp:788irtegb54hi"
+    },
+    {
+      "id": "lp-7aster-191f2dd32d",
+      "handle": "7Aster",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/7Aster",
+      "sourceId": "lp:7Aster"
+    },
+    {
+      "id": "lp-7copy-9aa4721c91",
+      "handle": "7copy",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/7copy",
+      "sourceId": "lp:7copy"
+    },
+    {
+      "id": "lp-7ico-200a6736e7",
+      "handle": "7ico",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/7ico",
+      "sourceId": "lp:7ico"
+    },
+    {
+      "id": "lp-7kane-05bb3e8bd4",
+      "handle": "7kane",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/7kane",
+      "sourceId": "lp:7kane"
+    },
+    {
+      "id": "lp-7reyy-05b74c5490",
+      "handle": "7Reyy",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/7Reyy",
+      "sourceId": "lp:7Reyy"
+    },
+    {
+      "id": "lp-86-dca6af7634",
+      "handle": "86",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/86",
+      "sourceId": "lp:86"
+    },
+    {
+      "id": "lp-870-3384e57e9f",
+      "handle": "870",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/870",
+      "sourceId": "lp:870"
+    },
+    {
+      "id": "lp-887-65a9212e26",
+      "handle": "887",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/887",
+      "sourceId": "lp:887"
+    },
+    {
+      "id": "lp-89-8e9f3bf35c",
+      "handle": "89",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/89",
+      "sourceId": "lp:89"
+    },
+    {
+      "id": "lp-8thflash-8357920a18",
+      "handle": "8thFlash",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/8thFlash",
+      "sourceId": "lp:8thFlash"
+    },
+    {
+      "id": "lp-8yen-baa1ff85ab",
+      "handle": "8yen",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/8yen",
+      "sourceId": "lp:8yen"
+    },
+    {
+      "id": "lp-925-68719a30e3",
+      "handle": "925",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/925",
+      "sourceId": "lp:925"
+    },
+    {
+      "id": "lp-957-3cc55d43b4",
+      "handle": "957",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/957",
+      "sourceId": "lp:957"
+    },
+    {
+      "id": "lp-9769-a6bc71c0c8",
+      "handle": "9769",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/9769",
+      "sourceId": "lp:9769"
+    },
+    {
+      "id": "lp-985-1b28a63cd7",
+      "handle": "985",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/985",
+      "sourceId": "lp:985"
+    },
+    {
+      "id": "lp-987-93860be822",
+      "handle": "987",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/987",
+      "sourceId": "lp:987"
+    },
+    {
+      "id": "lp-997-1144ec3004",
+      "handle": "997",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/997",
+      "sourceId": "lp:997"
+    },
+    {
+      "id": "lp-999xiejinxiang-751c231a49",
+      "handle": "999 (Xie Jin-Xiang)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/999_%28Xie_Jin-Xiang%29",
+      "sourceId": "lp:999 (Xie Jin-Xiang)"
+    },
+    {
+      "id": "lp-9eetoo-e7d34ab8d6",
+      "handle": "9eetoo",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/9eetoo",
+      "sourceId": "lp:9eetoo"
+    },
+    {
+      "id": "lp-9god-02e3416101",
+      "handle": "9God",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/9God",
+      "sourceId": "lp:9God"
+    },
+    {
+      "id": "lp-9lives-105a698e52",
+      "handle": "9Lives",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/9Lives",
+      "sourceId": "lp:9Lives"
+    },
+    {
+      "id": "lp-a5-61e01bbbae",
+      "handle": "A 5",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A_5",
+      "sourceId": "lp:A 5"
+    },
+    {
+      "id": "lp-abee-f03ebef707",
+      "handle": "A Bee",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A_Bee",
+      "sourceId": "lp:A Bee"
+    },
+    {
+      "id": "lp-amuse4-4c30c4be78",
+      "handle": "A M U S E 4",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A_M_U_S_E_4",
+      "sourceId": "lp:A M U S E 4"
+    },
+    {
+      "id": "lp-aseal-7f27368979",
+      "handle": "A Seal",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A_Seal",
+      "sourceId": "lp:A Seal"
+    },
+    {
+      "id": "lp-a0-3126abe54f",
+      "handle": "A0",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A0",
+      "sourceId": "lp:A0"
+    },
+    {
+      "id": "lp-a02-dc2f0a1102",
+      "handle": "A02",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A02",
+      "sourceId": "lp:A02"
+    },
+    {
+      "id": "lp-a0k-fb88951c1e",
+      "handle": "A0k",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A0k",
+      "sourceId": "lp:A0k"
+    },
+    {
+      "id": "lp-a1-db9cfe22ff",
+      "handle": "A1",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A1",
+      "sourceId": "lp:A1"
+    },
+    {
+      "id": "lp-a1ter-775990608a",
+      "handle": "A1ter",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A1ter",
+      "sourceId": "lp:A1ter"
+    },
+    {
+      "id": "lp-a266-d5f9b76cd8",
+      "handle": "A266",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A266",
+      "sourceId": "lp:A266"
+    },
+    {
+      "id": "lp-a8000-c322685aa0",
+      "handle": "A8000",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/A8000",
+      "sourceId": "lp:A8000"
+    },
+    {
+      "id": "lp-aadam-b3a6aaee08",
+      "handle": "Aadam",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aadam",
+      "sourceId": "lp:Aadam"
+    },
+    {
+      "id": "lp-aadamm-06fb036f89",
+      "handle": "AAdaMM",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/AAdaMM",
+      "sourceId": "lp:AAdaMM"
+    },
+    {
+      "id": "lp-aaey-a4a2927e8f",
+      "handle": "AAey",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/AAey",
+      "sourceId": "lp:AAey"
+    },
+    {
+      "id": "lp-aagie-8736ce59c2",
+      "handle": "Aagie",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aagie",
+      "sourceId": "lp:Aagie"
+    },
+    {
+      "id": "lp-aakash-5d83c90355",
+      "handle": "Aakash",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aakash",
+      "sourceId": "lp:Aakash"
+    },
+    {
+      "id": "lp-aamazed-04145c1fe0",
+      "handle": "AAmazed",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/AAmazed",
+      "sourceId": "lp:AAmazed"
+    },
+    {
+      "id": "lp-aang-a4a5215842",
+      "handle": "Aang",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aang",
+      "sourceId": "lp:Aang"
+    },
+    {
+      "id": "lp-aaronaarongallego-2d8505b293",
+      "handle": "Aaron (Aarón Gallego)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aaron_%28Aar%C3%B3n_Gallego%29",
+      "sourceId": "lp:Aaron (Aarón Gallego)"
+    },
+    {
+      "id": "lp-aaroncanadianplayer-83e30408d8",
+      "handle": "Aaron (Canadian Player)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aaron_%28Canadian_Player%29",
+      "sourceId": "lp:Aaron (Canadian Player)"
+    },
+    {
+      "id": "lp-aaronjixing-67fba27253",
+      "handle": "Aaron (Ji Xing)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aaron_%28Ji_Xing%29",
+      "sourceId": "lp:Aaron (Ji Xing)"
+    },
+    {
+      "id": "lp-aaronjosephmayorga-63e286e1a8",
+      "handle": "Aaron (Joseph Mayorga)",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aaron_%28Joseph_Mayorga%29",
+      "sourceId": "lp:Aaron (Joseph Mayorga)"
+    },
+    {
+      "id": "lp-aaronkapiko-d87bbd7ed1",
+      "handle": "Aaron Kapiko",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aaron_Kapiko",
+      "sourceId": "lp:Aaron Kapiko"
+    },
+    {
+      "id": "lp-aarsh-42c8ab7140",
+      "handle": "Aarsh",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aarsh",
+      "sourceId": "lp:Aarsh"
+    },
+    {
+      "id": "lp-aavhin-0b791d4372",
+      "handle": "Aavhin",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Aavhin",
+      "sourceId": "lp:Aavhin"
+    },
+    {
+      "id": "lp-aawee-bd56749aa7",
+      "handle": "AAWEE",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/AAWEE",
+      "sourceId": "lp:AAWEE"
+    },
+    {
+      "id": "lp-ab-43416fb28d",
+      "handle": "Ab",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Ab",
+      "sourceId": "lp:Ab"
+    },
+    {
+      "id": "lp-abmaj-979673e6de",
+      "handle": "AB Maj",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/AB_Maj",
+      "sourceId": "lp:AB Maj"
+    },
+    {
+      "id": "lp-abaddon-35b30f8663",
+      "handle": "Abaddon",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abaddon",
+      "sourceId": "lp:Abaddon"
+    },
+    {
+      "id": "lp-abagnale-3bbfa6ebec",
+      "handle": "Abagnale",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abagnale",
+      "sourceId": "lp:Abagnale"
+    },
+    {
+      "id": "lp-abanke-1599d3dd49",
+      "handle": "Abanke",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abanke",
+      "sourceId": "lp:Abanke"
+    },
+    {
+      "id": "lp-abaria-90a47fae36",
+      "handle": "Abaria",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abaria",
+      "sourceId": "lp:Abaria"
+    },
+    {
+      "id": "lp-abaxial-5aa2ba8f42",
+      "handle": "Abaxial",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abaxial",
+      "sourceId": "lp:Abaxial"
+    },
+    {
+      "id": "lp-abbadon-89336fa5b9",
+      "handle": "Abbadon",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abbadon",
+      "sourceId": "lp:Abbadon"
+    },
+    {
+      "id": "lp-abbedagge-1655b9b287",
+      "handle": "Abbedagge",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abbedagge",
+      "sourceId": "lp:Abbedagge"
+    },
+    {
+      "id": "lp-abdiel-1c2dc4d927",
+      "handle": "Abdiel",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abdiel",
+      "sourceId": "lp:Abdiel"
+    },
+    {
+      "id": "lp-abdulla-e25cb0325d",
+      "handle": "Abdulla",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abdulla",
+      "sourceId": "lp:Abdulla"
+    },
+    {
+      "id": "lp-abedz-d326ee0d13",
+      "handle": "Abedz",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abedz",
+      "sourceId": "lp:Abedz"
+    },
+    {
+      "id": "lp-abel-a2c92dd86f",
+      "handle": "AbeL",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/AbeL",
+      "sourceId": "lp:AbeL"
+    },
+    {
+      "id": "lp-abitak-992f853d8b",
+      "handle": "Abitak",
+      "roles": [],
+      "sourceUrl": "https://lol.fandom.com/wiki/Abitak",
+      "sourceId": "lp:Abitak"
+    },
+    {
+      "id": "bin",
+      "handle": "Bin",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "Bin (gamer)"
+    },
+    {
+      "id": "wp-biofrost-ae5131336d",
+      "handle": "Biofrost",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Biofrost",
+      "sourceId": "wp:Biofrost",
+      "wikipedia": "Biofrost"
+    },
+    {
+      "id": "wp-bunnyfufuu-76a8e1b179",
+      "handle": "Bunny FuFuu",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Bunny_FuFuu",
+      "sourceId": "wp:Bunny FuFuu",
+      "wikipedia": "Bunny FuFuu"
+    },
+    {
+      "id": "esports-caliste-d4da2a4f59",
+      "handle": "Caliste",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Caliste"
+    },
+    {
+      "id": "canyon",
+      "handle": "Canyon",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Canyon (gamer)"
+    },
+    {
+      "id": "caps",
+      "handle": "Caps",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "Caps (gamer)"
+    },
+    {
+      "id": "chovy",
+      "handle": "Chovy",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "Chovy"
+    },
+    {
+      "id": "corejj",
+      "handle": "CoreJJ",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "CoreJJ"
+    },
+    {
+      "id": "deft",
+      "handle": "Deft",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Deft (gamer)"
+    },
+    {
+      "id": "esports-diable-506e3c00ec",
+      "handle": "Diable",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Diable"
+    },
+    {
+      "id": "doublelift",
+      "handle": "Doublelift",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Doublelift"
+    },
+    {
+      "id": "wp-effort-9e3bba274b",
+      "handle": "Effort",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Effort_%28gamer%29",
+      "sourceId": "wp:Effort",
+      "wikipedia": "Effort (gamer)"
+    },
+    {
+      "id": "esports-elk-95bff392f6",
+      "handle": "Elk",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Elk"
+    },
+    {
+      "id": "faker",
+      "handle": "Faker",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "Faker (gamer)",
+      "photo": {
+        "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Faker%202020%20interview.jpg?width=500",
+        "source": "https://commons.wikimedia.org/wiki/File:Faker_2020_interview.jpg",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+        "author": "Fomos Esports",
+        "credit": "Capture d’une interview de 2020 publiée sous CC BY. Présentation recadrée.",
+        "file": "Faker 2020 interview.jpg"
+      }
+    },
+    {
+      "id": "esports-gala-dfb8649278",
+      "handle": "GALA",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:GALA"
+    },
+    {
+      "id": "esports-gumayusi-245cb3991f",
+      "handle": "Gumayusi",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Gumayusi"
+    },
+    {
+      "id": "wp-hai-c46f51f8f0",
+      "handle": "Hai",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Hai_%28gamer%29",
+      "sourceId": "wp:Hai",
+      "wikipedia": "Hai (gamer)"
+    },
+    {
+      "id": "esports-hanssama-978921d573",
+      "handle": "Hans sama",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Hans sama"
+    },
+    {
+      "id": "hylissang",
+      "handle": "Hylissang",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "Hylissang"
+    },
+    {
+      "id": "esports-inspired-024d9ea455",
+      "handle": "Inspired",
+      "roles": [
+        "Jungle"
+      ],
+      "sourceUrl": "https://buyboosting.com/blog/top-league-of-legends-junglers-in-esports-2025/",
+      "sourceId": "esports:Inspired"
+    },
+    {
+      "id": "esports-jackeylove-3491477211",
+      "handle": "Jackeylove",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://gamerant.com/league-of-legends-best-adc-players-attack-damage-carry/",
+      "sourceId": "esports:Jackeylove"
+    },
+    {
+      "id": "jankos",
+      "handle": "Jankos",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Jankos"
+    },
+    {
+      "id": "keria",
+      "handle": "Keria",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "Keria (gamer)"
+    },
+    {
+      "id": "wp-kiwikid-855fd41894",
+      "handle": "KiWiKiD",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/KiWiKiD",
+      "sourceId": "wp:KiWiKiD",
+      "wikipedia": "KiWiKiD"
+    },
+    {
+      "id": "wp-lemonnation-c3033e59d1",
+      "handle": "LemonNation",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/LemonNation",
+      "sourceId": "wp:LemonNation",
+      "wikipedia": "LemonNation"
+    },
+    {
+      "id": "wp-lustboy-0b8fad7e69",
+      "handle": "Lustboy",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Lustboy",
+      "sourceId": "wp:Lustboy",
+      "wikipedia": "Lustboy"
+    },
+    {
+      "id": "madlife",
+      "handle": "MadLife",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "MadLife"
+    },
+    {
+      "id": "wp-mithy-aada7f2090",
+      "handle": "Mithy",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Mithy",
+      "sourceId": "wp:Mithy",
+      "wikipedia": "Mithy"
+    },
+    {
+      "id": "oner",
+      "handle": "Oner",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Oner (gamer)"
+    },
+    {
+      "id": "peanut",
+      "handle": "Peanut",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Peanut (gamer)"
+    },
+    {
+      "id": "esports-peyz-482c9a1706",
+      "handle": "Peyz",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Peyz"
+    },
+    {
+      "id": "esports-pray-14efc9fa2e",
+      "handle": "Pray",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://gamerant.com/league-of-legends-best-adc-players-attack-damage-carry/",
+      "sourceId": "esports:Pray"
+    },
+    {
+      "id": "wp-rekkles-6f7a1aff26",
+      "handle": "Rekkles",
+      "roles": [
+        "Support",
+        "ADC"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Rekkles",
+      "sourceId": "wp:Rekkles",
+      "wikipedia": "Rekkles"
+    },
+    {
+      "id": "wp-remilia-1aa290c2b9",
+      "handle": "Remilia",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Remilia",
+      "sourceId": "wp:Remilia",
+      "wikipedia": "Remilia"
+    },
+    {
+      "id": "ruler",
+      "handle": "Ruler",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Ruler (gamer)"
+    },
+    {
+      "id": "showmaker",
+      "handle": "ShowMaker",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "ShowMaker"
+    },
+    {
+      "id": "esports-smash-d0098f5e71",
+      "handle": "Smash",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Smash"
+    },
+    {
+      "id": "wp-smoothie-1d8f684bff",
+      "handle": "Smoothie",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Smoothie_%28gamer%29",
+      "sourceId": "wp:Smoothie",
+      "wikipedia": "Smoothie (gamer)"
+    },
+    {
+      "id": "theshy",
+      "handle": "TheShy",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "TheShy"
+    },
+    {
+      "id": "uzi",
+      "handle": "Uzi",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Uzi (gamer)"
+    },
+    {
+      "id": "esports-viper-c3460fffc3",
+      "handle": "Viper",
+      "roles": [
+        "ADC"
+      ],
+      "sourceUrl": "https://www.hotspawn.com/league-of-legends/guide/best-adc-players-in-2026",
+      "sourceId": "esports:Viper"
+    },
+    {
+      "id": "wp-vulcan-5f2019c8cc",
+      "handle": "Vulcan",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Vulcan_%28gamer%29",
+      "sourceId": "wp:Vulcan",
+      "wikipedia": "Vulcan (gamer)"
+    },
+    {
+      "id": "wunder",
+      "handle": "Wunder",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "Wunder (gamer)"
+    },
+    {
+      "id": "wp-xpecial-c644b03a48",
+      "handle": "Xpecial",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Xpecial",
+      "sourceId": "wp:Xpecial",
+      "wikipedia": "Xpecial"
+    },
+    {
+      "id": "wp-yellowstar-878293f5a5",
+      "handle": "YellOwStaR",
+      "roles": [
+        "Support"
+      ],
+      "sourceUrl": "https://en.wikipedia.org/wiki/YellOwStaR",
+      "sourceId": "wp:YellOwStaR",
+      "wikipedia": "YellOwStaR"
+    },
+    {
+      "id": "zeus",
+      "handle": "Zeus",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "Zeus (gamer)"
+    }
+  ],
+  "importStatus": {
+    "complete": false,
+    "updatedAt": "2026-11-04",
+    "message": "246 entrées. Import partiel : 200 premières fiches de la catégorie Players de Leaguepedia, 20 cartes historiques conservées et compléments sourcés. Ce fichier ne contient pas tous les joueurs professionnels. Les rôles non renseignés restent inconnus ; les portraits non fournis utilisent la recherche du module ou une illustration de remplacement.",
+    "preservedEdition": "decouverte-v1",
+    "preservedPlayerIds": [
+      "faker",
+      "caps",
+      "chovy",
+      "showmaker",
+      "uzi",
+      "ruler",
+      "deft",
+      "doublelift",
+      "canyon",
+      "jankos",
+      "peanut",
+      "oner",
+      "keria",
+      "corejj",
+      "hylissang",
+      "madlife",
+      "bin",
+      "zeus",
+      "theshy",
+      "wunder"
+    ],
+    "directPortraits": 1
+  },
+  "attribution": {
+    "text": "Liste partiellement dérivée de Leaguepedia et de ses contributeurs (CC BY-SA 3.0, hors fichiers disposant de leur propre licence). Compléments sourcés sur chaque fiche. Les portraits ont leurs propres conditions et crédits.",
+    "url": "https://lol.fandom.com/wiki/Category:Players"
+  }
+}

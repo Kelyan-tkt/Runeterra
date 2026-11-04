@@ -32,11 +32,12 @@ const sample=random=>{const x=random();if(!Number.isFinite(x)||x<0||x>=1)fail('T
 export function openEsportsBooster(raw,catalog,{now=Date.now(),random=Math.random}={}){
  if(!catalog||catalog.schema!==1||!token(catalog.edition)||!Array.isArray(catalog.players)||!catalog.players.length)fail('Catalogue esport vide ou invalide.');
  const ids=new Set();for(const p of catalog.players){if(!p||!token(p.id)||ids.has(p.id)||!p.handle)fail('Identifiant joueur invalide ou dupliqué.');ids.add(p.id);}
+ const pool=catalog.players.filter(p=>p.boosterEligible!==false&&!p.archived);if(!pool.length)fail('Aucun joueur admissible dans les boosters de ce catalogue.');
  const state=normaliseEsports(raw,now);if(state.boosters<1)fail('Aucun booster esport disponible.');
  if(state.opened>=Number.MAX_SAFE_INTEGER||state.revision>=Number.MAX_SAFE_INTEGER)fail('Compteur esport trop élevé.');
  state.boosters--;state.opened++;state.revision++;const drawn=[];
  for(let i=0;i<5;i++){
-  const p=catalog.players[Math.floor(sample(random)*catalog.players.length)];let x=sample(random)*100,f=FINISHES.at(-1);
+  const p=pool[Math.floor(sample(random)*pool.length)];let x=sample(random)*100,f=FINISHES.at(-1);
   for(const candidate of FINISHES){x-=candidate.weight;if(x<0){f=candidate;break;}}
   const key=esportsCardKey(catalog.edition,p.id,f.id),before=state.cards[key]||0;if(before>=Number.MAX_SAFE_INTEGER)fail('Quantité de cartes trop élevée.');
   state.cards[key]=before+1;if(state.obtained[key]===undefined)state.obtained[key]=now;

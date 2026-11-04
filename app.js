@@ -2858,7 +2858,7 @@ function renderAscendedCollection() {
 }
 
 // Module facultatif : un échec ne bloque pas le site existant.
-void import("./esports.js?v=pro-3")
+void import("./esports.js?v=panda-1")
   .then(module => module.installEsports({
     db,
     user: () => user,
