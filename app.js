@@ -81,6 +81,7 @@ const QUESTS = {
 let ascendedUI = null;
 let ascendedCache = [], ascendedCacheKey = "";
 let esportsUI = null;
+let openingLock = null;
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
@@ -560,12 +561,26 @@ function openingCardHTML(card, standalone = false) {
   return `<div class="opening-result-card${card.rarity === "ascended" ? " opening-result-ascended" : ""}">${html}${badge}</div>`;
 }
 
+function acquireOpening() {
+  if (rv || openingLock || !user) return null;
+  openingLock = { uid: user.uid };
+  return openingLock;
+}
+function releaseOpening(token) {
+  if (openingLock === token) openingLock = null;
+  if (state) render();
+}
+
 async function openBooster() {
+  const lock = acquireOpening();
+  if (!lock) return;
+  const actor = user.uid, ref = doc(db, "users", actor);
   $("openBtn").disabled = true;
   try {
     let drawn;
-    state = await runTransaction(db, async tx => {
-      const snap = await tx.get(userRef());
+    const next = await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      if (user?.uid !== actor) throw new Error("Le compte a changé.");
       let s = applyRefill(snap.data());
       if (s.boosters <= 0) throw new Error("Aucun booster disponible");
       if (s.boosters >= MAX_BOOSTERS) s.lastRefill = Date.now();
@@ -581,25 +596,31 @@ async function openBooster() {
       drawn = markNewCardsForOpening(drawn, ownedBefore, ascendedBefore);
       ensureObtained(s);
       addProgress(s, "open");
-      tx.set(userRef(), s);
+      tx.set(ref, s);
       return s;
     });
 
+    if (user?.uid !== actor) return;
+    state = next;
     $("result").innerHTML = "";
     startReveal(drawn);
   } catch (e) {
-    alert(e.message);
+    if (user?.uid === actor) alert(e.message);
+  } finally {
+    releaseOpening(lock);
   }
-  render();
 }
 
 async function openBonusBooster() {
-  if (rv) return;
+  const lock = acquireOpening();
+  if (!lock) return;
+  const actor = user.uid, ref = doc(db, "users", actor);
   $("bonusBtn").disabled = true;
   try {
     let drawn;
-    state = await runTransaction(db, async tx => {
-      const snap = await tx.get(userRef());
+    const next = await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      if (user?.uid !== actor) throw new Error("Le compte a changé.");
       const s = snap.data();
       if ((s.bonusBoosters || 0) <= 0) throw new Error("Aucun booster bonus disponible.");
       s.bonusBoosters -= 1;
@@ -613,29 +634,32 @@ async function openBonusBooster() {
       if (ascendedBonus) drawn.push(ascendedBonus);
       drawn = markNewCardsForOpening(drawn, ownedBefore, ascendedBefore);
       ensureObtained(s);
-      tx.set(userRef(), s);
+      tx.set(ref, s);
       return s;
     });
 
+    if (user?.uid !== actor) return;
+    state = next;
     $("result").innerHTML = "";
     startReveal(drawn);
   } catch (e) {
-    alert(e.message);
+    if (user?.uid === actor) alert(e.message);
+  } finally {
+    releaseOpening(lock);
   }
-  render();
 }
 
 // ---------- Révélation carte par carte ----------
 let rv = null;
 
-function startReveal(cards) {
-  cards.forEach(c => { const i = new Image(); i.referrerPolicy = "no-referrer"; i.src = c.img; });
-  rv = { cards, next: 0, busy: false };
+function startReveal(cards, options = {}) {
+  cards.forEach(c => { if (c.img) { const i = new Image(); i.referrerPolicy = "no-referrer"; i.src = c.img; } });
+  rv = { cards, next: 0, busy: false, renderer: options.renderCard || openingCardHTML, onResults: options.onResults || null, onClose: options.onClose || null };
   $("revealRow").innerHTML = cards.map((c, i) => `
     <div class="flip r-${c.rarity}" data-i="${i}">
       <div class="flip-inner">
         <div class="flip-back"><span>R</span></div>
-        <div class="flip-front">${openingCardHTML(c)}</div>
+        <div class="flip-front">${rv.renderer(c, false)}</div>
       </div>
     </div>`).join("");
   const row = $("revealRow");
@@ -696,13 +720,17 @@ function flipAll() {
 function finishReveal() {
   $("revealAll").hidden = true;
   $("revealClose").hidden = false;
-  $("result").innerHTML = rv.cards.map(c => openingCardHTML(c, true)).join("");
+  const markup = rv.cards.map(c => rv.renderer(c, true)).join("");
+  if (rv.onResults) rv.onResults(markup);
+  else $("result").innerHTML = markup;
 }
 
 function closeReveal() {
+  const onClose = rv?.onClose;
   $("reveal").hidden = true;
   rv = null;
   render();
+  if (onClose) onClose();
 }
 
 // ---------- Effets de rareté ----------
@@ -792,6 +820,8 @@ function rarityEffect(el, rarity) {
 }
 
 $("reveal").addEventListener("click", e => {
+  const pro = e.target.closest(".flip.flipped [data-pro-key]");
+  if (pro) { esportsUI?.showCard(pro.dataset.proKey); return; }
   if (e.target.closest("button")) return;
   const flipped = e.target.closest(".flip.flipped .card");
   if (flipped) { openLightbox(flipped.dataset.id); return; }
@@ -826,6 +856,8 @@ $("lightbox").addEventListener("click", closeLightbox);
 
 document.addEventListener("click", e => {
   if (e.target.closest("#reveal") || e.target.closest("#lightbox")) return;
+  const pro = e.target.closest("[data-pro-key]");
+  if (pro) { esportsUI?.showCard(pro.dataset.proKey); return; }
   const card = e.target.closest(".card");
   if (card && card.dataset.id) openLightbox(card.dataset.id);
 });
@@ -1011,12 +1043,12 @@ document.addEventListener("keydown", e => {
 function render() {
   applyRefill(state);
   $("boosterCount").textContent = state.boosters;
-  $("openBtn").disabled = state.boosters <= 0 || !!rv;
+  $("openBtn").disabled = state.boosters <= 0 || !!rv || !!openingLock;
 
   const bonus = state.bonusBoosters || 0;
   $("bonusBox").hidden = bonus <= 0;
   $("bonusCount").textContent = bonus;
-  $("bonusBtn").disabled = bonus <= 0 || !!rv;
+  $("bonusBtn").disabled = bonus <= 0 || !!rv || !!openingLock;
 
   const uniqueOwned = Object.keys(state.cards || {}).length;
   $("cardCount").textContent = `${uniqueOwned} / ${skinList.length} skins`;
@@ -1075,7 +1107,7 @@ setInterval(() => {
     applyRefill(state);
     if (state.boosters !== before) {
       $("boosterCount").textContent = state.boosters;
-      $("openBtn").disabled = state.boosters <= 0 || !!rv;
+      $("openBtn").disabled = state.boosters <= 0 || !!rv || !!openingLock;
     }
     tickTimer();
     tickQuestTimers();
@@ -2686,6 +2718,7 @@ onAuthStateChanged(auth, async u => {
   if (!u) {
     stopListeners();
     state = null;
+    openingLock = null;
     $("reveal").hidden = true;
     $("tradeModal").hidden = true;
     $("recycleModal").hidden = true;
@@ -2824,8 +2857,16 @@ function renderAscendedCollection() {
   ascendedUI.render();
 }
 
-// Module facultatif : son échec ne bloque pas la collection ni la connexion existantes.
-void import("./esports.js?v=pro-2")
-  .then(module => module.installEsports({ db, user: () => user }))
+// Module facultatif : un échec ne bloque pas le site existant.
+void import("./esports.js?v=pro-3")
+  .then(module => module.installEsports({
+    db,
+    user: () => user,
+    navigate: goTab,
+    isRevealing: () => Boolean(rv || openingLock),
+    acquireOpening,
+    releaseOpening,
+    openReveal: (cards, options) => startReveal(cards, options)
+  }))
   .then(controller => { esportsUI = controller; })
   .catch(error => console.warn("Module esport non chargé :", error.message));

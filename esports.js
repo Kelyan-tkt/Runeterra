@@ -1,139 +1,100 @@
 import {doc,runTransaction,onSnapshot} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
-import {ESPORTS,FINISHES,normaliseEsports,openEsportsBooster,esportsCardKey,parseEsportsKey} from './esports-engine.js?v=pro-2';
-import {fetchPlayerPortrait} from './esports-portraits.js?v=pro-1';
-const H=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const checkedHref=url=>{try{const u=new URL(url);return u.protocol==='https:'?H(u.href):'';}catch{return '';}};
+import {ESPORTS,FINISHES,normaliseEsports,openEsportsBooster,esportsCardKey,parseEsportsKey} from './esports-engine.js?v=pro-3';
+import {fetchPlayerPortrait,permittedPortrait} from './esports-portraits.js?v=pro-3';
+const H=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const href=x=>{try{const u=new URL(x);return u.protocol==='https:'?H(u.href):'';}catch{return '';}};
+const FALLBACK='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="180" height="290" viewBox="0 0 180 290"><defs><linearGradient id="b" x2="0" y2="1"><stop stop-color="#1e3446"/><stop offset="1" stop-color="#07121e"/></linearGradient></defs><path fill="url(#b)" d="M0 0h180v290H0z"/><circle cx="90" cy="91" r="35" fill="#577082"/><path d="M26 230v-26a64 64 0 0 1 128 0v26" fill="#3c5365"/><text x="90" y="267" text-anchor="middle" fill="#bccbd6" font-family="sans-serif" font-size="12">Portrait indisponible</text></svg>');
 export async function installEsports(api){
- const main=document.getElementById('gameView'),nav=main?.querySelector('nav');
- if(!main||!nav)throw new Error('Navigation du site introuvable.');
- const response=await fetch(new URL('./esports-catalog.json?v=pro-1',import.meta.url),{signal:AbortSignal.timeout(12000)});
- if(!response.ok)throw new Error('Catalogue esport introuvable.');const catalog=await response.json();
+ const main=document.getElementById('gameView'),nav=main?.querySelector('nav'),boosters=document.getElementById('tab-boosters'),original=boosters?.querySelector('.booster-layout');
+ if(!main||!nav||!original)throw new Error('La page booster existante est introuvable.');
+ const response=await fetch(new URL('./esports-catalog.json?v=pro-3',import.meta.url),{signal:AbortSignal.timeout(20000)});
+ if(!response.ok)throw new Error('Catalogue esport : HTTP '+response.status);const catalog=await response.json();
  if(catalog.schema!==1||!Array.isArray(catalog.players)||!catalog.players.length||!/^[a-z0-9][a-z0-9-]{0,127}$/.test(catalog.edition||''))throw new Error('Catalogue esport invalide.');
- const ids=new Set();for(const p of catalog.players){if(!/^[a-z0-9-]+$/.test(p.id)||ids.has(p.id)||!p.handle||!p.wikipedia)throw new Error('Joueur esport invalide ou identifiant dupliqué.');ids.add(p.id);}
- const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('./esports.css?v=pro-1',import.meta.url).href;document.head.appendChild(link);
- const navButton=document.createElement('button');navButton.type='button';navButton.dataset.tab='esports';navButton.textContent='Esport';nav.appendChild(navButton);
+ const byId=new Map();for(const p of catalog.players){if(!/^[a-z0-9][a-z0-9-]{0,127}$/.test(p.id)||byId.has(p.id)||!p.handle||!Array.isArray(p.roles))throw new Error('Catalogue : identifiant dupliqué ou joueur invalide.');byId.set(p.id,p);}
+ const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('./esports.css?v=pro-3',import.meta.url);document.head.appendChild(link);
+ const switcher=document.createElement('div');switcher.className='pro-switch';switcher.innerHTML='<button type="button" class="ttab active" data-pro-mode="normal">Champions et skins</button><button type="button" class="ttab" data-pro-mode="esports">Joueurs professionnels</button>';boosters.prepend(switcher);
+ // Copie de la vraie mise en page du site, pas une seconde maquette.
+ const pack=original.cloneNode(true);pack.classList.add('pro-booster-layout');pack.hidden=true;
+ for(const el of pack.querySelectorAll('[id]')){el.dataset.proPart=el.id;el.removeAttribute('id');}
+ const part=name=>pack.querySelector(`[data-pro-part="${name}"]`);
+ part('bonusBox')?.remove();pack.querySelector('.pity')?.remove();
+ const aside=pack.querySelector('.odds-box');aside.querySelector('h3').textContent='Finitions par carte';part('oddsList').innerHTML=FINISHES.map(f=>`<li><span style="color:${f.color}">● ${H(f.label)}</span><b>${f.weight} %</b></li>`).join('');
+ aside.insertAdjacentHTML('beforeend',`<p class="hint">${catalog.players.length.toLocaleString('fr-FR')} joueurs dans le catalogue actuel. Cinq cartes par booster, joueurs tirés uniformément. Les variantes sont cosmétiques.</p><p class="hint">${catalog.players.filter(p=>permittedPortrait(p.photo)).length} portraits renseignés avant chargement. Les portraits manquants restent signalés.</p>`);
+ pack.querySelector('.boosters-title').innerHTML='Boosters esport : <span data-pro-stock>…</span> / 10';part('openBtn').textContent='Ouvrir un booster esport';part('chest').setAttribute('aria-label','Ouvrir un booster esport');boosters.appendChild(pack);
+ const status=document.createElement('p');status.className='hint pro-status';status.setAttribute('role','status');pack.querySelector('.booster-main').appendChild(status);
+ const collectButton=document.createElement('button');collectButton.type='button';collectButton.className='btn';collectButton.textContent='Voir la collection des joueurs';pack.querySelector('.booster-main').appendChild(collectButton);
+ const navButton=document.createElement('button');navButton.type='button';navButton.dataset.tab='esports';navButton.textContent='Joueurs pro';nav.appendChild(navButton);
  const root=document.createElement('section');root.id='tab-esports';root.hidden=true;main.appendChild(root);
- const reveal=document.createElement('dialog');reveal.className='pro-dialog';reveal.id='proReveal';document.body.appendChild(reveal);
- const detail=document.createElement('dialog');detail.className='pro-dialog';detail.id='proDetail';document.body.appendChild(detail);
- let uid=null,progress=null,busy=false,error='',unsubscribe=null,epoch=0,lastDraw=[],revealed=0,q='',role='',finish='',onlyOwned=false,detailKey='',initPending=null;
- const photos=new Map(),queued=new Set();let photoRunning=0;const photoQueue=[];
- const count=key=>progress?.cards?.[key]||0;
- function photoHTML(player){
-  const photo=photos.get(player.id);return photo?`<img loading="lazy" referrerpolicy="no-referrer" src="${H(photo.url)}" alt="Portrait de ${H(player.handle)}" data-pro-photo-img>`:`<span class="pro-monogram" aria-label="Portrait non disponible">${H(player.handle.slice(0,2).toUpperCase())}</span>`;
+ const detail=document.createElement('dialog');detail.className='pro-detail-dialog';document.body.appendChild(detail);
+ let uid=null,epoch=0,progress=null,busy=false,pending=null,unsub=null,mode='normal',error='',q='',role='',onlyOwned=false,onlyPhoto=false,page=0,detailKey='',lastDraw=[];
+ const photos=new Map(),requested=new Set(),queue=[];let running=0;
+ for(const p of catalog.players)if(permittedPortrait(p.photo))photos.set(p.id,p.photo);
+ const quantity=key=>progress?.cards?.[key]||0;
+ const photo=p=>photos.get(p.id)||null;
+ const image=p=>photo(p)?.local||photo(p)?.url||FALLBACK;
+ function drawCard(draw){const p=byId.get(draw.playerId),f=FINISHES.find(x=>x.id===draw.finishId);return p&&f?{id:draw.key,proKey:draw.key,esports:true,playerId:p.id,name:p.handle,skinName:f.label,rarity:f.rarity,img:image(p),isNewAtOpen:draw.isNew,finishId:f.id}:null;}
+ function renderCard(card,standalone=false){
+  const p=byId.get(card.playerId),f=FINISHES.find(x=>x.id===card.finishId);if(!p||!f)return '';
+  const markup=`<div class="card ${f.rarity} pro-player-card" data-pro-key="${H(card.proKey)}"><span class="badge">${H(f.label)}</span><img loading="lazy" referrerpolicy="no-referrer" src="${H(image(p))}" alt="${H(p.handle)}" data-pro-photo-id="${p.id}"><div class="info"><b>${H(p.handle)}</b><br>${H((p.roles||[]).join(' / ')||'Joueur pro')}</div></div>`;
+  if(!card.isNewAtOpen)return markup;
+  const badge='<span class="opening-new-badge">Nouveau</span>';
+  return standalone?`<div class="opening-result-card">${markup}${badge}</div>`:markup+badge;
  }
- function photoBox(player){return `<span class="pro-photo" data-pro-portrait="${H(player.id)}">${photoHTML(player)}</span>`;}
- function refreshPhotos(){for(const el of document.querySelectorAll('[data-pro-portrait]')){const player=catalog.players.find(p=>p.id===el.dataset.proPortrait);if(player&&photos.get(player.id))el.innerHTML=photoHTML(player);}if(detail.open&&detailKey)showDetail(detailKey);}
- function pumpPhotos(){while(photoRunning<2&&photoQueue.length){const player=photoQueue.shift();photoRunning++;fetchPlayerPortrait(player).then(photo=>{photos.set(player.id,photo);refreshPhotos();}).catch(()=>{photos.set(player.id,null);}).finally(()=>{photoRunning--;pumpPhotos();});}}
- function requestPhotos(){for(const el of document.querySelectorAll('#tab-esports [data-pro-portrait],.pro-dialog[open] [data-pro-portrait]')){const player=catalog.players.find(p=>p.id===el.dataset.proPortrait);if(player&&!queued.has(player.id)){queued.add(player.id);photoQueue.push(player);}}pumpPhotos();}
- function cardHTML(player,f,{isNew=false,revealIndex=null}={}){
-  const key=esportsCardKey(catalog.edition,player.id,f.id),quantity=count(key);
-  return `<button type="button" class="pro-card pro-${f.id}" ${revealIndex===null?`data-pro-card="${H(key)}"`:`data-pro-flip="${revealIndex}"`} aria-label="${H(player.handle)}, ${H(f.label)}"><span class="pro-finish">${H(f.label)}</span>${isNew?'<span class="pro-new">Nouveau</span>':''}${quantity>1?`<span class="pro-qty">×${quantity}</span>`:''}${photoBox(player)}<span class="pro-name">${H(player.handle)}</span><span class="pro-role">${H((player.roles||[]).join(' / ')||'Joueur pro')}</span><small>${H(catalog.title)}</small></button>`;
+ function updateImages(id){const p=byId.get(id);for(const el of document.querySelectorAll('img[data-pro-photo-id]'))if(el.dataset.proPhotoId===id&&el.getAttribute('src')!==image(p)){delete el.dataset.proFailed;el.src=image(p);}}
+ function pump(){while(running<2&&queue.length){const p=queue.shift();running++;fetchPlayerPortrait(p).then(value=>{if(value){photos.set(p.id,value);updateImages(p.id);}}).catch(()=>{}).finally(()=>{running--;pump();});}}
+ function requestVisible(){for(const el of document.querySelectorAll('#tab-esports:not([hidden]) [data-pro-photo-id],#reveal:not([hidden]) [data-pro-photo-id],.pro-detail-dialog[open] [data-pro-photo-id]')){const p=byId.get(el.dataset.proPhotoId);if(p&&!photo(p)&&!requested.has(p.id)){requested.add(p.id);queue.push(p);}}pump();}
+ function tick(){
+  if(!uid)return;let value=null;try{if(progress)value=normaliseEsports(progress);}catch(e){error=e.message;}
+  const count=value?.boosters;pack.querySelector('[data-pro-stock]').textContent=count??'…';part('chestCount').textContent='x'+(count??0);
+  part('timer').textContent=!value?'Chargement…':count>=10?'Stock plein':`Prochain booster dans ${Math.floor(Math.max(0,ESPORTS.refillMs-Date.now()+value.lastRefill)/60000)}:${String(Math.floor(Math.max(0,ESPORTS.refillMs-Date.now()+value.lastRefill)%60000/1000)).padStart(2,'0')}`;
+  part('openBtn').disabled=busy||!value||count<1||api.isRevealing();part('chest').classList.toggle('empty',!value||count<1);part('chest').setAttribute('aria-disabled',String(part('openBtn').disabled));status.textContent=error||'';
  }
- function render(){
-  if(root.hidden)return;
-  if(!api.user()){root.innerHTML='<p>Connecte-toi pour accéder à l’esport.</p>';return;}
-  let view=null;try{view=progress?normaliseEsports(progress):null;}catch(e){error=e.message;}
-  const ownedKeys=Object.keys(progress?.cards||{}).filter(k=>count(k)>0),playersOwned=new Set(ownedKeys.map(k=>parseEsportsKey(k)?.playerId).filter(Boolean));
-  const filterPlayers=catalog.players.filter(p=>(!q||norm(p.handle).includes(norm(q)))&&(!role||(p.roles||[]).includes(role)));
-  const list=[];for(const player of filterPlayers){const choices=finish?FINISHES.filter(f=>f.id===finish):FINISHES;
-   if(finish){for(const f of choices)if(!onlyOwned||count(esportsCardKey(catalog.edition,player.id,f.id))>0)list.push({player,f});}
-   else{const owned=FINISHES.filter(f=>count(esportsCardKey(catalog.edition,player.id,f.id))>0);if(onlyOwned&&!owned.length)continue;list.push({player,f:owned.at(-1)||FINISHES[0]});}}
-  root.innerHTML=`<header class="pro-hero"><p>Nouvelle collection indépendante</p><h2>Collection Esport</h2><p>${H(catalog.description)}</p><small>Cartes de fan non officielles. Les finitions sont des variantes visuelles, pas une note du niveau du joueur.</small></header>
-  <div class="pro-top"><div class="pro-pack"><span class="pro-pack-emblem" aria-hidden="true">✦</span><h3>Booster Esport</h3><p>Cinq cartes · ${H(catalog.title)}</p><p><b data-pro-stock>${view?.boosters??'…'} / ${ESPORTS.maxBoosters}</b> boosters</p><p data-pro-timer>Chargement…</p><button type="button" class="btn-play" data-pro-action="open" ${busy||!view||view.boosters<1?'disabled':''}>${busy?(!progress?'Chargement…':'Ouverture…'):'Ouvrir un booster esport'}</button></div>
-  <div class="pro-info"><h3>Une collection à part</h3><p>Trois boosters de départ, puis un toutes les trente minutes, jusqu’à cinq en réserve. Ils ne consomment pas tes boosters de champions.</p><p>${playersOwned.size} joueurs obtenus · ${ownedKeys.length} variantes possédées · ${progress?.opened||0} boosters ouverts.</p><ul>${FINISHES.map(f=>`<li>${H(f.label)} : ${String(f.weight).replace('.',',')} % par carte</li>`).join('')}</ul><p>Choisis une carte pour consulter ses variantes et les crédits de sa photo.</p><p>Vitrine, échanges et recyclage esport ne sont pas inclus dans cette première version.</p>${lastDraw.length?'<button type="button" class="btn" data-pro-action="last">Revoir le dernier booster</button>':''}</div></div>
-  <p class="pro-error" role="status" aria-live="polite">${H(error)}</p>${error&&!progress?`<button type="button" class="btn" data-pro-action="retry" ${busy?'disabled':''}>Réessayer le chargement</button>`:''}
-  <div class="pro-filters"><input type="search" data-pro-search placeholder="Chercher un joueur…" value="${H(q)}"><select data-pro-role><option value="">Tous les rôles</option>${['Top','Jungle','Mid','ADC','Support'].map(r=>`<option ${role===r?'selected':''}>${r}</option>`).join('')}</select><select data-pro-finish><option value="">Toutes les finitions</option>${FINISHES.map(f=>`<option value="${f.id}" ${finish===f.id?'selected':''}>${H(f.label)}</option>`).join('')}</select><label><input type="checkbox" data-pro-owned ${onlyOwned?'checked':''}> Possédés seulement</label></div>
-  <div class="pro-grid">${list.map(({player,f})=>cardHTML(player,f)).join('')||'<p>Aucun joueur ne correspond aux filtres.</p>'}</div><p class="pro-footnote">Portraits : Wikimedia Commons, uniquement si les métadonnées indiquent une licence admise et un auteur. Les crédits et la licence figurent dans la fiche. Sinon, le pseudo est affiché sans photo. Certaines photos sont anciennes ; elles n’indiquent pas une équipe actuelle.</p>`;
-  tick();requestPhotos();
+ function renderCollection(){
+  if(root.hidden)return;if(!uid){root.innerHTML='<p>Connecte-toi pour consulter les joueurs.</p>';return;}
+  const matching=catalog.players.filter(p=>(!q||norm(p.handle+' '+(p.region||'')).includes(norm(q)))&&(!role||p.roles.includes(role))&&(!onlyPhoto||photo(p))&&(!onlyOwned||FINISHES.some(f=>quantity(esportsCardKey(catalog.edition,p.id,f.id))>0)));
+  const pages=Math.max(1,Math.ceil(matching.length/60));page=Math.min(page,pages-1);const list=matching.slice(page*60,(page+1)*60);
+  const owned=catalog.players.filter(p=>FINISHES.some(f=>quantity(esportsCardKey(catalog.edition,p.id,f.id))>0)).length;
+  root.innerHTML=`<h2>Collection des joueurs <span class="count">(${owned} / ${catalog.players.length})</span></h2><div class="gallery-bar panel"><input type="search" data-pro-search placeholder="Rechercher un joueur…" value="${H(q)}"><select data-pro-role><option value="">Tous les rôles</option>${['Top','Jungle','Mid','ADC','Support'].map(r=>`<option ${role===r?'selected':''}>${r}</option>`).join('')}</select><label><input type="checkbox" data-pro-owned ${onlyOwned?'checked':''}> Possédés seulement</label><label><input type="checkbox" data-pro-photo ${onlyPhoto?'checked':''}> Avec portrait</label></div>
+  <p class="hint">${matching.length.toLocaleString('fr-FR')} joueurs correspondants · ${H(catalog.title)}. Actifs et anciens selon les sources ; ce catalogue n’est pas un registre exhaustif. <button type="button" class="btn" data-pro-go-boosters>Ouvrir des boosters</button></p>
+  <div class="champ-grid">${list.map(p=>{const obtained=FINISHES.filter(f=>quantity(esportsCardKey(catalog.edition,p.id,f.id))>0);const f=obtained.at(-1)||FINISHES[0];return `<button type="button" class="tile ${f.rarity}${obtained.length?'':' locked'}" data-pro-player="${p.id}"><span class="badge">${H(f.label)}</span><img loading="lazy" referrerpolicy="no-referrer" src="${H(image(p))}" alt="${H(p.handle)}" data-pro-photo-id="${p.id}"><div class="tinfo"><b>${H(p.handle)}</b><small>${obtained.length} / ${FINISHES.length} variantes · ${H(p.roles.join(' / ')||'Joueur pro')}</small><div class="bar"><span style="width:${obtained.length/FINISHES.length*100}%"></span></div></div></button>`;}).join('')||'<p class="hint">Aucun joueur ne correspond.</p>'}</div><div class="pro-pages"><button class="btn" data-pro-page="-1" ${page===0?'disabled':''}>Précédent</button><span>${page+1} / ${pages}</span><button class="btn" data-pro-page="1" ${page+1>=pages?'disabled':''}>Suivant</button></div>
+  <details class="pro-sources"><summary>Sources et état du catalogue</summary><p>${H(catalog.description||'')}</p><p>${H(catalog.importStatus?.message||'Catalogue local : importer l’annuaire pour élargir la sélection.')}</p><p>${H(catalog.attribution?.text||'Données : Wikipédia et contributeurs ; voir les sources du catalogue.')}</p>${catalog.attribution?.url?`<a href="${href(catalog.attribution.url)}" target="_blank" rel="noopener noreferrer">Source des données</a>`:''}<p>Les photos ont leur propre attribution. Aucune photo ne signifie pas que le joueur n’existe pas : sa fiche et ses cartes restent disponibles.</p></details>`;
+  requestVisible();
  }
- function tick(){const el=root.querySelector('[data-pro-timer]');if(!el||!progress)return;let v;try{v=normaliseEsports(progress);}catch{return;}
-  const stock=root.querySelector('[data-pro-stock]');if(stock)stock.textContent=`${v.boosters} / ${ESPORTS.maxBoosters}`;
-  el.textContent=v.boosters>=ESPORTS.maxBoosters?'Réserve pleine':`Prochain booster : ${Math.max(1,Math.ceil((ESPORTS.refillMs-(Date.now()-v.lastRefill))/60000))} min`;
-  const b=root.querySelector('[data-pro-action="open"]');if(b)b.disabled=busy||v.boosters<1;
+ function render(){tick();renderCollection();}
+ function showCard(key){
+  const parsed=parseEsportsKey(key),p=byId.get(parsed?.playerId),f=FINISHES.find(x=>x.id===parsed?.finishId);if(!p||!f||parsed.edition!==catalog.edition)return;
+  detailKey=key;const current=FINISHES.indexOf(f),portrait=photo(p),card=drawCard({key,playerId:p.id,finishId:f.id,isNew:false});
+  detail.innerHTML=`<div class="pro-detail-head"><h2>${H(p.handle)}</h2><button class="btn" data-pro-close>Fermer</button></div><div class="pro-detail-stage"><button class="v-arrow" data-pro-step="-1" aria-label="Variante précédente">‹</button>${renderCard(card)}<button class="v-arrow" data-pro-step="1" aria-label="Variante suivante">›</button></div><p>${H(f.label)} · ${quantity(key)} exemplaire(s)</p><div class="pro-variants">${FINISHES.map((variant,i)=>`<button class="btn ${i===current?'active':''}" data-pro-variant="${variant.id}">${H(variant.label)} · ${quantity(esportsCardKey(catalog.edition,p.id,variant.id))}</button>`).join('')}</div><details class="pro-sources"><summary>Informations et crédits du portrait</summary><p>${H(p.roles.join(' / '))} · ${H(p.region||'')} · ${H(catalog.title)}</p>${p.sourceUrl?`<a href="${href(p.sourceUrl)}" target="_blank" rel="noopener noreferrer">Fiche du joueur</a>`:p.wikipedia?`<a href="https://en.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.replaceAll(' ','_'))}" target="_blank" rel="noopener noreferrer">Fiche du joueur</a>`:''}${portrait?`<p>Photo : ${H(portrait.author)} · <a href="${href(portrait.source)}" target="_blank" rel="noopener noreferrer">fichier original</a> · <a href="${href(portrait.licenseUrl)}" target="_blank" rel="noopener noreferrer">${H(portrait.license)}</a>. Présentation recadrée.</p><p>${H(portrait.credit||'')}</p>`:'<p>Pas de portrait disponible avec les métadonnées requises. Illustration de remplacement, pas une photo du joueur.</p>'}</details>`;
+  if(!detail.open)detail.showModal();requestVisible();
  }
- function showReveal(){
-  reveal.innerHTML=`<header class="pro-dialog-head"><h2>Ton booster esport</h2><button type="button" class="btn" data-pro-close>Fermer</button></header><p data-pro-reveal-status>Clique sur une carte pour la révéler.</p><div class="pro-reveal-cards">${lastDraw.map((draw,i)=>{const player=catalog.players.find(p=>p.id===draw.playerId),f=FINISHES.find(f=>f.id===draw.finishId);return i<revealed?cardHTML(player,f,{isNew:draw.isNew,revealIndex:i}):`<button type="button" class="pro-back" data-pro-flip="${i}" aria-label="Révéler la carte ${i+1}"><span>R</span><small>ESPORT</small></button>`;}).join('')}</div><button type="button" class="btn-play" data-pro-all ${revealed===lastDraw.length?'hidden':''}>Tout révéler</button><p class="pro-footnote">Les cartes sont déjà sauvegardées : fermer cette fenêtre ne les fait pas perdre.</p>`;
-  if(!reveal.open)reveal.showModal();requestPhotos();
- }
- function showDetail(key){
-  detailKey=key;
-  const parsed=parseEsportsKey(key),player=catalog.players.find(p=>p.id===parsed?.playerId),f=FINISHES.find(f=>f.id===parsed?.finishId);if(!player||!f)return;
-  const photo=photos.get(player.id),wiki='https://en.wikipedia.org/wiki/'+encodeURIComponent(player.wikipedia.replaceAll(' ','_'));
-  detail.innerHTML=`<header class="pro-dialog-head"><h2>${H(player.handle)}</h2><button type="button" class="btn" data-pro-close>Fermer</button></header><div class="pro-detail">${cardHTML(player,f)}<div><h3>Variantes de cette édition</h3><ul>${FINISHES.map(x=>`<li>${H(x.label)} : ${count(esportsCardKey(catalog.edition,player.id,x.id))} exemplaire(s)</li>`).join('')}</ul><p>Rôles de carrière : ${H((player.roles||[]).join(' / '))}.</p><p><a href="${checkedHref(wiki)}" target="_blank" rel="noopener noreferrer">Fiche du joueur et sources</a></p>${photo?`<p>Photo : ${H(photo.author)}.<br><a href="${checkedHref(photo.source)}" target="_blank" rel="noopener noreferrer">Fichier et historique sur Commons</a> · <a href="${checkedHref(photo.licenseUrl)}" target="_blank" rel="noopener noreferrer">${H(photo.license)}</a>.</p><p>Présentation recadrée dans la carte ; fichier source non modifié.</p>`:'<p>Aucun portrait avec métadonnées de licence admises n’a pu être chargé. Aucune photo non vérifiée n’est utilisée.</p>'}</div></div>`;
-  if(!detail.open)detail.showModal();requestPhotos();
- }
- async function ensureAccount(){
+ function chooseMode(value){mode=value;original.hidden=mode!=='normal';pack.hidden=mode!=='esports';for(const b of switcher.querySelectorAll('button'))b.classList.toggle('active',b.dataset.proMode===mode);if(mode==='esports'&&uid&&!progress)void initialise();tick();}
+ async function ensure(){
   const actor=uid,token=epoch,ref=doc(api.db,'users',actor);
-  const saved=await runTransaction(api.db,async tx=>{
-   const snap=await tx.get(ref);
-   if(!snap.exists())throw new Error('Compte introuvable.');
-   if(api.user()?.uid!==actor||token!==epoch)throw new Error('Le compte a changé.');
-   const raw=snap.data().esports;
-   // Une sauvegarde invalide provoque une erreur, jamais une remise à zéro.
-   const value=normaliseEsports(raw??null);
-   if(raw===undefined||raw===null)tx.update(ref,{esports:value});
-   return value;
-  });
-  if(token!==epoch||api.user()?.uid!==actor)return;
-  if(!progress||(saved.opened||0)>=(progress.opened||0))progress=saved;
-  unsubscribe?.();
-  unsubscribe=onSnapshot(ref,snap=>{
-   if(token!==epoch||api.user()?.uid!==actor||!snap.exists())return;
-   const next=snap.data().esports;
-   if(next===undefined||next===null){error='La sauvegarde esport a disparu. Aucune remise à zéro automatique.';progress=null;render();return;}
-   try{
-    const value=normaliseEsports(next);
-    if(!progress||(value.opened||0)>=(progress.opened||0)){progress=value;if(!busy)render();}
-   }catch(e){progress=null;error=e.message;render();}
-  },e=>{if(token===epoch){error='Synchronisation esport : '+e.message;render();}});
-  render();
+  const saved=await runTransaction(api.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw new Error('Compte introuvable.');if(api.user()?.uid!==actor||epoch!==token)throw new Error('Le compte a changé.');const raw=snap.data().esports,value=normaliseEsports(raw??null);if(!raw||raw.version!==2)tx.update(ref,{esports:value});return value;});
+  if(token!==epoch||api.user()?.uid!==actor)return;progress=saved;unsub?.();unsub=onSnapshot(ref,snap=>{if(epoch!==token||api.user()?.uid!==actor||!snap.exists())return;try{const raw=snap.data().esports;if(!raw)throw new Error('Sauvegarde esport absente.');const value=normaliseEsports(raw);if(!progress||value.opened>=progress.opened){progress=value;render();}}catch(e){error=e.message;render();}},e=>{if(token===epoch){error=e.message;render();}});render();
  }
- function initialiseAccount(){
-  if(!uid)return Promise.resolve();
-  if(initPending)return initPending;
-  const token=epoch;busy=true;error='';render();
-  const pending=ensureAccount().catch(e=>{
-   if(token===epoch)error=e.code==='permission-denied'?'La sauvegarde esport est refusée par les règles Firestore. Les autres inventaires ne sont pas modifiés.':e.message;
-  }).finally(()=>{
-   if(token===epoch){initPending=null;busy=false;render();}
-  });
-  initPending=pending;
-  return pending;
- }
+ function initialise(){if(!uid)return Promise.resolve();if(pending)return pending;const token=epoch;busy=true;error='';render();const operation=ensure().catch(e=>{if(token===epoch)error=e.message;}).finally(()=>{if(token===epoch){pending=null;busy=false;render();}});pending=operation;return operation;}
  async function openPack(){
-  if(busy||!uid||!progress)return;const actor=uid,token=epoch;busy=true;error='';render();
+  if(busy||!uid||!progress)return;const lock=api.acquireOpening();if(!lock)return;
+  const actor=uid,token=epoch;busy=true;error='';part('chest').classList.add('opening');setTimeout(()=>part('chest').classList.remove('opening'),900);tick();
   try{
-   const ref=doc(api.db,'users',actor);
-   const result=await runTransaction(api.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw new Error('Compte introuvable.');if(api.user()?.uid!==actor||token!==epoch)throw new Error('Le compte a changé.');const result=openEsportsBooster(snap.data().esports,catalog);tx.update(ref,{esports:result.state});return result;});
-   if(token!==epoch||api.user()?.uid!==actor)return;
-   if((result.state.opened||0)>=(progress?.opened||0))progress=result.state;
-   lastDraw=result.drawn;revealed=0;showReveal();
-  }catch(e){if(token===epoch)error=e.code==='permission-denied'?'La sauvegarde esport est refusée par les règles Firestore. Les autres inventaires ne sont pas modifiés.':e.message;}
-  finally{if(token===epoch){busy=false;render();}}
+   const ref=doc(api.db,'users',actor);const result=await runTransaction(api.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw new Error('Compte introuvable.');if(epoch!==token||api.user()?.uid!==actor)throw new Error('Le compte a changé.');const next=openEsportsBooster(snap.data().esports,catalog);tx.update(ref,{esports:next.state});return next;});
+   if(token!==epoch||api.user()?.uid!==actor)return;progress=result.state;lastDraw=result.drawn;
+   api.openReveal(lastDraw.map(drawCard).filter(Boolean),{renderCard,onResults:markup=>{part('result').innerHTML=markup;},onClose:()=>{tick();requestVisible();}});requestVisible();
+  }catch(e){if(token===epoch)error=e.code==='permission-denied'?'Firestore refuse la sauvegarde esport. Aucun autre inventaire n’est modifié.':e.message;}
+  finally{api.releaseOpening(lock);if(token===epoch){busy=false;render();}}
  }
- function accountChanged(){
-  epoch++;uid=api.user()?.uid||null;
-  unsubscribe?.();unsubscribe=null;initPending=null;progress=null;busy=false;error='';
-  lastDraw=[];revealed=0;detailKey='';root.innerHTML='';
-  if(reveal.open)reveal.close();if(detail.open)detail.close();
-  reveal.innerHTML='';detail.innerHTML='';
-  render();if(uid&&!root.hidden)void initialiseAccount();
- }
- navButton.onclick=()=>{
-  if(!api.user())return;
-  for(const b of nav.querySelectorAll('button'))b.classList.toggle('active',b===navButton);
-  for(const section of main.querySelectorAll(':scope > section'))section.hidden=section!==root;
-  if(uid!==api.user()?.uid)accountChanged();
-  render();if(!progress)void initialiseAccount();
- };
- nav.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b&&b!==navButton){if(reveal.open)reveal.close();if(detail.open)detail.close();}});
- root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.proAction==='open')void openPack();else if(b.dataset.proAction==='retry')void initialiseAccount();else if(b.dataset.proAction==='last'){revealed=lastDraw.length;showReveal();}else if(b.dataset.proCard)showDetail(b.dataset.proCard);});
- root.addEventListener('input',e=>{if(e.target.matches('[data-pro-search]')){const pos=e.target.selectionStart;q=e.target.value;render();const n=root.querySelector('[data-pro-search]');n.focus();n.setSelectionRange(pos,pos);}});
- root.addEventListener('change',e=>{if(e.target.matches('[data-pro-role]'))role=e.target.value;else if(e.target.matches('[data-pro-finish]'))finish=e.target.value;else if(e.target.matches('[data-pro-owned]'))onlyOwned=e.target.checked;render();});
- reveal.addEventListener('click',e=>{if(e.target.closest('[data-pro-close]')||e.target===reveal){reveal.close();return;}if(e.target.closest('[data-pro-all]')){revealed=lastDraw.length;showReveal();return;}const b=e.target.closest('[data-pro-flip]');if(b){if(Number(b.dataset.proFlip)>=revealed){revealed++;showReveal();}else{const draw=lastDraw[Number(b.dataset.proFlip)];showDetail(draw.key);}}});
- detail.addEventListener('click',e=>{if(e.target.closest('[data-pro-close]')||e.target===detail)detail.close();});
- document.addEventListener('error',e=>{const img=e.target;if(img.matches?.('[data-pro-photo-img]')){const player=catalog.players.find(p=>p.id===img.parentElement?.dataset.proPortrait);if(player){photos.set(player.id,null);img.parentElement.innerHTML=photoHTML(player);}}},true);
- const timer=setInterval(()=>{if(!root.hidden)tick();},1000);accountChanged();
- return {accountChanged};
+ function accountChanged(){epoch++;uid=api.user()?.uid||null;unsub?.();unsub=null;pending=null;progress=null;busy=false;error='';lastDraw=[];detailKey='';part('result').innerHTML='';root.innerHTML='';if(detail.open)detail.close();detail.innerHTML='';if(uid&&(mode==='esports'||!root.hidden))void initialise();render();}
+ switcher.addEventListener('click',e=>{const b=e.target.closest('[data-pro-mode]');if(b)chooseMode(b.dataset.proMode);});
+ part('openBtn').onclick=openPack;part('chest').onclick=()=>{if(!part('openBtn').disabled)void openPack();};part('chest').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!part('openBtn').disabled)void openPack();}});
+ const showCollection=()=>{api.navigate('esports');if(!progress)void initialise();renderCollection();};navButton.onclick=showCollection;collectButton.onclick=showCollection;
+ nav.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b){if(detail.open)detail.close();if(b.dataset.tab==='boosters')tick();}});
+ root.addEventListener('input',e=>{if(e.target.matches('[data-pro-search]')){const pos=e.target.selectionStart;q=e.target.value;page=0;renderCollection();const el=root.querySelector('[data-pro-search]');el.focus();el.setSelectionRange(pos,pos);}});
+ root.addEventListener('change',e=>{if(e.target.matches('[data-pro-role]'))role=e.target.value;else if(e.target.matches('[data-pro-owned]'))onlyOwned=e.target.checked;else if(e.target.matches('[data-pro-photo]'))onlyPhoto=e.target.checked;page=0;renderCollection();});
+ root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.proPlayer){const p=byId.get(b.dataset.proPlayer),f=FINISHES.filter(x=>quantity(esportsCardKey(catalog.edition,p.id,x.id))>0).at(-1)||FINISHES[0];showCard(esportsCardKey(catalog.edition,p.id,f.id));}else if(b.dataset.proPage){page+=Number(b.dataset.proPage);renderCollection();}else if(b.hasAttribute('data-pro-go-boosters')){api.navigate('boosters');chooseMode('esports');}});
+ detail.addEventListener('click',e=>{const b=e.target.closest('button');if(e.target===detail||b?.hasAttribute('data-pro-close')){detail.close();return;}if(!b)return;const parsed=parseEsportsKey(detailKey);if(!parsed)return;const i=FINISHES.findIndex(f=>f.id===parsed.finishId),f=b.dataset.proVariant||FINISHES[(i+Number(b.dataset.proStep||0)+4)%4].id;showCard(esportsCardKey(catalog.edition,parsed.playerId,f));});
+ document.addEventListener('error',e=>{const img=e.target,id=img.dataset?.proPhotoId;if(!id)return;const p=byId.get(id),value=p&&photo(p);if(!img.dataset.proFailed&&value?.url&&img.getAttribute('src')!==value.url){img.dataset.proFailed='1';img.src=value.url;}else if(img.getAttribute('src')!==FALLBACK){img.dataset.proFailed='1';img.src=FALLBACK;}},true);
+ setInterval(()=>{if(!boosters.hidden&&mode==='esports')tick();},1000);accountChanged();
+ return {accountChanged,showCard,renderCard};
 }
