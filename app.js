@@ -538,6 +538,27 @@ function recycleAll() {
 $("recycleAll").onclick = recycleAll;
 
 // ---------- Ouverture ----------
+// Métadonnée d'affichage de l'ouverture : jamais enregistrée dans le compte.
+function markNewCardsForOpening(cards, ownedBefore, ascendedBefore) {
+  const seen = new Set();
+  return cards.map(card => {
+    const ascended = card.rarity === "ascended";
+    const id = String(card.id);
+    const key = `${ascended ? "ascended" : "normal"}:${id}`;
+    const inventory = ascended ? ascendedBefore : ownedBefore;
+    const isNewAtOpen = !(inventory?.[id] > 0) && !seen.has(key);
+    seen.add(key);
+    return { ...card, isNewAtOpen };
+  });
+}
+
+function openingCardHTML(card) {
+  const html = cardHTML(card);
+  if (!card.isNewAtOpen) return html;
+  return html.replace(/^(\s*<(?:div|button)\b[^>]*>)/,
+    '$1<span class="opening-new-badge" aria-label="Nouvelle carte dans ta collection">Nouveau</span>');
+}
+
 async function openBooster() {
   $("openBtn").disabled = true;
   try {
@@ -549,11 +570,14 @@ async function openBooster() {
       if (s.boosters >= MAX_BOOSTERS) s.lastRefill = Date.now();
       s.boosters -= 1;
       s.cards = s.cards || {};
+      const ownedBefore = { ...s.cards };
+      const ascendedBefore = { ...(s.ascendedCards || {}) };
       drawn = drawBooster(CARDS_PER_BOOSTER, (s.mythicPity || 0) >= PITY_MAX);
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
       s.mythicPity = drawn.some(c => c.rarity === "mythic") ? 0 : (s.mythicPity || 0) + 1;
       const ascendedBonus = awardAscendedBonus(s, ascendedCatalogue());
       if (ascendedBonus) drawn.push(ascendedBonus);
+      drawn = markNewCardsForOpening(drawn, ownedBefore, ascendedBefore);
       ensureObtained(s);
       addProgress(s, "open");
       tx.set(userRef(), s);
@@ -579,11 +603,14 @@ async function openBonusBooster() {
       if ((s.bonusBoosters || 0) <= 0) throw new Error("Aucun booster bonus disponible.");
       s.bonusBoosters -= 1;
       s.cards = s.cards || {};
+      const ownedBefore = { ...s.cards };
+      const ascendedBefore = { ...(s.ascendedCards || {}) };
       drawn = drawBonusBooster(CARDS_PER_BOOSTER, (s.mythicPity || 0) >= PITY_MAX);
       drawn.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
       s.mythicPity = drawn.some(c => c.rarity === "mythic") ? 0 : (s.mythicPity || 0) + 1;
       const ascendedBonus = awardAscendedBonus(s, ascendedCatalogue());
       if (ascendedBonus) drawn.push(ascendedBonus);
+      drawn = markNewCardsForOpening(drawn, ownedBefore, ascendedBefore);
       ensureObtained(s);
       tx.set(userRef(), s);
       return s;
@@ -607,7 +634,7 @@ function startReveal(cards) {
     <div class="flip r-${c.rarity}" data-i="${i}">
       <div class="flip-inner">
         <div class="flip-back"><span>R</span></div>
-        <div class="flip-front">${cardHTML(c)}</div>
+        <div class="flip-front">${openingCardHTML(c)}</div>
       </div>
     </div>`).join("");
   const row = $("revealRow");
@@ -668,7 +695,7 @@ function flipAll() {
 function finishReveal() {
   $("revealAll").hidden = true;
   $("revealClose").hidden = false;
-  $("result").innerHTML = rv.cards.map(c => cardHTML(c)).join("");
+  $("result").innerHTML = rv.cards.map(c => openingCardHTML(c)).join("");
 }
 
 function closeReveal() {

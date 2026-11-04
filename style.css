@@ -1065,3 +1065,33 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
     min-height: 0;
   }
 }
+
+/* Badge temporaire : uniquement sur les cartes de la dernière ouverture. */
+.opening-new-badge {
+  position: absolute;
+  z-index: 5;
+  top: 43px;
+  left: 9px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border: 1px solid #b1f5cb;
+  border-radius: 20px;
+  background: #123b2ef2;
+  color: #d4ffe6;
+  box-shadow: 0 2px 8px #0006;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .025em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* Ne révèle pas une nouvelle carte avant son retournement. */
+#reveal .flip:not(.flipped) .opening-new-badge {
+  visibility: hidden;
+}
+@media (max-width: 550px) {
+  .opening-new-badge { top: 37px; left: 7px; padding: 3px 7px; font-size: 10px; }
+}
