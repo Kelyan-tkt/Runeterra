@@ -450,48 +450,63 @@ $("recycleGo").onclick = () => {
 
 // applique un recyclage : retire les doublons choisis, ajoute les nouvelles cartes
 async function applyRecycle(sel, newCards) {
-  const need = Object.values(sel).reduce((a, b) => a + b, 0);
-  let ascendedBonuses = [];
-  state = await runTransaction(db, async tx => {
-    const snap = await tx.get(userRef());
-    const s = snap.data();
-    s.cards = s.cards || {};
+  const actor = user?.uid;
+  if (!actor) throw new Error("Connecte-toi pour recycler.");
+  const ref = doc(db, "users", actor);
+  const need = Object.values(sel).reduce((sum, n) => sum + n, 0);
+  const result = await runTransaction(db, async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Compte introuvable.");
+    if (user?.uid !== actor) throw new Error("Le compte a changé.");
+    const account = snap.data();
+    account.cards = account.cards || {};
+    const ownedBefore = { ...account.cards };
+    const ascendedBefore = { ...(account.ascendedCards || {}) };
     for (const [id, n] of Object.entries(sel)) {
-      if (n > 0 && (s.cards[id] || 0) - 1 < n) throw new Error("Doublons insuffisants.");
+      if (n > 0 && (account.cards[id] || 0) - 1 < n) throw new Error("Doublons insuffisants.");
     }
-    for (const [id, n] of Object.entries(sel)) if (n > 0) s.cards[id] -= n;
-    newCards.forEach(c => { s.cards[c.id] = (s.cards[c.id] || 0) + 1; });
-    ascendedBonuses = [];
+    for (const [id, n] of Object.entries(sel)) if (n > 0) account.cards[id] -= n;
+    newCards.forEach(card => { account.cards[card.id] = (account.cards[card.id] || 0) + 1; });
+    const ascendedBonuses = [];
     for (const card of newCards) {
-      const bonus = awardAscendedBonus(s, ascendedCatalogue(), { channel: "recycle" });
+      const bonus = awardAscendedBonus(account, ascendedCatalogue(), { channel: "recycle" });
       if (bonus) ascendedBonuses.push(bonus);
     }
-    ensureObtained(s);
-    addProgress(s, "recycle", need);
-    tx.set(userRef(), s);
-    return s;
+    const revealed = markNewCardsForOpening([...newCards, ...ascendedBonuses], ownedBefore, ascendedBefore);
+    ensureObtained(account);
+    addProgress(account, "recycle", need);
+    tx.set(ref, account);
+    return { account, revealed };
   });
-  return ascendedBonuses;
+  if (user?.uid !== actor) throw new Error("Le compte a changé.");
+  state = result.account;
+  return result.revealed;
 }
 
 async function recycleCards() {
   const sel = { ...recSel };
-  const total = Object.values(sel).reduce((a, b) => a + b, 0);
+  const total = Object.values(sel).reduce((sum, n) => sum + n, 0);
   if (!total || total % DUPES_PER_CRAFT) return;
-  const newCards = Array.from({ length: total / DUPES_PER_CRAFT }, drawRecycleCard);
-
+  const lock = acquireOpening();
+  if (!lock) return;
+  const actor = user.uid;
   $("recycleGo").disabled = true;
   $("recycleAll").disabled = true;
   try {
-    const ascendedBonuses = await applyRecycle(sel, newCards);
+    const newCards = Array.from({ length: total / DUPES_PER_CRAFT }, drawRecycleCard);
+    const revealed = await applyRecycle(sel, newCards);
+    if (user?.uid !== actor) return;
     $("recycleModal").hidden = true;
     $("result").innerHTML = "";
-    startReveal([...newCards, ...ascendedBonuses]);
-  } catch (e) {
-    alert(e.message);
-    renderRecycleList();
+    startReveal(revealed);
+  } catch (error) {
+    if (user?.uid === actor) {
+      alert(error.message);
+      renderRecycleList();
+    }
+  } finally {
+    releaseOpening(lock);
   }
-  render();
 }
 
 $("recycleGo").onclick = () => {
