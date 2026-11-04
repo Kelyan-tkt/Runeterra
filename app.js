@@ -80,6 +80,7 @@ const QUESTS = {
 
 let ascendedUI = null;
 let ascendedCache = [], ascendedCacheKey = "";
+let esportsUI = null;
 let user = null, state = null;
 let champions = [], champByKey = {}, skinsById = {}, skinList = [];
 let pools = {}, skinsByChamp = {};
@@ -551,13 +552,10 @@ function markNewCardsForOpening(cards, ownedBefore, ascendedBefore) {
     return { ...card, isNewAtOpen };
   });
 }
-
 function openingCardHTML(card, standalone = false) {
   const html = cardHTML(card);
   if (!card.isNewAtOpen) return html;
   const badge = '<span class="opening-new-badge" aria-label="Nouvelle carte dans ta collection">Nouveau</span>';
-  // Pendant le retournement, la face avant contient le badge à côté de la carte.
-  // Dans le résultat, un conteneur dédié évite le découpage par son cadre.
   if (!standalone) return html + badge;
   return `<div class="opening-result-card${card.rarity === "ascended" ? " opening-result-ascended" : ""}">${html}${badge}</div>`;
 }
@@ -2681,6 +2679,7 @@ $("openBtn").onclick = openBooster;
 
 onAuthStateChanged(auth, async u => {
   user = u;
+  esportsUI?.accountChanged();
   $("loginView").hidden = !!u;
   $("gameView").hidden = !u;
   $("userBox").hidden = !u;
@@ -2824,3 +2823,9 @@ function renderAscendedCollection() {
   });
   ascendedUI.render();
 }
+
+// Module facultatif : son échec ne bloque pas la collection ni la connexion existantes.
+void import("./esports.js?v=pro-2")
+  .then(module => module.installEsports({ db, user: () => user }))
+  .then(controller => { esportsUI = controller; })
+  .catch(error => console.warn("Module esport non chargé :", error.message));

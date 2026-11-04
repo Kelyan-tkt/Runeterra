@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "edition": "decouverte-v1",
+  "title": "Découverte · carrières",
+  "description": "Joueurs actuels et anciens. Les rôles indiquent des rôles de carrière, pas un effectif ou une équipe actuelle.",
+  "sources": [
+    "https://en.wikipedia.org/wiki/Category:League_of_Legends_players"
+  ],
+  "players": [
+    {
+      "id": "faker",
+      "handle": "Faker",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "Faker (gamer)",
+      "photo": {
+        "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Faker%202020%20interview.jpg?width=500",
+        "source": "https://commons.wikimedia.org/wiki/File:Faker_2020_interview.jpg",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+        "author": "Fomos Esports",
+        "credit": "Capture d’une interview de 2020 publiée sous CC BY. Présentation recadrée.",
+        "file": "Faker 2020 interview.jpg"
+      }
+    },
+    {
+      "id": "caps",
+      "handle": "Caps",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "Caps (gamer)"
+    },
+    {
+      "id": "chovy",
+      "handle": "Chovy",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "Chovy"
+    },
+    {
+      "id": "showmaker",
+      "handle": "ShowMaker",
+      "roles": [
+        "Mid"
+      ],
+      "wikipedia": "ShowMaker"
+    },
+    {
+      "id": "uzi",
+      "handle": "Uzi",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Uzi (gamer)"
+    },
+    {
+      "id": "ruler",
+      "handle": "Ruler",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Ruler (gamer)"
+    },
+    {
+      "id": "deft",
+      "handle": "Deft",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Deft (gamer)"
+    },
+    {
+      "id": "doublelift",
+      "handle": "Doublelift",
+      "roles": [
+        "ADC"
+      ],
+      "wikipedia": "Doublelift"
+    },
+    {
+      "id": "canyon",
+      "handle": "Canyon",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Canyon (gamer)"
+    },
+    {
+      "id": "jankos",
+      "handle": "Jankos",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Jankos"
+    },
+    {
+      "id": "peanut",
+      "handle": "Peanut",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Peanut (gamer)"
+    },
+    {
+      "id": "oner",
+      "handle": "Oner",
+      "roles": [
+        "Jungle"
+      ],
+      "wikipedia": "Oner (gamer)"
+    },
+    {
+      "id": "keria",
+      "handle": "Keria",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "Keria (gamer)"
+    },
+    {
+      "id": "corejj",
+      "handle": "CoreJJ",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "CoreJJ"
+    },
+    {
+      "id": "hylissang",
+      "handle": "Hylissang",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "Hylissang"
+    },
+    {
+      "id": "madlife",
+      "handle": "MadLife",
+      "roles": [
+        "Support"
+      ],
+      "wikipedia": "MadLife"
+    },
+    {
+      "id": "bin",
+      "handle": "Bin",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "Bin (gamer)"
+    },
+    {
+      "id": "zeus",
+      "handle": "Zeus",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "Zeus (gamer)"
+    },
+    {
+      "id": "theshy",
+      "handle": "TheShy",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "TheShy"
+    },
+    {
+      "id": "wunder",
+      "handle": "Wunder",
+      "roles": [
+        "Top"
+      ],
+      "wikipedia": "Wunder (gamer)"
+    }
+  ]
+}
