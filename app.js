@@ -1,3 +1,4 @@
+import { installCustomSkins, customSkinArtwork } from "./custom-skins.js?v=mavayne-1";
 import { PODIUM_TITLES, collectionRanking, podiumPlayer, podiumPlayers, podiumTitleAvailable,
   activePodiumTitle, applyPodiumEffect, podiumIdentityHTML, refreshPodiumIdentities,
   startPodiumTracking, stopPodiumTracking } from "./podium-titles.js?v=1";
@@ -254,6 +255,7 @@ async function loadGameData() {
 
   const data = await (await fetch(`${CD}/v1/skins.json`)).json();
   skinsById = data;
+  installCustomSkins(champions, skinsById);
   skinList = Object.values(data).filter(s =>
     s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
 
@@ -273,15 +275,16 @@ async function loadGameData() {
 function skinCard(id) {
   const s = skinsById[id];
   const champ = champByKey[Math.floor(id / 1000)];
+  const custom = customSkinArtwork(s);
   return {
     id,
     name: champ?.name || "Inconnu",
     skinName: s?.isBase ? "Classique" : (s?.name || `Skin ${id}`),
     rarity: s ? rarityOf(s) : "common",
-    img: cdUrl(s?.loadScreenPath || s?.splashPath),
-    imgAlt: cdUrl(s?.splashPath || s?.tilePath),
-    splash: cdUrl(s?.uncenteredSplashPath || s?.splashPath || s?.loadScreenPath),
-    splashAlt: cdUrl(s?.splashPath || s?.loadScreenPath || s?.tilePath)
+    img: custom?.img || cdUrl(s?.loadScreenPath || s?.splashPath),
+    imgAlt: custom?.imgAlt || cdUrl(s?.splashPath || s?.tilePath),
+    splash: custom?.splash || cdUrl(s?.uncenteredSplashPath || s?.splashPath || s?.loadScreenPath),
+    splashAlt: custom?.splashAlt || cdUrl(s?.splashPath || s?.loadScreenPath || s?.tilePath)
   };
 }
 
