@@ -8,12 +8,15 @@ import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, signOut, onAuthStateChanged
 }
+
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {
   getFirestore, initializeFirestore, doc, runTransaction, collection, query, where,
   onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField
 }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+import { installSplashGame } from "./splash-game.js?v1";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA40nyTJKIFw0_mvU7GY9mZEGkvmkzUNu0",
@@ -1244,6 +1247,17 @@ function tickSpins() {
 }
 
 $("spinBtn").onclick = spinWheel;
+
+const splashGame = installSplashGame({
+  db,
+  getUser: () => user,
+  getUserRef: () => doc(db, "users", user.uid),
+  getChampions: () => champions,
+  getCard: skinCard,
+  dayKey,
+  normalize: norm,
+  onChanged: render
+});
 
 // ---------- Classement ----------
 let lbSig = "";
@@ -2819,7 +2833,7 @@ onAuthStateChanged(auth, async u => {
     await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
     startListeners();                       // les amis démarrent avant l'affichage
     startPodiumTracking({ db, user: () => user, week: weekKey, onChange: refreshPodiumAppearance });
-    try { render(); tickTimer(); }
+    try { render(); tickTimer(); splashGame.refresh(); }
     catch (e) { console.error("Erreur d'affichage :", e); }
   } catch (e) {
     console.error(e);
