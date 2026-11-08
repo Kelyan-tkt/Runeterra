@@ -1,7 +1,9 @@
 import { installCustomSkins, customSkinArtwork } from "./custom-skins.js?v=mavayne-1";
-import { PODIUM_TITLES, collectionRanking, podiumPlayer, podiumPlayers, podiumTitleAvailable,
+import {
+  PODIUM_TITLES, collectionRanking, podiumPlayer, podiumPlayers, podiumTitleAvailable,
   activePodiumTitle, applyPodiumEffect, podiumIdentityHTML, refreshPodiumIdentities,
-  startPodiumTracking, stopPodiumTracking } from "./podium-titles.js?v=1";
+  startPodiumTracking, stopPodiumTracking
+} from "./podium-titles.js?v=1";
 import { ASCENDED_CONFIG, loadAscendedMedia, ascendedMediaVersion, buildAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, playAscendedReveal, initAscended } from "./ascended.js?v=ascended-showcase-1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
@@ -256,17 +258,26 @@ async function loadGameData() {
   champions = Object.values(d.data);
   champions.forEach(c => champByKey[c.key] = c);
 
+
   const data = await (await fetch(`${CD}/v1/skins.json`)).json();
   skinsById = data;
   installCustomSkins(champions, skinsById);
   skinList = Object.values(data).filter(s =>
     s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
 
+
   pools = {}; skinsByChamp = {};
   skinList.forEach(s => {
     (pools[rarityOf(s)] ||= []).push(s);
     (skinsByChamp[Math.floor(s.id / 1000)] ||= []).push(s);
   });
+
+  champions.forEach(champ => {
+    champ.splashIds = (skinsByChamp[champ.key] || [])
+      .filter(skin => skinCard(skin.id)?.splash)
+      .map(skin => skin.id);
+  });
+
   try {
     const itd = await (await fetch(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`)).json();
     shopItems = buildShop(itd.data);
@@ -2946,8 +2957,10 @@ function renderAscendedCollection() {
     state: () => state,
     catalogue: ascendedCatalogue,
     resolveCard: resolveShowcaseAscended,
-    filters: () => ({ query: $("search").value, rarity: $("filterRarity").value,
-      sort: $("sortBy").value, owned: $("onlyOwned").checked, dupes: $("onlyDupes").checked })
+    filters: () => ({
+      query: $("search").value, rarity: $("filterRarity").value,
+      sort: $("sortBy").value, owned: $("onlyOwned").checked, dupes: $("onlyDupes").checked
+    })
   });
   ascendedUI.render();
 }
