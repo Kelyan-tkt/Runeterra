@@ -1228,3 +1228,59 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
   font-size: .85rem;
   margin-top: 12px;
 }
+
+/* Correction : les effets légendaires et mythiques ne débordent plus sur les cartes voisines */
+
+.flip.fx-legendary .flip-front::after,
+.flip.fx-mythic .flip-front::after {
+  display: none !important;
+}
+
+.flip.fx-legendary .flip-front .card::after,
+.flip.fx-mythic .flip-front .card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, .45) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: shine 3s ease-in-out infinite;
+}
+
+.flip.fx-legendary .flip-front .card {
+  animation: glowOrangeInner 1.8s ease-out;
+}
+
+.flip.fx-mythic .flip-front .card {
+  animation: glowRedInner 2s ease-out;
+}
+
+@keyframes glowOrangeInner {
+  0% {
+    box-shadow: inset 0 0 0 0 rgba(255, 128, 0, 0);
+  }
+  40% {
+    box-shadow: inset 0 0 26px 6px rgba(255, 128, 0, .75);
+  }
+  100% {
+    box-shadow: inset 0 0 12px rgba(255, 128, 0, .35);
+  }
+}
+
+@keyframes glowRedInner {
+  0% {
+    box-shadow: inset 0 0 0 0 rgba(232, 64, 87, 0);
+  }
+  40% {
+    box-shadow: inset 0 0 30px 8px rgba(232, 64, 87, .8);
+  }
+  100% {
+    box-shadow: inset 0 0 14px rgba(232, 64, 87, .4);
+  }
+}
