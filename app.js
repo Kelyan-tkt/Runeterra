@@ -1,24 +1,19 @@
 import { installCustomSkins, customSkinArtwork } from "./custom-skins.js?v=mavayne-1";
-import {
-  PODIUM_TITLES, collectionRanking, podiumPlayer, podiumPlayers, podiumTitleAvailable,
+import { PODIUM_TITLES, collectionRanking, podiumPlayer, podiumPlayers, podiumTitleAvailable,
   activePodiumTitle, applyPodiumEffect, podiumIdentityHTML, refreshPodiumIdentities,
-  startPodiumTracking, stopPodiumTracking
-} from "./podium-titles.js?v=1";
+  startPodiumTracking, stopPodiumTracking } from "./podium-titles.js?v=1";
 import { ASCENDED_CONFIG, loadAscendedMedia, ascendedMediaVersion, buildAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, playAscendedReveal, initAscended } from "./ascended.js?v=ascended-showcase-1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, signOut, onAuthStateChanged
 }
-
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {
   getFirestore, initializeFirestore, doc, runTransaction, collection, query, where,
   onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField
 }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
-
-import { installSplashGame } from "./splash-game.js?v1";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA40nyTJKIFw0_mvU7GY9mZEGkvmkzUNu0",
@@ -258,26 +253,17 @@ async function loadGameData() {
   champions = Object.values(d.data);
   champions.forEach(c => champByKey[c.key] = c);
 
-
   const data = await (await fetch(`${CD}/v1/skins.json`)).json();
   skinsById = data;
   installCustomSkins(champions, skinsById);
   skinList = Object.values(data).filter(s =>
     s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
 
-
   pools = {}; skinsByChamp = {};
   skinList.forEach(s => {
     (pools[rarityOf(s)] ||= []).push(s);
     (skinsByChamp[Math.floor(s.id / 1000)] ||= []).push(s);
   });
-
-  champions.forEach(champ => {
-    champ.splashIds = (skinsByChamp[champ.key] || [])
-      .filter(skin => skinCard(skin.id)?.splash)
-      .map(skin => skin.id);
-  });
-
   try {
     const itd = await (await fetch(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`)).json();
     shopItems = buildShop(itd.data);
@@ -290,13 +276,16 @@ function skinCard(id) {
   const s = skinsById[id];
   const champ = champByKey[Math.floor(id / 1000)];
   const custom = customSkinArtwork(s);
+  const number = Number(id) % 1000;
+  const riotImage = champ?.id && Number.isSafeInteger(Number(id))
+    ? `${DDRAGON}/cdn/img/champion/loading/${champ.id}_${number}.jpg` : "";
   return {
     id,
     name: champ?.name || "Inconnu",
     skinName: s?.isBase ? "Classique" : (s?.name || `Skin ${id}`),
     rarity: s ? rarityOf(s) : "common",
-    img: custom?.img || cdUrl(s?.loadScreenPath || s?.splashPath),
-    imgAlt: custom?.imgAlt || cdUrl(s?.splashPath || s?.tilePath),
+    img: custom?.img || riotImage || cdUrl(s?.loadScreenPath || s?.splashPath),
+    imgAlt: custom?.imgAlt || cdUrl(s?.loadScreenPath || s?.splashPath || s?.tilePath),
     splash: custom?.splash || cdUrl(s?.uncenteredSplashPath || s?.splashPath || s?.loadScreenPath),
     splashAlt: custom?.splashAlt || cdUrl(s?.splashPath || s?.loadScreenPath || s?.tilePath)
   };
@@ -903,7 +892,7 @@ const cardHTML = (c, qty = 0, delay = 0, locked = false) => c.rarity === "ascend
   <div class="card ${c.rarity}${locked ? " locked" : ""}" data-id="${c.id}" style="animation-delay:${delay}s">
     <span class="badge">${RARITIES[c.rarity].label}</span>
     ${qty > 1 ? `<span class="qty">×${qty}</span>` : ""}
-    <img loading="lazy" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
+    <img loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
     <div class="info"><b>${esc(c.name)}</b><br>${esc(c.skinName)}</div>
   </div>`;
@@ -911,7 +900,9 @@ const cardHTML = (c, qty = 0, delay = 0, locked = false) => c.rarity === "ascend
 const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 // ---------- Galerie des champions ----------
+let collectionMarkupCache = null;
 function renderCollection() {
+  if (!state || $("tab-collection")?.hidden) return;
   renderAscendedCollection();
   const ascendedOnly = $("filterRarity").value === "ascended";
   $("collection").hidden = ascendedOnly;
@@ -972,14 +963,14 @@ function renderCollection() {
   };
   rows.sort(sorters[$("sortBy").value] || byName);
 
-  $("collection").innerHTML = rows.map(r => {
+  const markup = rows.map(r => {
     const c = skinCard(r.rep.id);
     const qty = owned[r.rep.id] || 0;
     const pct = Math.round((r.ownedCount / r.skins.length) * 100);
     return `<button class="tile ${c.rarity}${qty ? "" : " locked"}" data-champ="${r.key}" data-skin="${r.rep.id}">
       <span class="badge">${RARITIES[c.rarity].label}</span>
       ${qty > 1 ? `<span class="qty">×${qty}</span>` : ""}
-      <img loading="lazy" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
+      <img loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
            onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
       <div class="tinfo">
         <b>${esc(r.champ.name)}</b>
@@ -988,6 +979,10 @@ function renderCollection() {
       </div>
     </button>`;
   }).join("") || `<p class="hint">Aucun champion ne correspond.</p>`;
+  if (markup !== collectionMarkupCache) {
+    $("collection").innerHTML = markup;
+    collectionMarkupCache = markup;
+  }
 }
 
 ["search", "sortBy", "filterRarity", "onlyDupes", "onlyOwned"].forEach(id =>
@@ -1159,6 +1154,7 @@ $("bonusBtn").onclick = openBonusBooster;
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
+  if (b.dataset.tab === "collection" && state) renderCollection();
   if (b.dataset.tab === "friends") refreshSocial();
   if (b.dataset.tab === "ranking") loadRanking();
   if (b.dataset.tab === "profile") showProfile();
@@ -1259,17 +1255,6 @@ function tickSpins() {
 
 $("spinBtn").onclick = spinWheel;
 
-const splashGame = installSplashGame({
-  db,
-  getUser: () => user,
-  getUserRef: () => doc(db, "users", user.uid),
-  getChampions: () => champions,
-  getCard: skinCard,
-  dayKey,
-  normalize: norm,
-  onChanged: render
-});
-
 // ---------- Classement ----------
 let lbSig = "";
 
@@ -1369,6 +1354,7 @@ let scSel = [];
 function goTab(tab) {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === tab));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${tab}`);
+  if (tab === "collection" && state) renderCollection();
 }
 
 function renderProfile(p, mine) {
@@ -2823,6 +2809,7 @@ onAuthStateChanged(auth, async u => {
     refreshPodiumAppearance();
     stopListeners();
     state = null;
+    collectionMarkupCache = null;
     openingLock = null;
     $("reveal").hidden = true;
     $("tradeModal").hidden = true;
@@ -2844,7 +2831,7 @@ onAuthStateChanged(auth, async u => {
     await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
     startListeners();                       // les amis démarrent avant l'affichage
     startPodiumTracking({ db, user: () => user, week: weekKey, onChange: refreshPodiumAppearance });
-    try { render(); tickTimer(); splashGame.refresh(); }
+    try { render(); tickTimer(); }
     catch (e) { console.error("Erreur d'affichage :", e); }
   } catch (e) {
     console.error(e);
@@ -2957,10 +2944,8 @@ function renderAscendedCollection() {
     state: () => state,
     catalogue: ascendedCatalogue,
     resolveCard: resolveShowcaseAscended,
-    filters: () => ({
-      query: $("search").value, rarity: $("filterRarity").value,
-      sort: $("sortBy").value, owned: $("onlyOwned").checked, dupes: $("onlyDupes").checked
-    })
+    filters: () => ({ query: $("search").value, rarity: $("filterRarity").value,
+      sort: $("sortBy").value, owned: $("onlyOwned").checked, dupes: $("onlyDupes").checked })
   });
   ascendedUI.render();
 }
