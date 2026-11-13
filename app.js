@@ -1361,56 +1361,136 @@ const SPIN_MSG = {
   nothing: "💨 Perdu, retente ta chance."
 };
 
+function setWheelBusy(busy) {
+  spinning = busy;
+  $("spinBtn").disabled = busy || !state || state.spins <= 0 || !!rv || !!openingLock;
+  const button = $("simulateSpinsBtn");
+  if (button) {
+    button.disabled = $("spinBtn").disabled;
+    button.textContent = busy ? "Lancers en cours…" : "Simuler les lancers";
+  }
+}
+
+function applyWheelReward(account, type) {
+  if (type === "booster") account.boosters = (account.boosters || 0) + 1;
+  else if (type === "bonus") account.bonusBoosters = (account.bonusBoosters || 0) + 1;
+  else if (type === "respin") account.spins += 1;
+}
+
+// Pure : la même suite de résultats est réutilisée si Firestore réessaie.
+function resolveAllWheelSpins(account, resultAt, now) {
+  applySpinRefill(account, now);
+  if (!Number.isSafeInteger(account.spins) || account.spins < 0) {
+    throw new Error("Nombre de lancers invalide.");
+  }
+  const summary = { initial: account.spins, total: 0, booster: 0, bonus: 0, respin: 0, nothing: 0 };
+  if (!summary.initial) throw new Error("Aucun lancer disponible.");
+  if (account.spins >= MAX_SPINS) account.lastSpin = now;
+  while (account.spins > 0) {
+    const segment = WHEEL[resultAt(summary.total)];
+    if (!segment || !(segment.type in summary) || !["booster", "bonus", "respin", "nothing"].includes(segment.type)) {
+      throw new Error("Résultat de roue invalide.");
+    }
+    account.spins -= 1;
+    applyWheelReward(account, segment.type);
+    summary[segment.type] += 1;
+    summary.total += 1;
+  }
+  return summary;
+}
+
 async function spinWheel() {
-  if (spinning || rv || !state) return;
+  if (spinning || rv || openingLock || !user || !state) return;
   applySpinRefill(state);
   if (state.spins <= 0) return;
-
-  spinning = true;
-  $("spinBtn").disabled = true;
-  $("spinResult").textContent = "";
+  const lock = acquireOpening();
+  if (!lock) return;
+  const actor = user.uid;
+  const reference = userRef();
   const idx = Math.floor(Math.random() * WHEEL.length);
   const seg = WHEEL[idx];
-
+  setWheelBusy(true);
+  $("spinResult").textContent = "";
   try {
     const next = await runTransaction(db, async tx => {
-      const snap = await tx.get(userRef());
+      const snap = await tx.get(reference);
+      if (!snap.exists()) throw new Error("Compte introuvable.");
+      if (user?.uid !== actor) throw new Error("Le compte a changé.");
       const s = snap.data();
       applySpinRefill(s);
       if (s.spins <= 0) throw new Error("Aucun lancer disponible.");
       if (s.spins >= MAX_SPINS) s.lastSpin = Date.now();
       s.spins -= 1;
-      if (seg.type === "booster") s.boosters = (s.boosters || 0) + 1;
-      else if (seg.type === "bonus") s.bonusBoosters = (s.bonusBoosters || 0) + 1;
-      else if (seg.type === "respin") s.spins += 1;
-      tx.set(userRef(), s);
+      applyWheelReward(s, seg.type);
+      tx.set(reference, s);
       return s;
     });
-
+    if (user?.uid !== actor) return;
+    state = next;
     const center = (idx + .5) * (360 / WHEEL.length);
     const jitter = (Math.random() - .5) * 24;
     const target = Math.floor(wheelRot / 360) * 360 + 360 * 6 + (360 - center) + jitter;
-    const w = $("wheel");
-    w.style.transition = "transform 4.5s cubic-bezier(.12,.6,.1,1)";
-    w.style.transform = `rotate(${target}deg)`;
+    const wheel = $("wheel");
+    wheel.style.transition = "transform 4.5s cubic-bezier(.12,.6,.1,1)";
+    wheel.style.transform = `rotate(${target}deg)`;
     wheelRot = target;
-    await new Promise(r => setTimeout(r, 4700));
-
-    state = next;
-    $("spinResult").textContent = SPIN_MSG[seg.type];
-  } catch (e) {
-    alert(e.message);
+    await new Promise(resolve => setTimeout(resolve, 4700));
+    if (user?.uid === actor) $("spinResult").textContent = SPIN_MSG[seg.type];
+  } catch (error) {
+    if (user?.uid === actor) $("spinResult").textContent = error.message;
+  } finally {
+    setWheelBusy(false);
+    releaseOpening(lock);
+    tickSpins();
   }
-  spinning = false;
-  render();
-  tickSpins();
+}
+
+async function simulateAllSpins() {
+  if (spinning || rv || openingLock || !user || !state) return;
+  const lock = acquireOpening();
+  if (!lock) return;
+  const actor = user.uid;
+  const reference = userRef();
+  const startedAt = Date.now();
+  const results = [];
+  const resultAt = index => {
+    if (results[index] === undefined) results[index] = Math.floor(Math.random() * WHEEL.length);
+    return results[index];
+  };
+  setWheelBusy(true);
+  $("spinResult").textContent = "Simulation des lancers…";
+  try {
+    const outcome = await runTransaction(db, async tx => {
+      const snapshot = await tx.get(reference);
+      if (!snapshot.exists()) throw new Error("Compte introuvable.");
+      if (user?.uid !== actor) throw new Error("Le compte a changé.");
+      const account = snapshot.data();
+      const summary = resolveAllWheelSpins(account, resultAt, startedAt);
+      tx.set(reference, account);
+      return { account, summary };
+    });
+    if (user?.uid !== actor) return;
+    state = outcome.account;
+    const s = outcome.summary;
+    $("spinResult").textContent =
+      `${s.initial} lancer${s.initial > 1 ? "s" : ""} disponible${s.initial > 1 ? "s" : ""} utilisé${s.initial > 1 ? "s" : ""}` +
+      ` — ${s.total} tour${s.total > 1 ? "s" : ""} simulé${s.total > 1 ? "s" : ""}, dont ${s.respin} relance${s.respin > 1 ? "s" : ""}. ` +
+      `Gains : ${s.booster} booster${s.booster > 1 ? "s" : ""} et ${s.bonus} booster${s.bonus > 1 ? "s" : ""} amélioré${s.bonus > 1 ? "s" : ""}. ` +
+      `${s.nothing} résultat${s.nothing > 1 ? "s" : ""} sans gain.`;
+  } catch (error) {
+    if (user?.uid === actor) $("spinResult").textContent = "Simulation impossible : " + error.message;
+  } finally {
+    setWheelBusy(false);
+    releaseOpening(lock);
+    tickSpins();
+  }
 }
 
 function tickSpins() {
   if (!state || spinning) return;
   applySpinRefill(state);
   $("spinCount").textContent = state.spins;
-  $("spinBtn").disabled = state.spins <= 0 || !!rv;
+  setWheelBusy(false);
   if (state.spins >= MAX_SPINS) { $("spinTimer").textContent = "Stock plein"; return; }
   const left = Math.max(0, SPIN_REFILL_MS - (Date.now() - state.lastSpin));
   const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
@@ -1418,6 +1498,18 @@ function tickSpins() {
 }
 
 $("spinBtn").onclick = spinWheel;
+if (!$("simulateSpinsBtn")) {
+  const button = document.createElement("button");
+  button.id = "simulateSpinsBtn";
+  button.type = "button";
+  button.className = $("spinBtn").className;
+  button.textContent = "Simuler les lancers";
+  button.disabled = true;
+  button.style.marginLeft = "8px";
+  button.style.marginTop = "8px";
+  $("spinBtn").insertAdjacentElement("afterend", button);
+}
+$("simulateSpinsBtn").onclick = simulateAllSpins;
 
 // ---------- Classement ----------
 let lbSig = "";
@@ -2958,8 +3050,7 @@ $("loginBtn").onclick = async () => {
 $("logoutBtn").onclick = () => signOut(auth);
 $("openBtn").onclick = openBooster;
 
-
-// ---------- Splash mystère : module facultatif, hors du démarrage critique ----------
+// ---------- Splash mystère : chargement facultatif ----------
 let splashGameUI = null;
 let splashGameLoading = null;
 async function refreshSplashGame() {
