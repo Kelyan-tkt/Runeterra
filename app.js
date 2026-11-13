@@ -220,17 +220,21 @@ async function fixObtained() {
 const userRef = () => doc(db, "users", user.uid);
 
 async function loadState() {
-  state = await runTransaction(db, async tx => {
-    const snap = await tx.get(userRef());
-    let s = snap.exists() ? snap.data()
+  const actor = user?.uid;
+  if (!actor) throw new Error("Compte déconnecté.");
+  const ref = doc(db, "users", actor);
+  return runTransaction(db, async tx => {
+    const snap = await tx.get(ref);
+    if (user?.uid !== actor) throw new Error("Le compte a changé.");
+    let account = snap.exists() ? snap.data()
       : { boosters: MAX_BOOSTERS, lastRefill: Date.now(), cards: {} };
-    s.cards = s.cards || {};
-    s = applyRefill(s);
-    ensureSpins(s);
-    ensureQuests(s);
-    ensureObtained(s);
-    tx.set(userRef(), s);
-    return s;
+    account.cards ||= {};
+    account = applyRefill(account);
+    ensureSpins(account);
+    ensureQuests(account);
+    ensureObtained(account);
+    if (!snap.exists()) tx.set(ref, account);
+    return account;
   });
 }
 
@@ -246,42 +250,68 @@ async function ensureUsernameDoc() {
 // ---------- Données du jeu ----------
 const cdUrl = p => p ? `${CD}/${p.replace("/lol-game-data/assets/", "").toLowerCase()}` : "";
 
-const publicDataRequests = new Map();
-async function cachedPublicJSON(url, maxAge = 6 * 60 * 60 * 1000) {
-  let cache = null, cached = null;
+// Public catalog only: no account data is stored in this cache.
+const publicCatalogRequests = new Map();
+const startupTimings = [];
+function startupStatus(text) {
+  let node = document.getElementById("startupStatus");
+  if (!node) {
+    node = document.createElement("p");
+    node.id = "startupStatus";
+    node.className = "hint";
+    node.setAttribute("role", "status");
+    $("gameView").before(node);
+  }
+  node.textContent = text;
+  node.hidden = !text;
+}
+async function measureStartup(label, task) {
+  const started = performance.now();
+  try { return await task(); }
+  finally {
+    const ms = Math.round(performance.now() - started);
+    startupTimings.push({ etape: label, ms });
+    console.info(`[Runeterra] ${label}: ${ms} ms`);
+  }
+}
+async function catalogJSON(url, ttl = 6 * 60 * 60 * 1000) {
+  let cache = null, saved = null;
   try {
     if (globalThis.caches) {
       cache = await caches.open("runeterra-public-catalog-v1");
-      cached = await cache.match(url);
+      saved = await cache.match(url);
     }
-  } catch (error) { console.warn("Cache catalogue indisponible :", error.message); }
+  } catch (error) { console.warn("Cache catalogue :", error.message); }
   const refresh = () => {
-    if (publicDataRequests.has(url)) return publicDataRequests.get(url);
+    if (publicCatalogRequests.has(url)) return publicCatalogRequests.get(url);
     const request = (async () => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
+      const timeout = setTimeout(() => controller.abort(), 20000);
       try {
         const response = await fetch(url, { signal: controller.signal });
-        if (!response.ok) throw new Error(`Catalogue HTTP ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status} : ${url}`);
         const data = await response.json();
+        if (!data || typeof data !== "object") throw new Error("Catalogue JSON invalide.");
         if (cache) {
-          try {
-            await cache.put(url, new Response(JSON.stringify(data), {
-              headers: { "Content-Type": "application/json", "X-Runeterra-Cached-At": String(Date.now()) }
-            }));
-          } catch (error) { console.warn("Écriture cache catalogue :", error.message); }
+          void cache.put(url, new Response(JSON.stringify(data), {
+            headers: { "Content-Type": "application/json", "X-Runeterra-Cached-At": String(Date.now()) }
+          })).catch(error => console.warn("Écriture cache catalogue :", error.message));
         }
         return data;
-      } finally { clearTimeout(timer); }
-    })().finally(() => publicDataRequests.delete(url));
-    publicDataRequests.set(url, request);
+      } catch (error) {
+        if (error.name === "AbortError") throw new Error(`Délai de chargement dépassé : ${url}`);
+        throw error;
+      } finally { clearTimeout(timeout); }
+    })().finally(() => publicCatalogRequests.delete(url));
+    publicCatalogRequests.set(url, request);
     return request;
   };
-  if (cached) {
+  if (saved) {
     try {
-      const data = await cached.json();
-      const age = Date.now() - Number(cached.headers.get("X-Runeterra-Cached-At") || 0);
-      if (age > maxAge) void refresh().catch(error => console.warn("Actualisation catalogue :", error.message));
+      const data = await saved.json();
+      if (!data || typeof data !== "object") throw new Error("Cache invalide.");
+      const age = Date.now() - Number(saved.headers.get("X-Runeterra-Cached-At") || 0);
+      if (age > ttl) void refresh().catch(error => console.warn("Actualisation catalogue :", error.message));
       return data;
     } catch (error) { console.warn("Lecture cache catalogue :", error.message); }
   }
@@ -290,11 +320,13 @@ async function cachedPublicJSON(url, maxAge = 6 * 60 * 60 * 1000) {
 
 async function loadGameData() {
   const [versions, data] = await Promise.all([
-    cachedPublicJSON(`${DDRAGON}/api/versions.json`),
-    cachedPublicJSON(`${CD}/v1/skins.json`, 30 * 60 * 1000)
+    measureStartup("Versions LoL", () => catalogJSON(`${DDRAGON}/api/versions.json`)),
+    measureStartup("Catalogue des skins", () => catalogJSON(`${CD}/v1/skins.json`, 30 * 60 * 1000))
   ]);
+  if (!Array.isArray(versions) || !versions[0]) throw new Error("Versions LoL indisponibles.");
   ddVersion = versions[0];
-  const d = await cachedPublicJSON(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/champion.json`);
+  const d = await measureStartup("Champions", () => catalogJSON(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/champion.json`));
+  if (!d.data) throw new Error("Catalogue des champions invalide.");
   champions = Object.values(d.data);
   champions.forEach(c => champByKey[c.key] = c);
   skinsById = data;
@@ -306,32 +338,39 @@ async function loadGameData() {
     (pools[rarityOf(s)] ||= []).push(s);
     (skinsByChamp[Math.floor(s.id / 1000)] ||= []).push(s);
   });
-  void cachedPublicJSON(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`)
+  champions.forEach(c => {
+    c.splashIds = (skinsByChamp[c.key] || []).filter(s => skinCard(s.id).splash).map(s => s.id);
+  });
+  void measureStartup("Objets (arrière-plan)", () => catalogJSON(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`))
     .then(itd => {
       shopItems = buildShop(itd.data);
-      if (state) renderAdventure();
-    }).catch(error => console.warn("objets :", error.message));
+      if (state && !$("tab-adventure")?.hidden) renderAdventure();
+    }).catch(error => console.warn("Objets :", error.message));
 }
 
 
 function skinCard(id) {
   const s = skinsById[id];
-  const champ = champByKey[Math.floor(id / 1000)];
+  const champ = champByKey[Math.floor(Number(id) / 1000)];
   const custom = customSkinArtwork(s);
   const number = Number(id) % 1000;
-  const riotImage = champ?.id && Number.isSafeInteger(Number(id))
-    ? `${DDRAGON}/cdn/img/champion/loading/${champ.id}_${number}.jpg` : "";
+  const riotRoot = champ?.id && Number.isSafeInteger(Number(id))
+    ? `${DDRAGON}/cdn/img/champion` : "";
+  const filename = `${champ?.id}_${number}.jpg`;
   return {
     id,
     name: champ?.name || "Inconnu",
     skinName: s?.isBase ? "Classique" : (s?.name || `Skin ${id}`),
     rarity: s ? rarityOf(s) : "common",
-    img: custom?.img || riotImage || cdUrl(s?.loadScreenPath || s?.splashPath),
+    img: custom?.img || (riotRoot ? `${riotRoot}/loading/${filename}` : "")
+      || cdUrl(s?.loadScreenPath || s?.splashPath),
     imgAlt: custom?.imgAlt || cdUrl(s?.loadScreenPath || s?.splashPath || s?.tilePath),
-    splash: custom?.splash || cdUrl(s?.uncenteredSplashPath || s?.splashPath || s?.loadScreenPath),
-    splashAlt: custom?.splashAlt || cdUrl(s?.splashPath || s?.loadScreenPath || s?.tilePath)
+    splash: custom?.splash || (riotRoot ? `${riotRoot}/splash/${filename}` : "")
+      || cdUrl(s?.uncenteredSplashPath || s?.splashPath || s?.loadScreenPath),
+    splashAlt: custom?.splashAlt || cdUrl(s?.splashPath || s?.uncenteredSplashPath || s?.loadScreenPath)
   };
 }
+
 
 function drawBooster(n, forceMythic = false) {
   const picks = [];
@@ -898,15 +937,56 @@ $("revealAll").onclick = flipAll;
 $("revealClose").onclick = closeReveal;
 
 // ---------- Splash art en grand ----------
+const artworkLoads = new WeakMap();
+function stopArtwork(img, clear = false) {
+  const old = artworkLoads.get(img);
+  if (old) clearTimeout(old.timer);
+  artworkLoads.delete(img);
+  img.onload = null;
+  img.onerror = null;
+  if (clear) img.removeAttribute("src");
+}
+function loadArtwork(img, urls, label) {
+  const sources = [...new Set(urls.filter(Boolean))];
+  const key = JSON.stringify(sources);
+  const old = artworkLoads.get(img);
+  img.alt = label;
+  if (old?.key === key && !old.failed) return;
+  stopArtwork(img);
+  const job = { key, index: 0, timer: null, failed: false };
+  artworkLoads.set(img, job);
+  img.referrerPolicy = "no-referrer";
+  img.loading = "eager";
+  img.decoding = "async";
+  img.setAttribute("fetchpriority", "high");
+  const active = () => artworkLoads.get(img) === job;
+  const next = () => {
+    if (!active()) return;
+    clearTimeout(job.timer);
+    if (job.index >= sources.length) {
+      job.failed = true;
+      img.dataset.artworkState = "error";
+      img.alt = `${label} — image indisponible, réessaie en rouvrant la carte.`;
+      return;
+    }
+    const url = sources[job.index++];
+    img.dataset.artworkState = "loading";
+    img.src = url;
+    if (active() && img.dataset.artworkState === "loading") job.timer = setTimeout(next, 10000);
+  };
+  img.onload = () => {
+    if (!active()) return;
+    clearTimeout(job.timer);
+    img.dataset.artworkState = "loaded";
+  };
+  img.onerror = next;
+  next();
+}
+
 function openLightbox(id) {
   const c = skinCard(+id);
   const img = $("lbImg");
-  img.dataset.t = "";
-  img.onerror = () => {
-    if (img.dataset.t !== "1") { img.dataset.t = "1"; img.src = c.splashAlt; }
-  };
-  img.src = c.splash;
-  img.alt = `${c.name} - ${c.skinName}`;
+  loadArtwork(img, [c.splash, c.splashAlt], `${c.name} - ${c.skinName}`);
   $("lbTitle").textContent = `${c.name} — ${c.skinName}`;
   const r = $("lbRarity");
   r.textContent = RARITIES[c.rarity].label;
@@ -916,7 +996,7 @@ function openLightbox(id) {
 
 function closeLightbox() {
   $("lightbox").hidden = true;
-  $("lbImg").src = "";
+  stopArtwork($("lbImg"), true);
 }
 
 $("lightbox").addEventListener("click", closeLightbox);
@@ -1048,9 +1128,11 @@ function openViewer(champKey, startId) {
 
 function closeViewer() {
   $("viewer").hidden = true;
+  stopArtwork($("vImg"), true);
   vw = null;
 }
 
+let viewerStripCache = null;
 function renderViewer() {
   if (!vw) return;
   const id = vw.ids[vw.i];
@@ -1059,11 +1141,7 @@ function renderViewer() {
   const ts = state.obtained?.[id];
 
   const img = $("vImg");
-  img.dataset.t = "";
-  img.onerror = () => { if (img.dataset.t !== "1") { img.dataset.t = "1"; img.src = c.splashAlt; } };
-  img.style.animation = "none"; void img.offsetWidth; img.style.animation = "";
-  img.src = c.splash;
-  img.alt = `${c.name} - ${c.skinName}`;
+  loadArtwork(img, [c.splash, c.splashAlt], `${c.name} - ${c.skinName}`);
 
   $("vFrame").className = `rar-${c.rarity}${qty ? "" : " locked"}`;
   $("vQty").hidden = qty < 2;
@@ -1077,13 +1155,17 @@ function renderViewer() {
   $("vTitle").innerHTML = `<b>${esc(c.skinName)}</b>
     <span style="color:${RARITIES[c.rarity].color}">· ${RARITIES[c.rarity].label}</span><br><small>${when}</small>`;
 
-  $("vStrip").innerHTML = vw.ids.map((sid, k) => {
+  const stripMarkup = vw.ids.map((sid, k) => {
     const sc = skinCard(sid), q2 = state.cards?.[sid] || 0;
     return `<button class="thumb ${sc.rarity}${k === vw.i ? " active" : ""}${q2 ? "" : " locked"}" data-k="${k}" title="${esc(sc.skinName)}">
       <img loading="lazy" referrerpolicy="no-referrer" src="${sc.img}" alt="">
       ${q2 > 1 ? `<span class="qty">×${q2}</span>` : ""}</button>`;
   }).join("");
+  if (stripMarkup !== viewerStripCache) {
+    $("vStrip").innerHTML = stripMarkup;
+    viewerStripCache = stripMarkup;
   $("vStrip").querySelector(".active")?.scrollIntoView({ inline: "center", block: "nearest" });
+  }
 }
 
 function viewerStep(d) {
@@ -1197,6 +1279,7 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${b.dataset.tab}`);
   if (b.dataset.tab === "collection" && state) renderCollection();
+  if (b.dataset.tab === "adventure" && state) renderAdventure();
   if (b.dataset.tab === "friends") refreshSocial();
   if (b.dataset.tab === "ranking") loadRanking();
   if (b.dataset.tab === "profile") showProfile();
@@ -1397,6 +1480,7 @@ function goTab(tab) {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === tab));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== `tab-${tab}`);
   if (tab === "collection" && state) renderCollection();
+  if (tab === "adventure" && state) renderAdventure();
 }
 
 function renderProfile(p, mine) {
@@ -2276,6 +2360,7 @@ $("advMapBtn").onclick = () => showAdv("map");
 $("advTeamBtn").onclick = () => showAdv("team");
 
 function renderAdventure() {
+  if ($("tab-adventure")?.hidden) return;
   if (!state || !skinList.length) return;
   $("advGold").textContent = advView().gold;
   renderMap();
@@ -2815,7 +2900,7 @@ $("registerBtn").onclick = async () => {
     const cred = await createUserWithEmailAndPassword(auth, toEmail(f.name), f.pass);
     await updateProfile(cred.user, { displayName: f.name });
     $("userName").textContent = f.name;
-    void ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
+    await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
   } catch (e) {
     $("authError").textContent = authMessages[e.code] || e.code;
   }
@@ -2852,6 +2937,10 @@ onAuthStateChanged(auth, async u => {
     stopListeners();
     state = null;
     collectionMarkupCache = null;
+    viewerStripCache = null;
+    startupStatus("");
+    stopArtwork($("lbImg"), true);
+    stopArtwork($("vImg"), true);
     openingLock = null;
     $("reveal").hidden = true;
     $("tradeModal").hidden = true;
@@ -2866,24 +2955,39 @@ onAuthStateChanged(auth, async u => {
     return;
   }
   $("userName").textContent = u.displayName || "";
+  state = null;
+  $("gameView").hidden = true;
+  startupTimings.length = 0;
+  const startupStarted = performance.now();
+  startupStatus("Chargement du catalogue et de ton compte…");
   try {
-    if (!champions.length) await loadGameData();
-    void loadAscendedMedia().then(() => {
-      if (user?.uid === u.uid && state) {
-        ascendedCacheKey = "";
-        render();
-      }
-    }).catch(error => console.warn("Catalogue Ascendant :", error.message));
-    await loadState();
-    await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
-    startListeners();                       // les amis démarrent avant l'affichage
+    const [, account] = await Promise.all([
+      champions.length ? Promise.resolve() : measureStartup("Catalogue prêt", () => loadGameData()),
+      measureStartup("Compte Firestore", () => loadState())
+    ]);
+    if (user?.uid !== u.uid) return;
+    state = account;
+    $("gameView").hidden = false;
+    startupStatus("");
+    render();
+    tickTimer();
+    console.info(`[Runeterra] Affichage initial: ${Math.round(performance.now() - startupStarted)} ms`);
+    console.table(startupTimings);
+    startListeners();
     startPodiumTracking({ db, user: () => user, week: weekKey, onChange: refreshPodiumAppearance });
-    try { render(); tickTimer(); }
-    catch (e) { console.error("Erreur d'affichage :", e); }
-  } catch (e) {
-    console.error(e);
-    if (looksBlocked(e)) showNetWarn();
-    else alert("Erreur de chargement : " + e.message);
+    void ensureUsernameDoc().catch(error => console.warn("usernames :", error.message));
+    void measureStartup("Médias Ascendants (arrière-plan)", () => loadAscendedMedia())
+      .then(() => {
+        if (user?.uid === u.uid && state) {
+          ascendedCacheKey = "";
+          render();
+        }
+      }).catch(error => console.warn("Catalogue Ascendant :", error.message));
+  } catch (error) {
+    if (user?.uid !== u.uid) return;
+    console.error("Démarrage Runeterra :", error);
+    startupStatus("Chargement interrompu : " + error.message + " Recharge la page pour réessayer.");
+    if (looksBlocked(error)) showNetWarn();
   }
 });
 // ---------- Chargement indépendant de l'arène ----------
