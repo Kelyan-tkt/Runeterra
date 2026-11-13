@@ -246,31 +246,73 @@ async function ensureUsernameDoc() {
 // ---------- Données du jeu ----------
 const cdUrl = p => p ? `${CD}/${p.replace("/lol-game-data/assets/", "").toLowerCase()}` : "";
 
+const publicDataRequests = new Map();
+async function cachedPublicJSON(url, maxAge = 6 * 60 * 60 * 1000) {
+  let cache = null, cached = null;
+  try {
+    if (globalThis.caches) {
+      cache = await caches.open("runeterra-public-catalog-v1");
+      cached = await cache.match(url);
+    }
+  } catch (error) { console.warn("Cache catalogue indisponible :", error.message); }
+  const refresh = () => {
+    if (publicDataRequests.has(url)) return publicDataRequests.get(url);
+    const request = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) throw new Error(`Catalogue HTTP ${response.status}`);
+        const data = await response.json();
+        if (cache) {
+          try {
+            await cache.put(url, new Response(JSON.stringify(data), {
+              headers: { "Content-Type": "application/json", "X-Runeterra-Cached-At": String(Date.now()) }
+            }));
+          } catch (error) { console.warn("Écriture cache catalogue :", error.message); }
+        }
+        return data;
+      } finally { clearTimeout(timer); }
+    })().finally(() => publicDataRequests.delete(url));
+    publicDataRequests.set(url, request);
+    return request;
+  };
+  if (cached) {
+    try {
+      const data = await cached.json();
+      const age = Date.now() - Number(cached.headers.get("X-Runeterra-Cached-At") || 0);
+      if (age > maxAge) void refresh().catch(error => console.warn("Actualisation catalogue :", error.message));
+      return data;
+    } catch (error) { console.warn("Lecture cache catalogue :", error.message); }
+  }
+  return refresh();
+}
+
 async function loadGameData() {
-  const versions = await (await fetch(`${DDRAGON}/api/versions.json`)).json();
+  const [versions, data] = await Promise.all([
+    cachedPublicJSON(`${DDRAGON}/api/versions.json`),
+    cachedPublicJSON(`${CD}/v1/skins.json`, 30 * 60 * 1000)
+  ]);
   ddVersion = versions[0];
-  const d = await (await fetch(`${DDRAGON}/cdn/${versions[0]}/data/fr_FR/champion.json`)).json();
+  const d = await cachedPublicJSON(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/champion.json`);
   champions = Object.values(d.data);
   champions.forEach(c => champByKey[c.key] = c);
-
-  const data = await (await fetch(`${CD}/v1/skins.json`)).json();
   skinsById = data;
   installCustomSkins(champions, skinsById);
   skinList = Object.values(data).filter(s =>
     s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
-
   pools = {}; skinsByChamp = {};
   skinList.forEach(s => {
     (pools[rarityOf(s)] ||= []).push(s);
     (skinsByChamp[Math.floor(s.id / 1000)] ||= []).push(s);
   });
-  try {
-    const itd = await (await fetch(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`)).json();
-    shopItems = buildShop(itd.data);
-  } catch (e) {
-    console.warn("objets :", e.message);
-  }
+  void cachedPublicJSON(`${DDRAGON}/cdn/${ddVersion}/data/fr_FR/item.json`)
+    .then(itd => {
+      shopItems = buildShop(itd.data);
+      if (state) renderAdventure();
+    }).catch(error => console.warn("objets :", error.message));
 }
+
 
 function skinCard(id) {
   const s = skinsById[id];
@@ -892,7 +934,7 @@ const cardHTML = (c, qty = 0, delay = 0, locked = false) => c.rarity === "ascend
   <div class="card ${c.rarity}${locked ? " locked" : ""}" data-id="${c.id}" style="animation-delay:${delay}s">
     <span class="badge">${RARITIES[c.rarity].label}</span>
     ${qty > 1 ? `<span class="qty">×${qty}</span>` : ""}
-    <img loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
+    <img loading="lazy" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
          onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
     <div class="info"><b>${esc(c.name)}</b><br>${esc(c.skinName)}</div>
   </div>`;
@@ -970,7 +1012,7 @@ function renderCollection() {
     return `<button class="tile ${c.rarity}${qty ? "" : " locked"}" data-champ="${r.key}" data-skin="${r.rep.id}">
       <span class="badge">${RARITIES[c.rarity].label}</span>
       ${qty > 1 ? `<span class="qty">×${qty}</span>` : ""}
-      <img loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
+      <img loading="lazy" referrerpolicy="no-referrer" alt="${esc(c.name)}" src="${c.img}"
            onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
       <div class="tinfo">
         <b>${esc(r.champ.name)}</b>
@@ -2773,7 +2815,7 @@ $("registerBtn").onclick = async () => {
     const cred = await createUserWithEmailAndPassword(auth, toEmail(f.name), f.pass);
     await updateProfile(cred.user, { displayName: f.name });
     $("userName").textContent = f.name;
-    await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
+    void ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
   } catch (e) {
     $("authError").textContent = authMessages[e.code] || e.code;
   }
@@ -2826,7 +2868,12 @@ onAuthStateChanged(auth, async u => {
   $("userName").textContent = u.displayName || "";
   try {
     if (!champions.length) await loadGameData();
-    await loadAscendedMedia().catch(error => console.warn("Catalogue Ascendant :", error.message));
+    void loadAscendedMedia().then(() => {
+      if (user?.uid === u.uid && state) {
+        ascendedCacheKey = "";
+        render();
+      }
+    }).catch(error => console.warn("Catalogue Ascendant :", error.message));
     await loadState();
     await ensureUsernameDoc().catch(e => console.warn("usernames:", e.message));
     startListeners();                       // les amis démarrent avant l'affichage
