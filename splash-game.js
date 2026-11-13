@@ -1,4 +1,4 @@
-import { doc, runTransaction } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+import { runTransaction } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const ZOOMS = [430, 330, 260, 205, 165, 130, 100];
 
@@ -89,6 +89,9 @@ export function installSplashGame({
 
     let current = null;
     let busy = false;
+    let generation = 0;
+    let refreshPromise = null;
+    let failure = "";
 
     const today = () => (typeof dayKey === "function" ? dayKey() : dayKey);
     const clean = value =>
@@ -97,10 +100,10 @@ export function installSplashGame({
             : String(value ?? "").trim().toLowerCase();
 
     const champion = () =>
-        getChampions().find(item => item.key === current?.championKey) || null;
+        getChampions().find(item => String(item.key) === String(current?.championKey)) || null;
 
     function championSplashes(item) {
-        return (item.splashIds || [])
+        return (item?.splashIds || [])
             .map(id => getCard(id))
             .filter(card => card?.splash);
     }
@@ -123,10 +126,6 @@ export function installSplashGame({
     function render() {
         const champions = getChampions();
         const item = champion();
-        const splashes = championSplashes(item);
-        const card = splashes.length
-            ? splashes[hash(`${current.championKey}-${current.day}`) % splashes.length]
-            : getCard(item.key * 1000);
 
         datalist.innerHTML = champions
             .map(item => `<option value="${escapeHtml(item.name)}"></option>`)
@@ -137,12 +136,19 @@ export function installSplashGame({
             stage.style.backgroundImage = "";
             input.disabled = true;
             submit.disabled = true;
-            setMessage("Chargement du Splash mystère…");
+            setMessage(failure || (getUser() ? "Chargement du Splash mystère…" : "Connecte-toi pour participer au Splash mystère."));
             status.textContent = "";
             guesses.innerHTML = "";
             result.innerHTML = "";
             return;
         }
+
+        const splashes = championSplashes(item);
+        const card = item
+            ? (splashes.length
+                ? splashes[hash(`${current.championKey}-${current.day}`) % splashes.length]
+                : getCard(Number(item.key) * 1000))
+            : null;
 
         if (!item || !card?.splash) {
             stage.className = "splash-stage loading";
@@ -171,8 +177,8 @@ export function installSplashGame({
         stage.style.backgroundPosition = `${positionX}% ${positionY}%`;
         stage.classList.toggle("solved", current.solved);
 
-        input.disabled = current.solved;
-        submit.disabled = current.solved;
+        input.disabled = current.solved || busy;
+        submit.disabled = current.solved || busy;
 
         guesses.innerHTML = current.guesses
             .map(name => `<span class="splash-chip">${escapeHtml(name)}</span>`)
@@ -199,170 +205,121 @@ export function installSplashGame({
         const nextAttempt = wrongGuesses + 1;
         const nextReward = nextAttempt <= 4 ? 3 : nextAttempt <= 7 ? 2 : 1;
 
-        setMessage("");
+        setMessage(failure);
         status.textContent =
             `Essais : ${wrongGuesses} — bonne réponse maintenant : ` +
             `+${nextReward} booster${nextReward > 1 ? "s" : ""} amélioré${nextReward > 1 ? "s" : ""}.`;
         result.innerHTML = "";
     }
 
+    function newGame(key) {
+        const selected = pickChampion(getChampions(), key);
+        if (!selected) throw new Error("Aucun splash art disponible dans le catalogue.");
+        return { day: key, championKey: selected.key, guesses: [], solved: false, reward: 0 };
+    }
+
     async function ensureState() {
         const account = getUser();
-        const reference = getUserRef?.();
-
-        if (!account || !reference) return;
-        if (!getChampions().length) {
-            current = null;
-            render();
-            return;
-        }
+        const reference = account ? getUserRef?.() : null;
+        const request = ++generation;
+        busy = false;
+        failure = "";
+        current = null;
+        render();
+        if (!account || !reference || !getChampions().length) return;
 
         try {
-            current = await runTransaction(db, async transaction => {
+            const game = await runTransaction(db, async transaction => {
                 const snapshot = await transaction.get(reference);
-                const data = snapshot.data() || {};
+                if (!snapshot.exists()) throw new Error("Compte introuvable.");
+                const data = snapshot.data();
                 const key = today();
-                let game = data.splash;
-
-                if (!game || game.day !== key) {
-                    const selected = pickChampion(getChampions(), key);
-                    if (!selected) return null;
-
-                    game = {
-                        day: key,
-                        championKey: selected.key,
-                        guesses: [],
-                        solved: false,
-                        reward: 0
-                    };
-
-                    await transaction.set(reference, { splash: game }, { merge: true });
-                }
-
-                return game;
+                const saved = data.splash;
+                if (saved && saved.day === key) return saved;
+                const created = newGame(key);
+                transaction.set(reference, { splash: created }, { merge: true });
+                return created;
             });
-
+            if (request !== generation || getUser()?.uid !== account.uid) return;
+            current = { ...game, guesses: Array.isArray(game.guesses) ? game.guesses : [] };
             render();
         } catch (error) {
+            if (request !== generation || getUser()?.uid !== account.uid) return;
             console.warn("Splash mystère", error);
-            setMessage("Impossible de charger l’énigme pour le moment.");
+            failure = error.message || "Impossible de charger l’énigme pour le moment.";
+            render();
         }
     }
 
     async function submitGuess() {
         if (busy) return;
-
         const account = getUser();
-        const reference = getUserRef?.();
-
+        const reference = account ? getUserRef?.() : null;
         if (!account || !reference) {
             setMessage("Connecte-toi pour participer au Splash mystère.");
             return;
         }
-
-        const item = champion();
-        if (!item) return;
-
-        if (current?.solved) {
-            setMessage("Tu as déjà résolu l’énigme du jour.");
+        if (!current || current.day !== today()) {
+            await refresh();
+            setMessage("L’énigme a été actualisée. Propose ta réponse.");
             return;
         }
-
-        const value = input.value.trim();
-        const guess = clean(value);
-
-        if (!guess) {
-            setMessage("Écris le nom d’un champion.");
-            return;
-        }
-
-        if (current?.guesses.some(name => clean(name) === guess)) {
-            setMessage("Déjà proposé — essaie un autre champion.");
-            return;
-        }
-
+        if (current.solved) return;
+        const guess = clean(input.value.trim());
         const guessed = getChampions().find(item => clean(item.name) === guess);
-
-        if (!guessed) {
-            setMessage("Champion inconnu.");
-            return;
+        if (!guess) return setMessage("Écris le nom d’un champion.");
+        if (!guessed) return setMessage("Champion inconnu.");
+        if (current.guesses.some(name => clean(name) === guess)) {
+            return setMessage("Déjà proposé — essaie un autre champion.");
         }
 
+        const request = generation;
+        const expectedDay = current.day;
         busy = true;
-        submit.disabled = true;
-
+        failure = "";
+        render();
         try {
             const outcome = await runTransaction(db, async transaction => {
                 const snapshot = await transaction.get(reference);
-
-                if (!snapshot.exists) {
-                    throw new Error("Compte introuvable.");
-                }
-
+                if (!snapshot.exists()) throw new Error("Compte introuvable.");
+                if (getUser()?.uid !== account.uid) throw new Error("Le compte a changé.");
+                if (today() !== expectedDay) throw new Error("Nouvelle énigme disponible : actualise la page.");
                 const data = snapshot.data();
-                const key = today();
-                let game = data.splash;
-
-                if (!game || game.day !== key) {
-                    const selected = pickChampion(getChampions(), key);
-                    if (!selected) throw new Error("Splash art indisponible.");
-
-                    game = {
-                        day: key,
-                        championKey: selected.key,
-                        guesses: [],
-                        solved: false,
-                        reward: 0
-                    };
-                }
-
-                if (game.solved) {
-                    return { game, reward: 0 };
-                }
-
-                if (!game.guesses.includes(guessed.name)) {
-                    game.guesses.push(guessed.name);
-                }
-
-                let reward = 0;
-
-                if (clean(guessed.name) === clean(item.name)) {
+                const game = data.splash?.day === expectedDay ? data.splash : newGame(expectedDay);
+                game.guesses = Array.isArray(game.guesses) ? game.guesses : [];
+                if (game.solved) return { game };
+                if (game.guesses.some(name => clean(name) === guess)) return { game };
+                const answer = getChampions().find(item => String(item.key) === String(game.championKey));
+                if (!answer) throw new Error("Champion indisponible dans le catalogue.");
+                game.guesses.push(guessed.name);
+                if (clean(guessed.name) === clean(answer.name)) {
                     const attempts = game.guesses.length;
-                    reward = attempts <= 4 ? 3 : attempts <= 7 ? 2 : 1;
-
+                    game.reward = attempts <= 4 ? 3 : attempts <= 7 ? 2 : 1;
                     game.solved = true;
-                    game.reward = reward;
-                    data.bonusBoosters = (data.bonusBoosters || 0) + reward;
+                    data.bonusBoosters = (data.bonusBoosters || 0) + game.reward;
                 }
-
                 data.splash = game;
-                await transaction.set(reference, data);
-
-                return { game, reward };
+                transaction.set(reference, data);
+                return { game, account: data };
             });
-
+            if (request !== generation || getUser()?.uid !== account.uid) return;
             current = outcome.game;
             input.value = "";
-
-            if (outcome.reward > 0) {
-                setMessage(
-                    `Bravo ! C’était ${item.name}. Tu gagnes ${outcome.reward} booster${outcome.reward > 1 ? "s" : ""} amélioré${outcome.reward > 1 ? "s" : ""} !`
-                );
-            }
-
-            render();
-            onChanged();
+            onChanged(outcome.account);
         } catch (error) {
+            if (request !== generation || getUser()?.uid !== account.uid) return;
             console.warn("Splash mystère", error);
-            setMessage(error.message || "Impossible de valider ta réponse.");
+            failure = error.message || "Impossible de valider ta réponse.";
         } finally {
-            busy = false;
-            render();
+            if (request === generation && getUser()?.uid === account.uid) {
+                busy = false;
+                render();
+            }
         }
     }
 
     function refresh() {
-        ensureState();
+        return ensureState();
     }
 
     submit.addEventListener("click", submitGuess);
@@ -375,7 +332,12 @@ export function installSplashGame({
     });
 
     setInterval(() => {
-        if (!current || current.solved) return;
+        if (!getUser()) return;
+        if (current && current.day !== today() && !busy && !refreshPromise) {
+            refreshPromise = refresh().finally(() => { refreshPromise = null; });
+            return;
+        }
+        if (!current) return;
         const remaining = 86400 - parisSecondsToday();
         const hours = String(Math.floor(remaining / 3600)).padStart(2, "0");
         const minutes = String(Math.floor((remaining % 3600) / 60)).padStart(2, "0");

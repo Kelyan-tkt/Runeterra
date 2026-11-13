@@ -935,6 +935,45 @@ $("reveal").addEventListener("click", e => {
 });
 $("revealAll").onclick = flipAll;
 $("revealClose").onclick = closeReveal;
+// Espace : révéler la prochaine carte pendant une ouverture.
+document.addEventListener("keydown", (event) => {
+  if (event.code !== "Space") return;
+  if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+  const target = event.target;
+
+  // Ne pas intercepter les espaces pendant une saisie.
+  if (
+    target instanceof Element &&
+    (
+      target.closest("input, textarea, select") ||
+      target.isContentEditable
+    )
+  ) {
+    return;
+  }
+
+  const reveal = $("reveal");
+  const lightbox = $("lightbox");
+
+  if (!rv || !reveal || reveal.hidden) return;
+  if (lightbox && !lightbox.hidden) return;
+
+  // Empêche le défilement et l'activation du bouton sélectionné.
+  event.preventDefault();
+
+  // Une carte par pression, sans interrompre les animations.
+  if (
+    event.repeat ||
+    rv.busy ||
+    rv.ascAnimating ||
+    rv.next >= rv.cards.length
+  ) {
+    return;
+  }
+
+  void flipNext();
+}, { capture: true });
 
 // ---------- Splash art en grand ----------
 const artworkLoads = new WeakMap();
@@ -2919,6 +2958,49 @@ $("loginBtn").onclick = async () => {
 $("logoutBtn").onclick = () => signOut(auth);
 $("openBtn").onclick = openBooster;
 
+
+// ---------- Splash mystère : module facultatif, hors du démarrage critique ----------
+let splashGameUI = null;
+let splashGameLoading = null;
+async function refreshSplashGame() {
+  if (!user || !state || !champions.length) {
+    if (splashGameUI) await splashGameUI.refresh();
+    return;
+  }
+  try {
+    if (!splashGameUI) {
+      if (!splashGameLoading) {
+        splashGameLoading = import("./splash-game.js?v=repair-2")
+          .then(module => {
+            splashGameUI = module.installSplashGame({
+              db,
+              getUser: () => user,
+              getUserRef: () => user ? userRef() : null,
+              getChampions: () => champions,
+              getCard: id => skinCard(Number(id)),
+              dayKey,
+              normalize: value => norm(String(value ?? "").trim()),
+              onChanged: account => {
+                if (!user || !state) return;
+                if (account) state = applyRefill(account);
+                if (!rv && !spinning) render();
+              }
+            });
+            if (!splashGameUI) throw new Error("Élément #splash-game introuvable.");
+            return splashGameUI;
+          })
+          .catch(error => { splashGameLoading = null; throw error; });
+      }
+      await splashGameLoading;
+    }
+    await splashGameUI.refresh();
+  } catch (error) {
+    console.warn("Splash mystère :", error);
+    const root = $("splash-game");
+    if (root && !splashGameUI) root.textContent = "Impossible de charger Splash mystère : " + error.message;
+  }
+}
+
 onAuthStateChanged(auth, async u => {
   user = u;
   applyPodiumEffect($("userName"), "", "");
@@ -2936,6 +3018,7 @@ onAuthStateChanged(auth, async u => {
     refreshPodiumAppearance();
     stopListeners();
     state = null;
+    void refreshSplashGame();
     collectionMarkupCache = null;
     viewerStripCache = null;
     startupStatus("");
@@ -2967,6 +3050,7 @@ onAuthStateChanged(auth, async u => {
     ]);
     if (user?.uid !== u.uid) return;
     state = account;
+    void refreshSplashGame();
     $("gameView").hidden = false;
     startupStatus("");
     render();
