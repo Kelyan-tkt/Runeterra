@@ -2630,31 +2630,112 @@ async function sendFriendRequest() {
 }
 $("friendAdd").onclick = sendFriendRequest;
 
-// ---------- Échanges (même rareté uniquement) ----------
-// copies réservées par mes propositions d'échange en attente
-function reservedMap() {
-  const r = {};
-  tradesOut.filter(t => t.status === "pending").forEach(t => {
-    r[t.offerId] = (r[t.offerId] || 0) + 1;
-  });
-  return r;
+// ---------- Échanges : cartes classiques et variantes Ascendantes ----------
+// Une référence numérique garde le format historique ; asc:123 désigne sa variante.
+function parseTradeRef(value) {
+  const text = String(value ?? "");
+  const ascended = /^asc:[1-9]\d*$/.test(text);
+  if (!ascended && !/^[1-9]\d*$/.test(text)) return null;
+  const id = Number(ascended ? text.slice(4) : text);
+  if (!Number.isSafeInteger(id) || !skinsById[id]) return null;
+  return { id, ascended, field: ascended ? "ascendedCards" : "cards",
+    dates: ascended ? "ascendedObtained" : "obtained", ref: ascended ? `asc:${id}` : id };
 }
 
-// mes cartes réellement disponibles (possédées moins réservées)
+function tradeCard(value) {
+  const item = parseTradeRef(value);
+  if (!item) return null;
+  const card = item.ascended ? resolveShowcaseAscended(item.id) : skinCard(item.id);
+  return card ? { ...card, tradeRef: item.ref } : null;
+}
+
+function tradeInventory(account) {
+  const inventory = {};
+  for (const field of ["cards", "ascendedCards"]) {
+    for (const [id, quantity] of Object.entries(account?.[field] || {})) {
+      const item = parseTradeRef(field === "cards" ? id : `asc:${id}`);
+      if (item && Number.isSafeInteger(quantity) && quantity > 0) inventory[item.ref] = quantity;
+    }
+  }
+  return inventory;
+}
+
+// Les références séparées empêchent de réserver la version normale à la place d'une Ascendante.
+function reservedMap() {
+  const reserved = {};
+  for (const trade of tradesOut) {
+    if (trade.status !== "pending") continue;
+    const item = parseTradeRef(trade.offerId);
+    if (item) reserved[item.ref] = (reserved[item.ref] || 0) + 1;
+  }
+  return reserved;
+}
+
+// Utilisé aussi par le recyclage : conserver ici uniquement les cartes normales.
 function availCards(res = reservedMap()) {
   const out = {};
-  for (const [id, q] of Object.entries(state.cards || {})) {
-    const a = q - (res[id] || 0);
-    if (a > 0) out[id] = a;
+  for (const [id, quantity] of Object.entries(state?.cards || {})) {
+    const available = quantity - (res[id] || 0);
+    if (available > 0) out[id] = available;
   }
   return out;
 }
 
-const availQty = id => (state.cards?.[id] || 0) - (reservedMap()[id] || 0);
+function availableTradeCards(account, reservations = {}) {
+  const out = tradeInventory(account);
+  for (const key of Object.keys(out)) {
+    out[key] -= reservations[key] || 0;
+    if (out[key] <= 0) delete out[key];
+  }
+  return out;
+}
+
+function availQty(value) {
+  const item = parseTradeRef(value);
+  return item ? (state?.[item.field]?.[item.id] || 0) - (reservedMap()[item.ref] || 0) : 0;
+}
+
+function validateTradePair(offerValue, wantValue) {
+  const offer = parseTradeRef(offerValue), want = parseTradeRef(wantValue);
+  if (!offer || !want) throw new Error("Référence de carte invalide.");
+  if (String(offer.ref) === String(want.ref)) throw new Error("Choisis deux cartes différentes.");
+  if (offer.ascended !== want.ascended) throw new Error("Une Ascendante doit être échangée contre une autre Ascendante.");
+  if (!offer.ascended && skinCard(offer.id).rarity !== skinCard(want.id).rarity) {
+    throw new Error("Les deux cartes doivent avoir la même rareté.");
+  }
+  return { offer, want };
+}
+
+// Prépare seulement les champs à modifier ; la transaction applique les trois écritures ensemble.
+function tradeTransferUpdates(fromAccount, toAccount, offer, want, tradeId, now) {
+  const outgoing = fromAccount[offer.field] || {};
+  const incoming = toAccount[want.field] || {};
+  const quantity = value => Number.isSafeInteger(value) && value > 0 ? value : 0;
+  if (quantity(outgoing[offer.id]) < 1) throw new Error("Ton ami n'a plus cette carte.");
+  if (quantity(incoming[want.id]) < 1) throw new Error("Tu n'as plus cette carte.");
+  const receivedBySender = quantity(fromAccount[want.field]?.[want.id]);
+  const receivedByReceiver = quantity(toAccount[offer.field]?.[offer.id]);
+  const decrease = value => value <= 1 ? deleteField() : value - 1;
+  const fromUpdates = {
+    [`${offer.field}.${offer.id}`]: decrease(outgoing[offer.id]),
+    [`${want.field}.${want.id}`]: receivedBySender + 1, lastTradeId: tradeId
+  };
+  const toUpdates = {
+    [`${want.field}.${want.id}`]: decrease(incoming[want.id]),
+    [`${offer.field}.${offer.id}`]: receivedByReceiver + 1, lastTradeId: tradeId
+  };
+  if (!receivedBySender) fromUpdates[`${want.dates}.${want.id}`] = now;
+  if (!receivedByReceiver) toUpdates[`${offer.dates}.${offer.id}`] = now;
+  return { fromUpdates, toUpdates };
+}
+
 let tradeFriend = null, tradeData = null, tradeTab = "mine";
+let tradeSending = false;
+const acceptingTradeIds = new Set();
 const tradeSel = { mine: 0, theirs: 0 };
 const tradeFilt = { q: "", rarity: "", dupes: false, missing: false };
-const RAR_LETTER = { mythic: "M", legendary: "L", epic: "E", rare: "R", common: "C" };
+const RAR_LETTER = { ascended: "A", mythic: "M", legendary: "L", epic: "E", rare: "R", common: "C" };
+const TRADE_RARITIES = ["ascended", ...RARITY_ORDER.filter(rarity => rarity !== "ascended")];
 
 function closeTrade() {
   $("tradeModal").hidden = true;
@@ -2663,66 +2744,62 @@ function closeTrade() {
 }
 
 function renderTrade() {
-  if (!tradeFriend || !tradeData) return;
+  if (!tradeFriend || !tradeData || !state) return;
   const tab = tradeTab, other = tab === "mine" ? "theirs" : "mine";
-  const res = reservedMap();
-  const src = tab === "mine" ? availCards(res) : tradeData.theirs;
-  const oth = tab === "mine" ? tradeData.theirs : (state.cards || {});
-  const lock = tradeSel[other] ? skinCard(tradeSel[other]).rarity : "";
-  const rar = lock || tradeFilt.rarity;
-  const q = norm(tradeFilt.q.trim());
+  const reservations = reservedMap();
+  const src = tab === "mine" ? availableTradeCards(state, reservations) : tradeData.theirs;
+  const opposite = tab === "mine" ? tradeData.theirs : tradeInventory(state);
+  const lock = tradeSel[other] ? tradeCard(tradeSel[other])?.rarity || "" : "";
+  const rarity = lock || tradeFilt.rarity;
+  const query = norm(tradeFilt.q.trim());
   const dupLabel = tab === "mine" ? "Mes doubles" : "Ses doubles";
   const missLabel = tab === "mine" ? "Il lui manque" : "Il me manque";
-
   $("tradeTabMine").classList.toggle("active", tab === "mine");
   $("tradeTabTheirs").classList.toggle("active", tab === "theirs");
   $("tradeTabMine").textContent = "Mes cartes" + (tradeSel.mine ? " ✓" : "");
   $("tradeTabTheirs").textContent = `Cartes de ${tradeFriend.name}` + (tradeSel.theirs ? " ✓" : "");
-
-  const chip = (attrs, label, on, dis) =>
-    `<button type="button" class="tchip${on ? " on" : ""}" ${attrs}${dis ? " disabled" : ""}>${label}</button>`;
+  const chip = (attrs, label, on, disabled) =>
+    `<button type="button" class="tchip${on ? " on" : ""}" ${attrs}${disabled ? " disabled" : ""}>${label}</button>`;
   $("tradeChips").innerHTML =
     chip('data-f="dupes"', dupLabel, tradeFilt.dupes, false) +
     chip('data-f="missing"', missLabel, tradeFilt.missing, false) +
-    chip('data-r=""', "Toutes", !rar, !!lock) +
-    RARITY_ORDER.map(r =>
-      chip(`data-r="${r}" title="${RARITIES[r].label}"`, RAR_LETTER[r], rar === r, !!lock && lock !== r)).join("");
-
+    chip('data-r=""', "Toutes", !rarity, !!lock) +
+    TRADE_RARITIES.map(r => chip(`data-r="${r}" title="${RARITIES[r].label}"`,
+      r === "ascended" ? "Ascendante" : RAR_LETTER[r], rarity === r, !!lock && lock !== r)).join("");
   $("tradeLock").hidden = !lock;
   if (lock) $("tradeLockTxt").textContent = `Rareté imposée : ${RARITIES[lock].label} (échange entre cartes de même rareté)`;
-
-  const list = Object.keys(src).filter(id => src[id] > 0).map(id => skinCard(+id))
-    .filter(c => (!rar || c.rarity === rar)
-      && (!q || norm(c.name).includes(q) || norm(c.skinName).includes(q))
-      && (!tradeFilt.dupes || src[c.id] >= 2)
-      && (!tradeFilt.missing || !(oth[c.id] > 0)))
-    .sort((a, b) => rIdx(a.rarity) - rIdx(b.rarity) || a.name.localeCompare(b.name, "fr"));
-
-  $("tradeGrid").innerHTML = list.slice(0, 300).map(c => `
-    <button type="button" class="tcard${tradeSel[tab] === c.id ? " sel" : ""}" data-id="${c.id}" style="--rc:${RARITIES[c.rarity].color}">
-      <span class="tbadge">${RAR_LETTER[c.rarity]}</span>
-      <img loading="lazy" referrerpolicy="no-referrer" alt="" src="${c.img}"
-           onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src='${c.imgAlt}'}">
-      <b>${esc(c.name)}</b>
-      <small>${esc(c.skinName)}</small>
-      ${oth[c.id] > 0 ? "" : `<span class="tmiss">${missLabel}</span>`}
-            <span class="tqty">×${src[c.id]} dispo${tab === "mine" && res[c.id] ? ` · ${res[c.id]} réservée${res[c.id] > 1 ? "s" : ""}` : ""}</span>
+  const list = Object.keys(src).map(tradeCard).filter(Boolean)
+    .filter(card => (!rarity || card.rarity === rarity)
+      && (!query || norm(`${card.name} ${card.skinName} ${RARITIES[card.rarity].label}`).includes(query))
+      && (!tradeFilt.dupes || src[card.tradeRef] >= 2)
+      && (!tradeFilt.missing || !(opposite[card.tradeRef] > 0)))
+    .sort((a, b) => TRADE_RARITIES.indexOf(a.rarity) - TRADE_RARITIES.indexOf(b.rarity)
+      || a.name.localeCompare(b.name, "fr") || a.id - b.id);
+  $("tradeGrid").innerHTML = list.slice(0, 300).map(card => `
+    <button type="button" class="tcard${String(tradeSel[tab]) === String(card.tradeRef) ? " sel" : ""}"
+      data-id="${card.tradeRef}" title="${esc(RARITIES[card.rarity].label)}" style="--rc:${RARITIES[card.rarity].color}">
+      <span class="tbadge">${RAR_LETTER[card.rarity]}</span>
+      <img loading="lazy" referrerpolicy="no-referrer" alt="" src="${esc(card.img || card.splash || "")}" data-fallback="${esc(card.imgAlt || card.img || "")}" onerror="if(this.dataset.t!=='1'){this.dataset.t='1';this.src=this.dataset.fallback}">
+      <b>${esc(card.name)}</b><small>${esc(card.skinName)}</small>
+      ${card.rarity === "ascended" ? '<small style="color:#c7a0ff">Ascendante</small>' : ""}
+      ${opposite[card.tradeRef] > 0 ? "" : `<span class="tmiss">${missLabel}</span>`}
+      <span class="tqty">×${src[card.tradeRef]} dispo${tab === "mine" && reservations[card.tradeRef] ? ` · ${reservations[card.tradeRef]} réservée(s)` : ""}</span>
     </button>`).join("")
     + (list.length > 300 ? `<p class="hint">Affine ta recherche pour voir les ${list.length - 300} autres.</p>` : "")
-    || `<p class="hint">Aucune carte ne correspond.</p>`;
-
-  const side = id => (id ? mini(id) : `<span class="hint">—</span>`);
-  $("tradeSummary").innerHTML =
-    `<div><small>Tu donnes</small>${side(tradeSel.mine)}</div><span class="arrow">⇄</span>` +
-    `<div><small>Tu reçois</small>${side(tradeSel.theirs)}</div>`;
-
-  const same = tradeSel.mine && tradeSel.mine === tradeSel.theirs;
-  $("tradeMsg").textContent = same ? "Choisis deux cartes différentes." : "";
-  $("tradeSend").disabled = !(tradeSel.mine && tradeSel.theirs) || same;
+    || '<p class="hint">Aucune carte ne correspond.</p>';
+  const side = value => value ? mini(value) : '<span class="hint">—</span>';
+  $("tradeSummary").innerHTML = `<div><small>Tu donnes</small>${side(tradeSel.mine)}</div><span class="arrow">⇄</span>`
+    + `<div><small>Tu reçois</small>${side(tradeSel.theirs)}</div>`;
+  let reason = "";
+  if (tradeSel.mine && tradeSel.theirs) {
+    try { validateTradePair(tradeSel.mine, tradeSel.theirs); } catch (error) { reason = error.message; }
+  }
+  $("tradeMsg").textContent = reason;
+  $("tradeSend").disabled = tradeSending || !tradeSel.mine || !tradeSel.theirs || !!reason;
 }
 
-function setTradeTab(t) {
-  tradeTab = t;
+function setTradeTab(tab) {
+  tradeTab = tab;
   tradeFilt.q = "";
   $("tradeSearch").value = "";
   renderTrade();
@@ -2730,14 +2807,15 @@ function setTradeTab(t) {
 }
 
 async function openTrade(friendUid, friendName) {
+  const actor = user?.uid;
+  if (!actor || !state || actor === friendUid) return;
   try {
-    const snap = await getDoc(doc(db, "users", friendUid));
-    const theirs = {};
-    Object.entries(snap.data()?.cards || {}).forEach(([id, q]) => { if (q > 0) theirs[id] = q; });
-    const mineCount = Object.keys(state.cards || {}).filter(id => state.cards[id] > 0).length;
-    if (!mineCount) { alert("Tu n'as aucune carte à proposer."); return; }
-    if (!Object.keys(theirs).length) { alert(`${friendName} n'a aucune carte à échanger.`); return; }
-
+    const snapshot = await getDoc(doc(db, "users", friendUid));
+    if (user?.uid !== actor) return;
+    if (!snapshot.exists()) throw new Error("Compte de ton ami introuvable.");
+    const theirs = tradeInventory(snapshot.data());
+    if (!Object.keys(tradeInventory(state)).length) return alert("Tu n'as aucune carte à proposer.");
+    if (!Object.keys(theirs).length) return alert(`${friendName} n'a aucune carte à échanger.`);
     tradeFriend = { uid: friendUid, name: friendName };
     tradeData = { theirs };
     tradeSel.mine = 0; tradeSel.theirs = 0;
@@ -2748,8 +2826,8 @@ async function openTrade(friendUid, friendName) {
     renderTrade();
     $("tradeModal").hidden = false;
     $("tradeGrid").scrollTop = 0;
-  } catch (e) {
-    alert("Impossible de charger la collection de ton ami : " + e.message);
+  } catch (error) {
+    if (user?.uid === actor) alert("Impossible de charger la collection de ton ami : " + error.message);
   }
 }
 
@@ -2758,98 +2836,106 @@ $("tradeTabTheirs").onclick = () => setTradeTab("theirs");
 $("tradeSearch").addEventListener("input", () => { tradeFilt.q = $("tradeSearch").value; renderTrade(); });
 $("tradeReset").onclick = () => { tradeSel.mine = 0; tradeSel.theirs = 0; renderTrade(); };
 $("tradeCancel").onclick = closeTrade;
-
-$("tradeChips").addEventListener("click", e => {
-  const b = e.target.closest(".tchip");
-  if (!b || b.disabled) return;
-  if (b.dataset.f) tradeFilt[b.dataset.f] = !tradeFilt[b.dataset.f];
-  else tradeFilt.rarity = b.dataset.r;
+$("tradeChips").addEventListener("click", event => {
+  const button = event.target.closest(".tchip");
+  if (!button || button.disabled) return;
+  if (button.dataset.f) tradeFilt[button.dataset.f] = !tradeFilt[button.dataset.f];
+  else tradeFilt.rarity = button.dataset.r;
   renderTrade();
 });
-
-$("tradeGrid").addEventListener("click", e => {
-  const b = e.target.closest(".tcard");
-  if (!b) return;
-  const id = +b.dataset.id;
+$("tradeGrid").addEventListener("click", event => {
+  const button = event.target.closest(".tcard");
+  if (!button) return;
+  const item = parseTradeRef(button.dataset.id);
+  if (!item) return;
   const other = tradeTab === "mine" ? "theirs" : "mine";
-  tradeSel[tradeTab] = tradeSel[tradeTab] === id ? 0 : id;
-  if (tradeSel[tradeTab] && !tradeSel[other]) setTradeTab(other);   // passe à l'autre onglet
+  tradeSel[tradeTab] = String(tradeSel[tradeTab]) === String(item.ref) ? 0 : item.ref;
+  if (tradeSel[tradeTab] && !tradeSel[other]) setTradeTab(other);
   else renderTrade();
 });
 
 $("tradeSend").onclick = async () => {
-  if (!tradeFriend) return;
-  const offerId = tradeSel.mine, wantId = tradeSel.theirs;
-  if (!offerId || !wantId) { $("tradeMsg").textContent = "Choisis une carte à donner et une carte à recevoir."; return; }
-  if (offerId === wantId) { $("tradeMsg").textContent = "Choisis deux cartes différentes."; return; }
-  if (skinCard(offerId).rarity !== skinCard(wantId).rarity) {
-    $("tradeMsg").textContent = "Les deux cartes doivent avoir la même rareté.";
+  const actor = user?.uid;
+  if (!actor || !tradeFriend || tradeSending) return;
+  const target = { ...tradeFriend };
+  if (target.uid === actor) return;
+  let pair;
+  try { pair = validateTradePair(tradeSel.mine, tradeSel.theirs); }
+  catch (error) { $("tradeMsg").textContent = error.message; return; }
+  const { offer, want } = pair;
+  if (availQty(offer.ref) < 1) {
+    $("tradeMsg").textContent = "Cette carte n'est plus disponible ou est déjà réservée.";
     return;
   }
-  if (availQty(offerId) < 1) {
-    $("tradeMsg").textContent = "Cette carte est déjà proposée dans un autre échange en attente.";
-    renderTrade();
-    return;
-  }
+  tradeSending = true;
   $("tradeSend").disabled = true;
+  const proposal = doc(collection(db, "trades"));
   try {
-    await addDoc(collection(db, "trades"), {
-      from: user.uid, fromName: myName(),
-      to: tradeFriend.uid, toName: tradeFriend.name,
-      offerId, wantId, status: "pending", createdAt: Date.now()
+    await runTransaction(db, async tx => {
+      const mineRef = doc(db, "users", actor), theirRef = doc(db, "users", target.uid);
+      const [mine, theirs] = await Promise.all([tx.get(mineRef), tx.get(theirRef)]);
+      if (user?.uid !== actor) throw new Error("Le compte a changé.");
+      if (!mine.exists() || !theirs.exists()) throw new Error("Compte introuvable.");
+      if ((availableTradeCards(mine.data(), reservedMap())[offer.ref] || 0) < 1) throw new Error("Ta carte n'est plus disponible.");
+      if ((tradeInventory(theirs.data())[want.ref] || 0) < 1) throw new Error("Ton ami n'a plus cette carte.");
+      tx.set(proposal, { from: actor, fromName: myName(), to: target.uid, toName: target.name,
+        offerId: offer.ref, wantId: want.ref, status: "pending", createdAt: Date.now() });
     });
-    closeTrade();
+    if (user?.uid !== actor) return;
+    if (tradeFriend?.uid === target.uid) closeTrade();
     alert("Proposition envoyée !");
     await refreshSocial();
-  } catch (e) {
-    $("tradeMsg").textContent = "Erreur : " + e.message;
-    $("tradeSend").disabled = false;
+  } catch (error) {
+    if (user?.uid === actor) $("tradeMsg").textContent = "Erreur : " + error.message;
+  } finally {
+    tradeSending = false;
+    if (user?.uid === actor && tradeFriend) $("tradeSend").disabled = false;
   }
 };
 
 async function acceptTrade(id) {
-  const t = tradesIn.find(x => x.id === id);
-  if (!t) return;
-  if (skinCard(t.offerId).rarity !== skinCard(t.wantId).rarity) {
-    alert("Cet échange est refusé : les deux cartes n'ont pas la même rareté.");
-    return;
-  }
-  if (availQty(t.wantId) < 1) {
-    alert("La carte demandée est réservée dans une de tes propositions en attente. Annule-la d'abord.");
-    return;
-  }
+  const actor = user?.uid;
+  const invitation = tradesIn.find(trade => trade.id === id);
+  if (!actor || !invitation || acceptingTradeIds.has(id)) return;
+  const sender = invitation.from;
+  if (!sender || sender === actor) return;
+  acceptingTradeIds.add(id);
   const tradeRef = doc(db, "trades", id);
-  const myRef = doc(db, "users", user.uid);
-  const theirRef = doc(db, "users", t.from);
+  const myRef = doc(db, "users", actor), theirRef = doc(db, "users", sender);
   try {
     await runTransaction(db, async tx => {
-      const [tSnap, mine, theirs] = await Promise.all([tx.get(tradeRef), tx.get(myRef), tx.get(theirRef)]);
-      const tr = tSnap.data();
-      if (!tr || tr.status !== "pending") throw new Error("Cet échange n'est plus disponible.");
-      const o = String(tr.offerId), w = String(tr.wantId);
-      const mc = mine.data().cards || {}, tc = theirs.data().cards || {};
-      if ((tc[o] || 0) < 1) throw new Error("Ton ami n'a plus cette carte.");
-      if ((mc[w] || 0) < 1) throw new Error("Tu n'as plus cette carte.");
-      const dec = n => (n - 1 <= 0 ? deleteField() : n - 1);
-      tx.update(theirRef, { [`cards.${o}`]: dec(tc[o]), [`cards.${w}`]: (tc[w] || 0) + 1, lastTradeId: id });
-      const myUp = { [`cards.${w}`]: dec(mc[w]), [`cards.${o}`]: (mc[o] || 0) + 1, lastTradeId: id };
-      if (!(mc[o] > 0)) myUp[`obtained.${o}`] = Date.now();
-      tx.update(myRef, myUp);
+      const [snapshot, mine, theirs] = await Promise.all([tx.get(tradeRef), tx.get(myRef), tx.get(theirRef)]);
+      if (user?.uid !== actor) throw new Error("Le compte a changé.");
+      if (!snapshot.exists() || !mine.exists() || !theirs.exists()) throw new Error("Échange ou compte introuvable.");
+      const trade = snapshot.data();
+      if (trade.status !== "pending") throw new Error("Cet échange n'est plus disponible.");
+      if (trade.from !== sender || trade.to !== actor) throw new Error("Cet échange ne t'est pas destiné.");
+      const { offer, want } = validateTradePair(trade.offerId, trade.wantId);
+      if ((availableTradeCards(mine.data(), reservedMap())[want.ref] || 0) < 1) {
+        throw new Error("La carte demandée est indisponible ou réservée dans une autre proposition.");
+      }
+      const updates = tradeTransferUpdates(theirs.data(), mine.data(), offer, want, id, Date.now());
+      tx.update(theirRef, updates.fromUpdates);
+      tx.update(myRef, updates.toUpdates);
       tx.update(tradeRef, { status: "accepted" });
     });
+    if (user?.uid !== actor) return;
     alert("Échange réussi !");
-    refreshSocial();
-  } catch (e) {
-    alert(e.message);
+    await refreshSocial();
+  } catch (error) {
+    if (user?.uid === actor) alert(error.message);
+  } finally {
+    acceptingTradeIds.delete(id);
   }
 }
 
 const setTradeStatus = (id, status) =>
-  updateDoc(doc(db, "trades", id), { status }).then(refreshSocial).catch(e => alert(e.message));
+  updateDoc(doc(db, "trades", id), { status }).then(refreshSocial).catch(error => alert(error.message));
 
 // ---------- Affichage social ----------
 function mini(id) {
-  const c = skinCard(id);
+  const c = tradeCard(id);
+  if (!c) return '<span class="hint">Carte indisponible</span>';
   return `<span class="mini"><img src="${c.img}" referrerpolicy="no-referrer" alt="">
     <span><b>${esc(c.name)}</b><br>${esc(c.skinName)}<br>
     <small style="color:${RARITIES[c.rarity].color}">${RARITIES[c.rarity].label}</small></span></span>`;
@@ -2859,6 +2945,7 @@ const emptyLi = txt => `<li class="empty">${txt}</li>`;
 
 function renderSocial() {
   if (!user) return;
+  if (tradeFriend && !$("tradeModal").hidden) renderTrade();
   const me = user.uid;
   const accepted = friendships.filter(f => f.status === "accepted");
   const reqIn = friendships.filter(f => f.status === "pending" && f.requester !== me);
@@ -2978,6 +3065,7 @@ function startListeners() {
     const s = snap.data();
     s.cards = s.cards || {};
     state = applyRefill(s);
+    if (tradeFriend && !$("tradeModal").hidden) renderTrade();
     try { if (!rv && !spinning) render(); } catch (e) { console.error("Erreur d'affichage :", e); }
     fixObtained();
   }, "compte"));
@@ -3274,6 +3362,12 @@ function renderAscendedCollection() {
       sort: $("sortBy").value, owned: $("onlyOwned").checked, dupes: $("onlyDupes").checked })
   });
   ascendedUI.render();
+  root.querySelectorAll(".asc-muted").forEach(node => {
+    if (node.textContent.includes("Ascendantes non échangeables")) {
+      node.textContent = node.textContent.replace("Ascendantes non échangeables, non recyclables et non équipables dans cette version.",
+        "Ascendantes échangeables entre elles, non recyclables et non équipables.");
+    }
+  });
 }
 
 // Module facultatif : un échec ne bloque pas le site existant.
