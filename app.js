@@ -3383,3 +3383,100 @@ void import("./esports.js?v=panda-1")
   }))
   .then(controller => { esportsUI = controller; })
   .catch(error => console.warn("Module esport non chargé :", error.message));
+
+// ---------- Ouverture groupée des boosters normaux ----------
+// Ajouter ce bloc UNE SEULE FOIS à la fin du app.js actuellement en ligne.
+(() => {
+  if (document.getElementById("openAllBoostersBtn")) return;
+  const singleButton = $("openBtn");
+  if (!singleButton) return;
+  const button = document.createElement("button");
+  button.id = "openAllBoostersBtn";
+  button.type = "button";
+  button.className = singleButton.className;
+  button.style.marginLeft = "8px";
+  button.style.marginTop = "8px";
+  singleButton.insertAdjacentElement("afterend", button);
+  let pending = false;
+
+  function updateButton() {
+    const count = Number.isSafeInteger(state?.boosters) ? Math.max(0, state.boosters) : 0;
+    button.textContent = pending ? "Ouverture en cours…" : `Ouvrir tous les boosters (${count})`;
+    button.disabled = pending || !user || !state || count === 0 || !!rv || !!openingLock || spinning;
+  }
+
+  async function openAllBoosters() {
+    if (pending || !user || !state || rv || openingLock || spinning) return;
+    const lock = acquireOpening();
+    if (!lock) return;
+    const actor = user.uid;
+    const reference = doc(db, "users", actor);
+    const startedAt = Date.now();
+    const normalDraws = new Map();
+    const ascendedRandoms = [];
+    pending = true;
+    singleButton.disabled = true;
+    updateButton();
+    try {
+      const catalogue = ascendedCatalogue();
+      const outcome = await runTransaction(db, async transaction => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists()) throw new Error("Compte introuvable.");
+        if (user?.uid !== actor) throw new Error("Le compte a changé.");
+        const account = applyRefill(snapshot.data(), startedAt);
+        const count = account.boosters;
+        if (!Number.isSafeInteger(count) || count < 1) throw new Error("Aucun booster disponible.");
+        if (count >= MAX_BOOSTERS) account.lastRefill = startedAt;
+        account.boosters = 0;
+        account.cards = account.cards || {};
+        const ownedBefore = { ...account.cards };
+        const ascendedBefore = { ...(account.ascendedCards || {}) };
+        const allCards = [];
+        for (let index = 0; index < count; index += 1) {
+          const forceMythic = (account.mythicPity || 0) >= PITY_MAX;
+          const key = `${index}:${forceMythic}`;
+          if (!normalDraws.has(key)) normalDraws.set(key, drawBooster(CARDS_PER_BOOSTER, forceMythic));
+          const cards = normalDraws.get(key).map(card => ({ ...card }));
+          for (const card of cards) account.cards[card.id] = (account.cards[card.id] || 0) + 1;
+          account.mythicPity = cards.some(card => card.rarity === "mythic")
+            ? 0 : (account.mythicPity || 0) + 1;
+          const rolls = ascendedRandoms[index] || (ascendedRandoms[index] = []);
+          let cursor = 0;
+          const random = () => {
+            if (rolls[cursor] === undefined) rolls[cursor] = Math.random();
+            return rolls[cursor++];
+          };
+          const bonus = awardAscendedBonus(account, catalogue, { random, now: startedAt });
+          if (bonus) cards.push(bonus);
+          allCards.push(...cards);
+        }
+        ensureObtained(account);
+        addProgress(account, "open", count);
+        const revealed = markNewCardsForOpening(allCards, ownedBefore, ascendedBefore);
+        transaction.set(reference, account);
+        return { account, revealed, count };
+      });
+      if (user?.uid !== actor) return;
+      state = outcome.account;
+      $("result").innerHTML = "";
+      startReveal(outcome.revealed);
+    } catch (error) {
+      if (user?.uid === actor) alert("Ouverture groupée impossible : " + error.message);
+    } finally {
+      pending = false;
+      releaseOpening(lock);
+      updateButton();
+    }
+  }
+
+  button.onclick = openAllBoosters;
+  const observer = new MutationObserver(updateButton);
+  observer.observe(singleButton, { attributes: true, attributeFilter: ["disabled"] });
+  const counter = $("boosterCount");
+  if (counter) observer.observe(counter, { childList: true, subtree: true, characterData: true });
+  const reveal = $("reveal");
+  if (reveal) observer.observe(reveal, { attributes: true, attributeFilter: ["hidden"] });
+  const gameView = $("gameView");
+  if (gameView) observer.observe(gameView, { attributes: true, attributeFilter: ["hidden"] });
+  updateButton();
+})();
