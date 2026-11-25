@@ -1,9 +1,4 @@
 // custom-workshop.js
-import {
-  collection, addDoc, getDocs, updateDoc, deleteDoc, doc,
-  query, where, orderBy, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
 const ALLOWED_RARITIES = new Set(["kDefault", "kRare", "kEpic", "kLegendary", "kMythic"]);
 const RARITY_LABELS = {
   kDefault: "Commune",
@@ -33,7 +28,6 @@ function isValidHttpsUrl(url) {
   }
 }
 
-// Compresse et redimensionne une image locale pour tenir confortablement dans Firestore
 function compressImageFile(file, maxWidth, maxHeight, quality = 0.82) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith("image/")) {
@@ -78,7 +72,6 @@ function compressImageFile(file, maxWidth, maxHeight, quality = 0.82) {
 
 export class CustomCardWorkshop {
   constructor(deps) {
-    // deps: { db, getUser, getState, getChampions, getSkinsById, registerApprovedSkins, refreshAllUI }
     this.deps = deps;
     this.portraitData = "";
     this.splashData = "";
@@ -107,8 +100,9 @@ export class CustomCardWorkshop {
   }
 
   async loadApprovedSkinsIntoCatalog() {
-    const db = this.deps.db;
+    const db = this.deps.getDb?.();
     if (!db) return [];
+    const { collection, getDocs, query, where } = this.deps.fs;
     try {
       const q = query(collection(db, "customSkinProposals"), where("status", "==", "approved"));
       const snap = await getDocs(q);
@@ -123,7 +117,6 @@ export class CustomCardWorkshop {
 
       for (const item of approved) {
         const champ = champions.find(c => c.id === item.championId);
-        const champKey = Number(champ?.key || item.championKey);
         const skinId = Number(item.skinId);
         if (!champ || !Number.isSafeInteger(skinId) || skinId <= 0 || skinId >= 1000000) continue;
         if (skinsById[skinId] && skinsById[skinId].customSkinKey !== `community:${item.docId}`) continue;
@@ -158,8 +151,9 @@ export class CustomCardWorkshop {
 
   async refreshWorkshopLists() {
     const user = this.deps.getUser();
-    const db = this.deps.db;
+    const db = this.deps.getDb?.();
     if (!user || !db) return;
+    const { collection, getDocs, query, where } = this.deps.fs;
 
     const adminBadge = document.getElementById("wsAdminBadge");
     const adminSection = document.getElementById("wsAdminSection");
@@ -169,7 +163,6 @@ export class CustomCardWorkshop {
     if (adminSection) adminSection.hidden = !isAdmin;
 
     try {
-      // Mes propres propositions
       const myQ = query(collection(db, "customSkinProposals"), where("authorUid", "==", user.uid));
       const mySnap = await getDocs(myQ);
       this.myProposals = [];
@@ -177,7 +170,6 @@ export class CustomCardWorkshop {
       this.myProposals.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       this.renderMyProposals();
 
-      // Si admin : propositions en attente
       if (isAdmin) {
         const pendQ = query(collection(db, "customSkinProposals"), where("status", "==", "pending"));
         const pendSnap = await getDocs(pendQ);
@@ -196,11 +188,10 @@ export class CustomCardWorkshop {
     const titleInp = document.getElementById("wsTitleInput");
     const raritySel = document.getElementById("wsRaritySelect");
 
-    // Bascule Fichier / Lien URL pour Portrait et Splash
     document.querySelectorAll("[data-ws-source-toggle]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const target = btn.dataset.wsSourceToggle; // "portrait" ou "splash"
-        const mode = btn.dataset.mode; // "file" ou "url"
+        const target = btn.dataset.wsSourceToggle;
+        const mode = btn.dataset.mode;
         document.querySelectorAll(`[data-ws-source-toggle="${target}"]`).forEach(b =>
           b.classList.toggle("active", b === btn)
         );
@@ -211,7 +202,6 @@ export class CustomCardWorkshop {
       });
     });
 
-    // Import fichier Portrait
     document.getElementById("wsPortraitFile")?.addEventListener("change", async e => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -224,14 +214,12 @@ export class CustomCardWorkshop {
       }
     });
 
-    // URL Portrait
     document.getElementById("wsPortraitUrl")?.addEventListener("input", e => {
       const val = e.target.value.trim();
       this.portraitData = isValidHttpsUrl(val) ? val : "";
       this.updateLivePreview();
     });
 
-    // Import fichier Splash Art
     document.getElementById("wsSplashFile")?.addEventListener("change", async e => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -244,7 +232,6 @@ export class CustomCardWorkshop {
       }
     });
 
-    // URL Splash Art
     document.getElementById("wsSplashUrl")?.addEventListener("input", e => {
       const val = e.target.value.trim();
       this.splashData = isValidHttpsUrl(val) ? val : "";
@@ -255,7 +242,6 @@ export class CustomCardWorkshop {
     titleInp?.addEventListener("input", () => this.updateLivePreview());
     raritySel?.addEventListener("change", () => this.updateLivePreview());
 
-    // Soumission du formulaire
     document.getElementById("wsProposalForm")?.addEventListener("submit", async e => {
       e.preventDefault();
       await this.submitProposal();
@@ -291,10 +277,11 @@ export class CustomCardWorkshop {
   async submitProposal() {
     const user = this.deps.getUser();
     const state = this.deps.getState();
-    const db = this.deps.db;
+    const db = this.deps.getDb?.();
     const statusEl = document.getElementById("wsFormStatus");
 
     if (!user || !state || !db) return;
+    const { collection, addDoc, serverTimestamp } = this.deps.fs;
 
     const champSel = document.getElementById("wsChampionSelect");
     const championId = champSel?.value || "";
@@ -355,7 +342,6 @@ export class CustomCardWorkshop {
 
   allocateNextSlot(championKey) {
     const skinsById = this.deps.getSkinsById() || {};
-    // Mavayne utilise 999 ; on attribue de 998 à 700 pour éviter tout conflit
     for (let slot = 998; slot >= 700; slot--) {
       const candidateId = championKey * 1000 + slot;
       if (candidateId < 1000000 && !skinsById[candidateId]) {
@@ -378,7 +364,8 @@ export class CustomCardWorkshop {
     }
 
     try {
-      await updateDoc(doc(this.deps.db, "customSkinProposals", docId), {
+      const { doc, updateDoc, serverTimestamp } = this.deps.fs;
+      await updateDoc(doc(this.deps.getDb(), "customSkinProposals", docId), {
         status: "approved",
         slot: allocated.slot,
         skinId: allocated.skinId,
@@ -397,7 +384,8 @@ export class CustomCardWorkshop {
   async rejectProposal(docId) {
     if (!this.isAdmin()) return;
     try {
-      await updateDoc(doc(this.deps.db, "customSkinProposals", docId), {
+      const { doc, updateDoc, serverTimestamp } = this.deps.fs;
+      await updateDoc(doc(this.deps.getDb(), "customSkinProposals", docId), {
         status: "rejected",
         reviewedBy: this.deps.getUser().uid,
         reviewedAt: serverTimestamp()

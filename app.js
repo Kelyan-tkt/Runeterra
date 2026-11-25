@@ -12,7 +12,7 @@ import {
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {
   getFirestore, initializeFirestore, doc, runTransaction, collection, query, where,
-  onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField
+  onSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField, serverTimestamp
 }
   from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
@@ -349,16 +349,14 @@ async function loadGameData() {
 }
 
 window.cardWorkshop = new CustomCardWorkshop({
-  db,
+  getDb: () => db,
+  fs: { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp },
   getUser: () => user,
   getState: () => state,
   getChampions: () => champions,
   getSkinsById: () => skinsById,
   registerApprovedSkins: registerApprovedCommunitySkins,
-  refreshAllUI: () => {
-    renderCollection?.();
-    renderStats?.();
-  }
+  refreshAllUI: () => render()
 });
 window.cardWorkshop.init();
 await window.cardWorkshop.loadApprovedSkinsIntoCatalog();
