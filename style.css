@@ -1284,3 +1284,109 @@ input, select, textarea { font-size: 16px; }              /* évite le zoom auto
     box-shadow: inset 0 0 14px rgba(232, 64, 87, .4);
   }
 }
+
+/* ---------- Atelier de création de cartes & Modération Admin ---------- */
+.ws-container { max-width: 1040px; margin: 0 auto; display: grid; gap: 18px; text-align: left; }
+.ws-panel {
+  background: rgba(13, 19, 32, 0.92);
+  border: 1px solid var(--gold-dim);
+  border-radius: 12px;
+  padding: 18px;
+}
+.ws-admin-panel { border-color: #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.18); }
+.ws-admin-pill {
+  background: #f59e0b;
+  color: #0b0e14;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+.ws-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; margin-top: 12px; }
+@media (max-width: 760px) { .ws-layout { grid-template-columns: 1fr; } }
+.ws-form { display: grid; gap: 12px; }
+.ws-form label { display: grid; gap: 6px; font-size: 0.9rem; }
+.ws-form input[type="text"],
+.ws-form input[type="url"],
+.ws-form select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #090d16;
+  color: #f3f4f6;
+}
+.ws-image-field {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+.ws-image-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+.ws-toggle-group { display: flex; gap: 6px; }
+.ws-toggle-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #d1d5db;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.ws-toggle-btn.active { border-color: var(--gold); background: rgba(200, 170, 110, 0.24); color: #fff; font-weight: 700; }
+.ws-live-preview {
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+.ws-preview-grid { display: flex; gap: 12px; justify-content: center; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+.ws-preview-card {
+  width: 130px;
+  aspect-ratio: 3 / 5;
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+.ws-preview-splash {
+  width: 240px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+.ws-preview-card img, .ws-preview-splash img { width: 100%; height: 100%; object-fit: cover; }
+.ws-prev-title { font-weight: 700; font-size: 1.05rem; margin: 4px 0 0; }
+.ws-pending-list, .ws-my-list { display: grid; gap: 12px; margin-top: 10px; }
+.ws-proposal-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 12px;
+  align-items: center;
+}
+.ws-proposal-media { display: flex; gap: 8px; }
+.ws-thumb-portrait { width: 68px; height: 112px; object-fit: cover; border-radius: 6px; }
+.ws-thumb-splash { width: 198px; height: 112px; object-fit: cover; border-radius: 6px; }
+.ws-proposal-actions { display: flex; gap: 8px; margin-top: 8px; }
+.ws-my-item { display: flex; gap: 10px; align-items: center; background: #090d16; padding: 8px 12px; border-radius: 8px; }
+.ws-my-item img { width: 42px; height: 68px; object-fit: cover; border-radius: 4px; }
+.ws-status.pending { color: #fbbf24; }
+.ws-status.approved { color: #34d399; font-weight: 700; }
+.ws-status.rejected { color: #f87171; }

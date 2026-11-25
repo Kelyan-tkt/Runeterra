@@ -49,6 +49,8 @@
       <button data-tab="ranked">Arène classée</button>
       <button data-tab="ranking">Classement</button>
       <button data-tab="profile">Profil</button>
+      <button class="tab" data-tab="workshop">Atelier <span id="wsAdminBadge" class="ws-admin-pill"
+          hidden>Admin</span></button>
     </nav>
     <section id="tab-boosters">
       <div class="booster-layout">
@@ -79,6 +81,109 @@
             <small id="pityNote"></small>
           </div>
         </aside>
+      </div>
+    </section>
+
+    <section id="tab-workshop" hidden>
+      <div class="ws-container">
+        <!-- Panneau visible uniquement si isAdmin == true -->
+        <div id="wsAdminSection" class="ws-panel ws-admin-panel" hidden>
+          <h2>🛡️ Modération Admin — Cartes en attente</h2>
+          <p class="hint">Valider une carte la rend immédiatement visible dans la galerie et obtenable dans les boosters
+            pour tous les joueurs.</p>
+          <div id="wsAdminPendingList" class="ws-pending-list"></div>
+        </div>
+
+        <!-- Formulaire accessible à tous les joueurs -->
+        <div class="ws-panel">
+          <h2>✨ Proposer une carte personnalisée</h2>
+          <p class="hint">Crée ton propre skin (comme Mavayne) en choisissant un champion, un titre, une rareté et ses 2
+            illustrations.</p>
+
+          <div class="ws-layout">
+            <form id="wsProposalForm" class="ws-form">
+              <label>
+                <span>Champion</span>
+                <select id="wsChampionSelect" required></select>
+              </label>
+
+              <label>
+                <span>Titre de la carte</span>
+                <input type="text" id="wsTitleInput" maxlength="50" placeholder="Ex : Mavayne, Yasuo Lune de sang..."
+                  required>
+              </label>
+
+              <label>
+                <span>Rareté</span>
+                <select id="wsRaritySelect" required>
+                  <option value="kDefault">Commune</option>
+                  <option value="kRare" selected>Rare</option>
+                  <option value="kEpic">Épique</option>
+                  <option value="kLegendary">Légendaire</option>
+                  <option value="kMythic">Mythique</option>
+                </select>
+              </label>
+
+              <!-- Image 1 : Carte Portrait -->
+              <div class="ws-image-field">
+                <div class="ws-image-header">
+                  <strong>1. Petite image de la carte (format vertical)</strong>
+                  <div class="ws-toggle-group">
+                    <button type="button" class="ws-toggle-btn active" data-ws-source-toggle="portrait"
+                      data-mode="file">📁 Fichier</button>
+                    <button type="button" class="ws-toggle-btn" data-ws-source-toggle="portrait" data-mode="url">🔗 Lien
+                      URL</button>
+                  </div>
+                </div>
+                <div id="ws-portrait-file-box">
+                  <input type="file" id="wsPortraitFile" accept="image/*">
+                </div>
+                <div id="ws-portrait-url-box" hidden>
+                  <input type="url" id="wsPortraitUrl" placeholder="https://exemple.com/carte-portrait.jpg">
+                </div>
+              </div>
+
+              <!-- Image 2 : Splash Art -->
+              <div class="ws-image-field">
+                <div class="ws-image-header">
+                  <strong>2. Grande image Splash Art (format large)</strong>
+                  <div class="ws-toggle-group">
+                    <button type="button" class="ws-toggle-btn active" data-ws-source-toggle="splash"
+                      data-mode="file">📁 Fichier</button>
+                    <button type="button" class="ws-toggle-btn" data-ws-source-toggle="splash" data-mode="url">🔗 Lien
+                      URL</button>
+                  </div>
+                </div>
+                <div id="ws-splash-file-box">
+                  <input type="file" id="wsSplashFile" accept="image/*">
+                </div>
+                <div id="ws-splash-url-box" hidden>
+                  <input type="url" id="wsSplashUrl" placeholder="https://exemple.com/splash-art.jpg">
+                </div>
+              </div>
+
+              <button type="submit" id="wsSubmitBtn" class="btn-play small">Envoyer la proposition</button>
+              <p id="wsFormStatus" class="hint"></p>
+            </form>
+
+            <!-- Aperçu en direct -->
+            <div class="ws-live-preview">
+              <h3>Aperçu en direct</h3>
+              <div class="ws-preview-grid">
+                <div id="wsPreviewCard" class="ws-preview-card"><span>Aperçu carte (portrait)</span></div>
+                <div id="wsPreviewSplash" class="ws-preview-splash"><span>Aperçu Splash Art</span></div>
+              </div>
+              <p id="wsPreviewTitle" class="ws-prev-title">Titre du skin</p>
+              <p id="wsPreviewMeta" class="hint">Champion • Rare</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historique du joueur -->
+        <div class="ws-panel">
+          <h3>Mes propositions</h3>
+          <div id="wsMyProposalsList" class="ws-my-list"></div>
+        </div>
       </div>
     </section>
     <section id="tab-collection" hidden>

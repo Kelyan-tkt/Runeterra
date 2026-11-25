@@ -2,6 +2,7 @@ import { installCustomSkins, customSkinArtwork } from "./custom-skins.js?v=mavay
 import { PODIUM_TITLES, collectionRanking, podiumPlayer, podiumPlayers, podiumTitleAvailable,
   activePodiumTitle, applyPodiumEffect, podiumIdentityHTML, refreshPodiumIdentities,
   startPodiumTracking, stopPodiumTracking } from "./podium-titles.js?v=1";
+import { CustomCardWorkshop } from "./custom-workshop.js";
 import { ASCENDED_CONFIG, loadAscendedMedia, ascendedMediaVersion, buildAscendedCatalogue, awardAscendedBonus, ascendedCardHTML, playAscendedReveal, initAscended } from "./ascended.js?v=ascended-showcase-1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
@@ -331,6 +332,36 @@ async function loadGameData() {
   champions.forEach(c => champByKey[c.key] = c);
   skinsById = data;
   installCustomSkins(champions, skinsById);
+  function registerApprovedCommunitySkins(newSkins) {
+  for (const skin of newSkins) {
+    if (!skinList.some(s => s.id === skin.id)) {
+      skinList.push(skin);
+    }
+    const r = skin.rarity || "kRare";
+    if (pools[r] && !pools[r].some(s => s.id === skin.id)) {
+      pools[r].push(skin);
+    }
+    const champKey = Math.floor(skin.id / 1000);
+    if (skinsByChamp[champKey] && !skinsByChamp[champKey].some(s => s.id === skin.id)) {
+      skinsByChamp[champKey].push(skin);
+    }
+  }
+}
+
+window.cardWorkshop = new CustomCardWorkshop({
+  db,
+  getUser: () => user,
+  getState: () => state,
+  getChampions: () => champions,
+  getSkinsById: () => skinsById,
+  registerApprovedSkins: registerApprovedCommunitySkins,
+  refreshAllUI: () => {
+    renderCollection?.();
+    renderStats?.();
+  }
+});
+window.cardWorkshop.init();
+await window.cardWorkshop.loadApprovedSkinsIntoCatalog();
   skinList = Object.values(data).filter(s =>
     s.id < 1000000 && champByKey[Math.floor(s.id / 1000)] && (s.loadScreenPath || s.splashPath));
   pools = {}; skinsByChamp = {};
@@ -3229,6 +3260,8 @@ onAuthStateChanged(auth, async u => {
     ]);
     if (user?.uid !== u.uid) return;
     state = account;
+    await window.cardWorkshop?.loadApprovedSkinsIntoCatalog();
+    await window.cardWorkshop?.refreshWorkshopLists();
     void refreshSplashGame();
     $("gameView").hidden = false;
     startupStatus("");
